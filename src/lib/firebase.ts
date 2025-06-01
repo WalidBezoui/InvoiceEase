@@ -4,42 +4,19 @@ import { getAuth, type Auth } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
 import { getStorage, type FirebaseStorage } from 'firebase/storage';
 
-// Define the expected environment variable names
-const ENV_VAR_NAMES = {
-  apiKey: "NEXT_PUBLIC_FIREBASE_API_KEY",
-  authDomain: "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN",
-  projectId: "NEXT_PUBLIC_FIREBASE_PROJECT_ID",
-  storageBucket: "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET",
-  messagingSenderId: "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID",
-  appId: "NEXT_PUBLIC_FIREBASE_APP_ID",
-};
-
-// Check for missing environment variables
-const missingEnvVars: string[] = [];
-Object.values(ENV_VAR_NAMES).forEach(varName => {
-  if (!process.env[varName]) {
-    missingEnvVars.push(varName);
-  }
-});
-
-if (missingEnvVars.length > 0) {
-  const errorMessage = `Firebase configuration is incomplete. The following environment variables are missing or empty: ${missingEnvVars.join(', ')}. 
-Please ensure they are set in your .env.local file (e.g., NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key). 
-Environment variables need to be prefixed with NEXT_PUBLIC_ to be available to the browser.`;
-  console.error(errorMessage);
-  // Throwing an error here will stop further execution and provide a clear message on the error page.
-  throw new Error(errorMessage);
-}
-
+// Firebase configuration provided by the user
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY!,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN!,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID!,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET!,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID!,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID!,
+  apiKey: "AIzaSyDvK8q2-2PmkiRStI4TfUAv9mqfQcR871o",
+  authDomain: "invoiceflow-b5b92.firebaseapp.com",
+  databaseURL: "https://invoiceflow-b5b92-default-rtdb.firebaseio.com",
+  projectId: "invoiceflow-b5b92",
+  storageBucket: "invoiceflow-b5b92.firebasestorage.app",
+  messagingSenderId: "917479650556",
+  appId: "1:917479650556:web:1ab66d55068bc398d41379",
+  measurementId: "G-B30CWJ0ZPG"
 };
 
+// Initialize Firebase
 let app: FirebaseApp;
 if (!getApps().length) {
   app = initializeApp(firebaseConfig);
