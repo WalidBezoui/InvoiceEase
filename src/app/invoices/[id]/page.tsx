@@ -156,6 +156,10 @@ const getInvoiceStrings = (languageCode?: string) => {
       confirmPaidDescription: "Are you sure you want to mark this invoice as paid? This action cannot be easily undone.",
       confirmPaidAction: "Confirm Paid",
       confirmPaidCancel: "Cancel",
+      confirmCancelTitle: "Confirm Cancellation",
+      confirmCancelDescription: "Are you sure you want to cancel this invoice? This action cannot be easily undone and marks the invoice as void.",
+      confirmCancelAction: "Confirm Cancel",
+      confirmCancelCancel: "Keep Invoice",
     },
     fr: {
       invoiceTitle: "Facture",
@@ -191,6 +195,10 @@ const getInvoiceStrings = (languageCode?: string) => {
       confirmPaidDescription: "Êtes-vous sûr de vouloir marquer cette facture comme payée ? Cette action ne peut pas être facilement annulée.",
       confirmPaidAction: "Confirmer Payée",
       confirmPaidCancel: "Annuler",
+      confirmCancelTitle: "Confirmer l'Annulation",
+      confirmCancelDescription: "Êtes-vous sûr de vouloir annuler cette facture ? Cette action ne peut pas être facilement annulée et rendra la facture nulle.",
+      confirmCancelAction: "Confirmer Annulation",
+      confirmCancelCancel: "Conserver Facture",
     },
   };
   return strings[lang];
@@ -347,25 +355,25 @@ export default function InvoiceDetailPage() {
 
   return (
     <div className="invoice-page-wrapper">
-      <AlertDialog>
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 print:hidden mb-8">
-          <div className="flex items-center gap-4">
-              <Button variant="outline" size="icon" asChild>
-              <Link href="/invoices">
-                  <ArrowLeft className="h-4 w-4" />
-                  <span className="sr-only">{s.backToInvoices}</span>
-              </Link>
-              </Button>
-              <div>
-              <h1 className="font-headline text-3xl md:text-4xl font-bold text-primary">
-                  {s.invoiceTitle} {invoice.invoiceNumber}
-              </h1>
-              <p className="text-muted-foreground mt-1">
-                  {s.invoiceStatus} <Badge variant={getStatusBadgeVariant(invoice.status)} className="capitalize ml-1">{invoice.status}</Badge>
-              </p>
-              </div>
-          </div>
-          <div className="flex gap-2 items-center">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 print:hidden mb-8">
+        <div className="flex items-center gap-4">
+            <Button variant="outline" size="icon" asChild>
+            <Link href="/invoices">
+                <ArrowLeft className="h-4 w-4" />
+                <span className="sr-only">{s.backToInvoices}</span>
+            </Link>
+            </Button>
+            <div>
+            <h1 className="font-headline text-3xl md:text-4xl font-bold text-primary">
+                {s.invoiceTitle} {invoice.invoiceNumber}
+            </h1>
+            <p className="text-muted-foreground mt-1">
+                {s.invoiceStatus} <Badge variant={getStatusBadgeVariant(invoice.status)} className="capitalize ml-1">{invoice.status}</Badge>
+            </p>
+            </div>
+        </div>
+        <div className="flex gap-2 items-center">
+          <AlertDialog> {/* For Paid Confirmation */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" disabled={isUpdatingStatus || invoice.status === 'paid' || invoice.status === 'cancelled'}>
@@ -390,9 +398,7 @@ export default function InvoiceDetailPage() {
                       <AlertCircleIcon className="mr-2 h-4 w-4" /> {s.markAsOverdue}
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => handleStatusChange('cancelled')} className="text-destructive hover:!text-destructive focus:!text-destructive" disabled={isUpdatingStatus}>
-                      <XCircle className="mr-2 h-4 w-4" /> {s.cancelInvoice}
-                    </DropdownMenuItem>
+                     {/* Cancel for 'sent' status - moved to its own AlertDialog below */}
                   </>
                 )}
                 {invoice.status === 'overdue' && (
@@ -403,50 +409,71 @@ export default function InvoiceDetailPage() {
                       </DropdownMenuItem>
                     </AlertDialogTrigger>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => handleStatusChange('cancelled')} className="text-destructive hover:!text-destructive focus:!text-destructive" disabled={isUpdatingStatus}>
-                      <XCircle className="mr-2 h-4 w-4" /> {s.cancelInvoice}
-                    </DropdownMenuItem>
+                     {/* Cancel for 'overdue' status - moved to its own AlertDialog below */}
                   </>
                 )}
+                 {(invoice.status === 'sent' || invoice.status === 'overdue') && (
+                  <AlertDialog> {/* For Cancel Confirmation */}
+                    <AlertDialogTrigger asChild>
+                       <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive hover:!text-destructive focus:!text-destructive" disabled={isUpdatingStatus}>
+                         <XCircle className="mr-2 h-4 w-4" /> {s.cancelInvoice}
+                       </DropdownMenuItem>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>{s.confirmCancelTitle}</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          {s.confirmCancelDescription}
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>{s.confirmCancelCancel}</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleStatusChange('cancelled')} disabled={isUpdatingStatus} className="bg-destructive hover:bg-destructive/90">
+                          {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                          {s.confirmCancelAction}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                 )}
               </DropdownMenuContent>
             </DropdownMenu>
+            <AlertDialogContent> {/* This is for PAID Confirmation */}
+              <AlertDialogHeader>
+                <AlertDialogTitle>{s.confirmPaidTitle}</AlertDialogTitle>
+                <AlertDialogDescription>
+                  {s.confirmPaidDescription}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>{s.confirmPaidCancel}</AlertDialogCancel>
+                <AlertDialogAction onClick={() => handleStatusChange('paid')} disabled={isUpdatingStatus}>
+                  {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  {s.confirmPaidAction}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
-            <Button variant="outline" onClick={printInvoice}>
-              <Printer className="mr-2 h-4 w-4" /> {s.printPdf}
+          <Button variant="outline" onClick={printInvoice}>
+            <Printer className="mr-2 h-4 w-4" /> {s.printPdf}
+          </Button>
+          <Button variant="outline" onClick={printInvoice}>
+            <Download className="mr-2 h-4 w-4" /> {s.downloadPdf}
+          </Button>
+          { invoice.status === 'draft' || invoice.status === 'sent' ? (
+            <Button asChild>
+              <Link href={`/invoices/${invoice.id}/edit`}>
+                <Edit className="mr-2 h-4 w-4" /> {s.edit}
+              </Link>
             </Button>
-            <Button variant="outline" onClick={printInvoice}>
-              <Download className="mr-2 h-4 w-4" /> {s.downloadPdf}
-            </Button>
-            { invoice.status === 'draft' || invoice.status === 'sent' ? (
-              <Button asChild>
-                <Link href={`/invoices/${invoice.id}/edit`}>
-                  <Edit className="mr-2 h-4 w-4" /> {s.edit}
-                </Link>
-              </Button>
-            ) : (
-               <Button disabled> 
-                  <Edit className="mr-2 h-4 w-4" /> {s.edit}
-               </Button>
-            )}
-          </div>
+          ) : (
+             <Button disabled> 
+                <Edit className="mr-2 h-4 w-4" /> {s.edit}
+             </Button>
+          )}
         </div>
-
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{s.confirmPaidTitle}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {s.confirmPaidDescription}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{s.confirmPaidCancel}</AlertDialogCancel>
-            <AlertDialogAction onClick={() => handleStatusChange('paid')} disabled={isUpdatingStatus}>
-              {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              {s.confirmPaidAction}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      </div>
 
 
       <Card className="invoice-card-for-print shadow-lg print:shadow-none print:border-none">
