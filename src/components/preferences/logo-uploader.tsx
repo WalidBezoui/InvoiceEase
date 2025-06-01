@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -28,16 +29,33 @@ export default function LogoUploader() {
     async function fetchCurrentLogo() {
       if (user) {
         setIsLoadingLogo(true);
-        const prefDocRef = doc(db, "userPreferences", user.uid);
-        const docSnap = await getDoc(prefDocRef);
-        if (docSnap.exists() && docSnap.data().logoUrl) {
-          setCurrentLogoUrl(docSnap.data().logoUrl);
+        try {
+          const prefDocRef = doc(db, "userPreferences", user.uid);
+          const docSnap = await getDoc(prefDocRef);
+          if (docSnap.exists() && docSnap.data().logoUrl) {
+            setCurrentLogoUrl(docSnap.data().logoUrl);
+          } else {
+            setCurrentLogoUrl(null); // Explicitly set to null if no logo URL
+          }
+        } catch (error) {
+          console.error("Error fetching current logo:", error);
+          toast({
+            title: "Error fetching logo",
+            description: "Could not load your current company logo. Please try refreshing.",
+            variant: "destructive",
+          });
+          setCurrentLogoUrl(null); // Reset on error
+        } finally {
+          setIsLoadingLogo(false);
         }
+      } else {
+        // No user, so no logo to load, and not currently loading.
+        setCurrentLogoUrl(null);
         setIsLoadingLogo(false);
       }
     }
     fetchCurrentLogo();
-  }, [user]);
+  }, [user, toast]); // Added toast to the dependency array
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
