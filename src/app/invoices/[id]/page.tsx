@@ -10,7 +10,7 @@ import { doc, getDoc, updateDoc, serverTimestamp, type FieldValue } from "fireba
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Download, Edit, Loader2, AlertTriangle, Printer, ChevronDown, Send, DollarSign, AlertCircle as AlertCircleIcon, XCircle } from "lucide-react";
+import { ArrowLeft, Download, Edit, Loader2, AlertTriangle, Printer, ChevronDown, Send, DollarSign, AlertCircle as AlertCircleIcon, XCircle, Undo, FilePenLine } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale"; // Import French locale
@@ -152,14 +152,24 @@ const getInvoiceStrings = (languageCode?: string) => {
       markAsPaid: "Mark as Paid",
       markAsOverdue: "Mark as Overdue",
       cancelInvoice: "Cancel Invoice",
+      revertToSent: "Revert to Sent",
+      reopenAsDraft: "Re-open as Draft",
       confirmPaidTitle: "Confirm Payment",
       confirmPaidDescription: "Are you sure you want to mark this invoice as paid? This action cannot be easily undone.",
       confirmPaidAction: "Confirm Paid",
       confirmPaidCancel: "Cancel",
       confirmCancelTitle: "Confirm Cancellation",
-      confirmCancelDescription: "Are you sure you want to cancel this invoice? This action cannot be easily undone and marks the invoice as void.",
+      confirmCancelDescription: "Are you sure you want to cancel this invoice? This action marks the invoice as void.",
       confirmCancelAction: "Confirm Cancel",
       confirmCancelCancel: "Keep Invoice",
+      confirmRevertToSentTitle: "Confirm Revert to Sent",
+      confirmRevertToSentDescription: "Are you sure you want to mark this invoice as 'Sent' (not paid)? This will clear the payment date.",
+      confirmRevertToSentAction: "Confirm Revert",
+      confirmRevertToSentCancel: "Keep as Paid",
+      confirmReopenAsDraftTitle: "Confirm Re-open",
+      confirmReopenAsDraftDescription: "Are you sure you want to re-open this cancelled invoice? It will be moved to 'Draft' status.",
+      confirmReopenAsDraftAction: "Confirm Re-open",
+      confirmReopenAsDraftCancel: "Keep Cancelled",
     },
     fr: {
       invoiceTitle: "Facture",
@@ -191,14 +201,24 @@ const getInvoiceStrings = (languageCode?: string) => {
       markAsPaid: "Marquer comme Payée",
       markAsOverdue: "Marquer comme En Retard",
       cancelInvoice: "Annuler la Facture",
+      revertToSent: "Revenir à Envoyée",
+      reopenAsDraft: "Réouvrir comme Brouillon",
       confirmPaidTitle: "Confirmer le Paiement",
       confirmPaidDescription: "Êtes-vous sûr de vouloir marquer cette facture comme payée ? Cette action ne peut pas être facilement annulée.",
       confirmPaidAction: "Confirmer Payée",
       confirmPaidCancel: "Annuler",
       confirmCancelTitle: "Confirmer l'Annulation",
-      confirmCancelDescription: "Êtes-vous sûr de vouloir annuler cette facture ? Cette action ne peut pas être facilement annulée et rendra la facture nulle.",
+      confirmCancelDescription: "Êtes-vous sûr de vouloir annuler cette facture ? Cette action rendra la facture nulle.",
       confirmCancelAction: "Confirmer Annulation",
       confirmCancelCancel: "Conserver Facture",
+      confirmRevertToSentTitle: "Confirmer Retour à Envoyée",
+      confirmRevertToSentDescription: "Êtes-vous sûr de vouloir marquer cette facture comme 'Envoyée' (non payée) ? La date de paiement sera effacée.",
+      confirmRevertToSentAction: "Confirmer Retour",
+      confirmRevertToSentCancel: "Garder Payée",
+      confirmReopenAsDraftTitle: "Confirmer Réouverture",
+      confirmReopenAsDraftDescription: "Êtes-vous sûr de vouloir réouvrir cette facture annulée ? Elle passera au statut 'Brouillon'.",
+      confirmReopenAsDraftAction: "Confirmer Réouverture",
+      confirmReopenAsDraftCancel: "Garder Annulée",
     },
   };
   return strings[lang];
@@ -274,34 +294,41 @@ export default function InvoiceDetailPage() {
     setIsUpdatingStatus(true);
     const invoiceRef = doc(db, "invoices", invoice.id);
     
-    const updateData: { status: Invoice['status']; updatedAt: FieldValue; sentDate?: string; paidDate?: string } = {
+    const updateData: { status: Invoice['status']; updatedAt: FieldValue; sentDate?: string | null; paidDate?: string | null } = {
       status: newStatus,
       updatedAt: serverTimestamp(),
     };
 
-    if (newStatus === 'sent' && invoice.status === 'draft') {
-      updateData.sentDate = new Date().toISOString();
-    }
-    if (newStatus === 'paid' && (invoice.status === 'sent' || invoice.status === 'overdue')) {
+    if (newStatus === 'sent') {
+      if (invoice.status === 'draft') { // Draft to Sent
+        updateData.sentDate = new Date().toISOString();
+      } else if (invoice.status === 'paid') { // Paid to Sent (Revert)
+        updateData.paidDate = null; // Clear paid date
+      }
+    } else if (newStatus === 'paid' && (invoice.status === 'sent' || invoice.status === 'overdue')) { // Sent/Overdue to Paid
       updateData.paidDate = new Date().toISOString();
     }
+    // For newStatus === 'draft' (e.g. from cancelled), no specific date fields need to be set other than updatedAt
+    // For newStatus === 'cancelled', no specific date fields other than updatedAt
+    // For newStatus === 'overdue', no specific date fields other than updatedAt
+
 
     try {
-      await updateDoc(invoiceRef, updateData as any); // Use 'as any' for FieldValue compatibility if needed
+      await updateDoc(invoiceRef, updateData as any); 
       setInvoice(prev => {
         if (!prev) return null;
         const updatedInvoice = { 
           ...prev, 
           status: newStatus, 
-          updatedAt: new Date() // Approximate for UI, Firestore handles actual server timestamp
+          updatedAt: new Date() 
         };
-        if (updateData.sentDate) updatedInvoice.sentDate = updateData.sentDate;
-        if (updateData.paidDate) updatedInvoice.paidDate = updateData.paidDate;
+        if (updateData.hasOwnProperty('sentDate')) updatedInvoice.sentDate = updateData.sentDate;
+        if (updateData.hasOwnProperty('paidDate')) updatedInvoice.paidDate = updateData.paidDate;
         return updatedInvoice;
       });
       toast({
         title: "Status Updated",
-        description: `Invoice ${invoice.invoiceNumber} marked as ${newStatus}.`,
+        description: `Invoice ${invoice.invoiceNumber} status changed to ${newStatus}.`,
       });
     } catch (err) {
       console.error("Error updating invoice status:", err);
@@ -352,6 +379,14 @@ export default function InvoiceDetailPage() {
   
   const printInvoice = () => window.print();
 
+  const canMarkAsSent = invoice.status === 'draft';
+  const canMarkAsPaid = invoice.status === 'sent' || invoice.status === 'overdue';
+  const canMarkAsOverdue = invoice.status === 'sent';
+  const canCancel = invoice.status === 'sent' || invoice.status === 'overdue';
+  const canRevertToSent = invoice.status === 'paid';
+  const canReopenAsDraft = invoice.status === 'cancelled';
+
+  const hasAvailableActions = canMarkAsSent || canMarkAsPaid || canMarkAsOverdue || canCancel || canRevertToSent || canReopenAsDraft;
 
   return (
     <div className="invoice-page-wrapper">
@@ -373,87 +408,115 @@ export default function InvoiceDetailPage() {
             </div>
         </div>
         <div className="flex gap-2 items-center">
-          <AlertDialog> {/* For Paid Confirmation */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" disabled={isUpdatingStatus || invoice.status === 'paid' || invoice.status === 'cancelled'}>
-                  {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                  {s.changeStatus} <ChevronDown className="ml-2 h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {invoice.status === 'draft' && (
-                  <DropdownMenuItem onClick={() => handleStatusChange('sent')} disabled={isUpdatingStatus}>
-                    <Send className="mr-2 h-4 w-4" /> {s.markAsSent}
-                  </DropdownMenuItem>
-                )}
-                {invoice.status === 'sent' && (
-                  <>
-                    <AlertDialogTrigger asChild>
-                      <DropdownMenuItem onSelect={(e) => e.preventDefault()} disabled={isUpdatingStatus}>
-                        <DollarSign className="mr-2 h-4 w-4" /> {s.markAsPaid}
-                      </DropdownMenuItem>
-                    </AlertDialogTrigger>
-                    <DropdownMenuItem onClick={() => handleStatusChange('overdue')} disabled={isUpdatingStatus}>
-                      <AlertCircleIcon className="mr-2 h-4 w-4" /> {s.markAsOverdue}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" disabled={isUpdatingStatus || !hasAvailableActions}>
+                {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                {s.changeStatus} <ChevronDown className="ml-2 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {canMarkAsSent && (
+                <DropdownMenuItem onClick={() => handleStatusChange('sent')} disabled={isUpdatingStatus}>
+                  <Send className="mr-2 h-4 w-4" /> {s.markAsSent}
+                </DropdownMenuItem>
+              )}
+              {canMarkAsPaid && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} disabled={isUpdatingStatus}>
+                      <DollarSign className="mr-2 h-4 w-4" /> {s.markAsPaid}
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                     {/* Cancel for 'sent' status - moved to its own AlertDialog below */}
-                  </>
-                )}
-                {invoice.status === 'overdue' && (
-                  <>
-                     <AlertDialogTrigger asChild>
-                      <DropdownMenuItem onSelect={(e) => e.preventDefault()} disabled={isUpdatingStatus}>
-                        <DollarSign className="mr-2 h-4 w-4" /> {s.markAsPaid}
-                      </DropdownMenuItem>
-                    </AlertDialogTrigger>
-                    <DropdownMenuSeparator />
-                     {/* Cancel for 'overdue' status - moved to its own AlertDialog below */}
-                  </>
-                )}
-                 {(invoice.status === 'sent' || invoice.status === 'overdue') && (
-                  <AlertDialog> {/* For Cancel Confirmation */}
-                    <AlertDialogTrigger asChild>
-                       <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive hover:!text-destructive focus:!text-destructive" disabled={isUpdatingStatus}>
-                         <XCircle className="mr-2 h-4 w-4" /> {s.cancelInvoice}
-                       </DropdownMenuItem>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>{s.confirmCancelTitle}</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          {s.confirmCancelDescription}
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>{s.confirmCancelCancel}</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => handleStatusChange('cancelled')} disabled={isUpdatingStatus} className="bg-destructive hover:bg-destructive/90">
-                          {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                          {s.confirmCancelAction}
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                 )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <AlertDialogContent> {/* This is for PAID Confirmation */}
-              <AlertDialogHeader>
-                <AlertDialogTitle>{s.confirmPaidTitle}</AlertDialogTitle>
-                <AlertDialogDescription>
-                  {s.confirmPaidDescription}
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>{s.confirmPaidCancel}</AlertDialogCancel>
-                <AlertDialogAction onClick={() => handleStatusChange('paid')} disabled={isUpdatingStatus}>
-                  {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                  {s.confirmPaidAction}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>{s.confirmPaidTitle}</AlertDialogTitle>
+                      <AlertDialogDescription>{s.confirmPaidDescription}</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>{s.confirmPaidCancel}</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => handleStatusChange('paid')} disabled={isUpdatingStatus}>
+                        {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                        {s.confirmPaidAction}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+              {canMarkAsOverdue && (
+                <DropdownMenuItem onClick={() => handleStatusChange('overdue')} disabled={isUpdatingStatus}>
+                  <AlertCircleIcon className="mr-2 h-4 w-4" /> {s.markAsOverdue}
+                </DropdownMenuItem>
+              )}
+              {canCancel && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                     <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive hover:!text-destructive focus:!text-destructive" disabled={isUpdatingStatus}>
+                       <XCircle className="mr-2 h-4 w-4" /> {s.cancelInvoice}
+                     </DropdownMenuItem>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>{s.confirmCancelTitle}</AlertDialogTitle>
+                      <AlertDialogDescription>{s.confirmCancelDescription}</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>{s.confirmCancelCancel}</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => handleStatusChange('cancelled')} disabled={isUpdatingStatus} className="bg-destructive hover:bg-destructive/90">
+                        {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                        {s.confirmCancelAction}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+               )}
+              {(canRevertToSent || canReopenAsDraft) && <DropdownMenuSeparator />}
+              {canRevertToSent && (
+                 <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} disabled={isUpdatingStatus}>
+                      <Undo className="mr-2 h-4 w-4" /> {s.revertToSent}
+                    </DropdownMenuItem>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>{s.confirmRevertToSentTitle}</AlertDialogTitle>
+                      <AlertDialogDescription>{s.confirmRevertToSentDescription}</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>{s.confirmRevertToSentCancel}</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => handleStatusChange('sent')} disabled={isUpdatingStatus}>
+                        {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                        {s.confirmRevertToSentAction}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+              {canReopenAsDraft && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} disabled={isUpdatingStatus}>
+                     <FilePenLine className="mr-2 h-4 w-4" /> {s.reopenAsDraft}
+                    </DropdownMenuItem>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>{s.confirmReopenAsDraftTitle}</AlertDialogTitle>
+                      <AlertDialogDescription>{s.confirmReopenAsDraftDescription}</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>{s.confirmReopenAsDraftCancel}</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => handleStatusChange('draft')} disabled={isUpdatingStatus}>
+                        {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                        {s.confirmReopenAsDraftAction}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           <Button variant="outline" onClick={printInvoice}>
             <Printer className="mr-2 h-4 w-4" /> {s.printPdf}
