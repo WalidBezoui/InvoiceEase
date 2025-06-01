@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription as ShadcnCardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,7 +23,7 @@ const preferencesSchema = z.object({
   invoiceFooter: z.string().optional(),
   invoiceWatermark: z.string().optional(),
   currency: z.string().min(2, "Currency code must be at least 2 letters").optional().default("MAD"),
-  language: z.string().min(2, "Language code must be 2 letters").optional().default("ar"),
+  language: z.string().min(2, "Language code must be 2 letters").optional().default("fr"),
   defaultNotes: z.string().optional(),
   defaultPaymentTerms: z.string().optional(),
 });
@@ -61,7 +61,7 @@ export default function PreferencesForm() {
       invoiceFooter: "",
       invoiceWatermark: "",
       currency: "MAD",
-      language: "ar",
+      language: "fr", // Set default language to French
       defaultNotes: "",
       defaultPaymentTerms: "",
     },
@@ -80,12 +80,25 @@ export default function PreferencesForm() {
             invoiceFooter: data.invoiceFooter || "",
             invoiceWatermark: data.invoiceWatermark || "",
             currency: data.currency || "MAD",
-            language: data.language || "ar",
+            language: data.language || "fr", // Default to French if not set
             defaultNotes: (data as any).defaultNotes || "", 
             defaultPaymentTerms: (data as any).defaultPaymentTerms || "",
           });
+        } else {
+           // If no preferences doc exists, still set defaults including French
+          form.reset({
+            invoiceHeader: "",
+            invoiceFooter: "",
+            invoiceWatermark: "",
+            currency: "MAD",
+            language: "fr",
+            defaultNotes: "",
+            defaultPaymentTerms: "",
+          });
         }
         setIsFetching(false);
+      } else {
+        setIsFetching(false); // Also set fetching to false if no user
       }
     }
     fetchPreferences();
@@ -134,8 +147,8 @@ export default function PreferencesForm() {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <CardHeader>
-            <CardTitle className="font-headline text-xl text-primary">Invoice Content Customization</CardTitle>
-            <ShadcnCardDescription>Personalize the default text and elements on your invoices.</ShadcnCardDescription>
+            <CardTitle className="font-headline text-xl text-primary">Invoice Customization</CardTitle>
+            <FormDescription>Personalize the default text, regional settings, and elements on your invoices.</FormDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <FormField control={form.control} name="invoiceHeader" render={({ field }) => (
@@ -209,8 +222,8 @@ export default function PreferencesForm() {
 
           </CardContent>
           <CardFooter className="border-t pt-6">
-            <Button type="submit" disabled={isLoading}>
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button type="submit" disabled={isLoading || isFetching}>
+              {(isLoading || isFetching) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               <Save className="mr-2 h-4 w-4" /> Save Preferences
             </Button>
           </CardFooter>
