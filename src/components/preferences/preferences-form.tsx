@@ -22,8 +22,8 @@ const preferencesSchema = z.object({
   invoiceHeader: z.string().optional(),
   invoiceFooter: z.string().optional(),
   invoiceWatermark: z.string().optional(),
-  currency: z.string().min(3, "Currency code must be 3 letters").optional().default("USD"),
-  language: z.string().min(2, "Language code must be 2 letters").optional().default("en"),
+  currency: z.string().min(2, "Currency code must be at least 2 letters").optional().default("MAD"),
+  language: z.string().min(2, "Language code must be 2 letters").optional().default("ar"),
   defaultNotes: z.string().optional(),
   defaultPaymentTerms: z.string().optional(),
 });
@@ -37,6 +37,7 @@ const currencies = [
   { code: "JPY", name: "Japanese Yen" },
   { code: "CAD", name: "Canadian Dollar" },
   { code: "AUD", name: "Australian Dollar" },
+  { code: "MAD", name: "Moroccan Dirham" },
 ];
 
 const languages = [
@@ -44,6 +45,7 @@ const languages = [
   { code: "es", name: "Español (Spanish)" },
   { code: "fr", name: "Français (French)" },
   { code: "de", name: "Deutsch (German)" },
+  { code: "ar", name: "العربية (Arabic)" },
 ];
 
 export default function PreferencesForm() {
@@ -58,8 +60,8 @@ export default function PreferencesForm() {
       invoiceHeader: "",
       invoiceFooter: "",
       invoiceWatermark: "",
-      currency: "USD",
-      language: "en",
+      currency: "MAD",
+      language: "ar",
       defaultNotes: "",
       defaultPaymentTerms: "",
     },
@@ -77,9 +79,8 @@ export default function PreferencesForm() {
             invoiceHeader: data.invoiceHeader || "",
             invoiceFooter: data.invoiceFooter || "",
             invoiceWatermark: data.invoiceWatermark || "",
-            currency: data.currency || "USD",
-            language: data.language || "en",
-            // Assuming defaultNotes and defaultPaymentTerms are also part of UserPreferences
+            currency: data.currency || "MAD",
+            language: data.language || "ar",
             defaultNotes: (data as any).defaultNotes || "", 
             defaultPaymentTerms: (data as any).defaultPaymentTerms || "",
           });
@@ -98,7 +99,6 @@ export default function PreferencesForm() {
     setIsLoading(true);
     try {
       const prefDocRef = doc(db, "userPreferences", user.uid);
-      // Use setDoc with merge:true to avoid overwriting logoUrl managed by LogoUploader
       await setDoc(prefDocRef, values, { merge: true }); 
       toast({
         title: "Preferences Saved",
@@ -219,3 +219,4 @@ export default function PreferencesForm() {
     </Card>
   );
 }
+
