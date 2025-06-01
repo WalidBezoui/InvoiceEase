@@ -292,9 +292,9 @@ export default function InvoiceDetailPage() {
               </Link>
             </Button>
           ) : (
-            <Button disabled>
-              <Edit className="mr-2 h-4 w-4" /> {s.edit}
-            </Button>
+             <Button disabled> {/* Render a standard button when disabled */}
+                <Edit className="mr-2 h-4 w-4" /> {s.edit}
+             </Button>
           )}
         </div>
       </div>
@@ -411,7 +411,7 @@ export default function InvoiceDetailPage() {
         </CardContent>
 
         {invoice.companyInvoiceFooter && (
-          <CardFooter className="border-t mt-6 pt-4 print:border-t-0 print:pt-4">
+          <CardFooter className="border-t mt-6 pt-4 print:border-t-0 print:mt-2 print:pt-2 print:pb-2">
             <p className="text-xs text-muted-foreground text-center w-full">{invoice.companyInvoiceFooter}</p>
           </CardFooter>
         )}
