@@ -201,13 +201,10 @@ export default function InvoiceDetailPage() {
           <Button variant="outline" onClick={printInvoice}>
             <Download className="mr-2 h-4 w-4" /> {s.downloadPdf}
           </Button>
-          <Button disabled> {/* Render as a standard button when disabled */}
-            <Edit className="mr-2 h-4 w-4" /> {s.edit}
-            {/* TODO: When enabling, use asChild and Link:
+          <Button asChild>
             <Link href={`/invoices/${invoice.id}/edit`}>
               <Edit className="mr-2 h-4 w-4" /> {s.edit}
             </Link>
-            */}
           </Button>
         </div>
       </div>
@@ -235,7 +232,7 @@ export default function InvoiceDetailPage() {
               <h4 className="font-semibold text-primary mb-1">{s.billTo}</h4>
               <p className="font-medium">{invoice.clientName}</p>
               {invoice.clientCompany && <p className="text-sm text-muted-foreground">{invoice.clientCompany}</p>}
-              {invoice.clientAddress && <p className="text-sm text-muted-foreground">{invoice.clientAddress.split('\n').map((line, i) => (<span key={i}>{line}<br/></span>))}</p>}
+              {invoice.clientAddress && <p className="text-sm text-muted-foreground">{invoice.clientAddress.split('\\n').map((line, i) => (<span key={i}>{line}<br/></span>))}</p>}
               {invoice.clientEmail && <p className="text-sm text-muted-foreground">{invoice.clientEmail}</p>}
               {invoice.clientICE && <p className="text-sm text-muted-foreground">ICE: {invoice.clientICE}</p>}
             </div>
@@ -341,4 +338,3 @@ export default function InvoiceDetailPage() {
     </div>
   );
 }
-
