@@ -10,7 +10,7 @@ import { doc, getDoc, updateDoc, serverTimestamp, type FieldValue } from "fireba
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Download, Edit, Loader2, AlertTriangle, Printer, ChevronDown, Send, DollarSign, AlertCircle as AlertCircleIcon, XCircle, CheckCircle } from "lucide-react";
+import { ArrowLeft, Download, Edit, Loader2, AlertTriangle, Printer, ChevronDown, Send, DollarSign, AlertCircle as AlertCircleIcon, XCircle } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale"; // Import French locale
@@ -23,6 +23,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 
 
@@ -141,6 +152,10 @@ const getInvoiceStrings = (languageCode?: string) => {
       markAsPaid: "Mark as Paid",
       markAsOverdue: "Mark as Overdue",
       cancelInvoice: "Cancel Invoice",
+      confirmPaidTitle: "Confirm Payment",
+      confirmPaidDescription: "Are you sure you want to mark this invoice as paid? This action cannot be easily undone.",
+      confirmPaidAction: "Confirm Paid",
+      confirmPaidCancel: "Cancel",
     },
     fr: {
       invoiceTitle: "Facture",
@@ -172,6 +187,10 @@ const getInvoiceStrings = (languageCode?: string) => {
       markAsPaid: "Marquer comme Payée",
       markAsOverdue: "Marquer comme En Retard",
       cancelInvoice: "Annuler la Facture",
+      confirmPaidTitle: "Confirmer le Paiement",
+      confirmPaidDescription: "Êtes-vous sûr de vouloir marquer cette facture comme payée ? Cette action ne peut pas être facilement annulée.",
+      confirmPaidAction: "Confirmer Payée",
+      confirmPaidCancel: "Annuler",
     },
   };
   return strings[lang];
@@ -328,87 +347,110 @@ export default function InvoiceDetailPage() {
 
   return (
     <div className="invoice-page-wrapper">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 print:hidden mb-8">
-        <div className="flex items-center gap-4">
-            <Button variant="outline" size="icon" asChild>
-            <Link href="/invoices">
-                <ArrowLeft className="h-4 w-4" />
-                <span className="sr-only">{s.backToInvoices}</span>
-            </Link>
-            </Button>
-            <div>
-            <h1 className="font-headline text-3xl md:text-4xl font-bold text-primary">
-                {s.invoiceTitle} {invoice.invoiceNumber}
-            </h1>
-            <p className="text-muted-foreground mt-1">
-                {s.invoiceStatus} <Badge variant={getStatusBadgeVariant(invoice.status)} className="capitalize ml-1">{invoice.status}</Badge>
-            </p>
-            </div>
-        </div>
-        <div className="flex gap-2 items-center">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" disabled={isUpdatingStatus || invoice.status === 'paid' || invoice.status === 'cancelled'}>
-                {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                {s.changeStatus} <ChevronDown className="ml-2 h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {invoice.status === 'draft' && (
-                <DropdownMenuItem onClick={() => handleStatusChange('sent')} disabled={isUpdatingStatus}>
-                  <Send className="mr-2 h-4 w-4" /> {s.markAsSent}
-                </DropdownMenuItem>
-              )}
-              {invoice.status === 'sent' && (
-                <>
-                  <DropdownMenuItem onClick={() => handleStatusChange('paid')} disabled={isUpdatingStatus}>
-                    <DollarSign className="mr-2 h-4 w-4" /> {s.markAsPaid}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleStatusChange('overdue')} disabled={isUpdatingStatus}>
-                    <AlertCircleIcon className="mr-2 h-4 w-4" /> {s.markAsOverdue}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => handleStatusChange('cancelled')} className="text-destructive hover:!text-destructive focus:!text-destructive" disabled={isUpdatingStatus}>
-                    <XCircle className="mr-2 h-4 w-4" /> {s.cancelInvoice}
-                  </DropdownMenuItem>
-                </>
-              )}
-              {invoice.status === 'overdue' && (
-                <>
-                  <DropdownMenuItem onClick={() => handleStatusChange('paid')} disabled={isUpdatingStatus}>
-                    <DollarSign className="mr-2 h-4 w-4" /> {s.markAsPaid}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => handleStatusChange('cancelled')} className="text-destructive hover:!text-destructive focus:!text-destructive" disabled={isUpdatingStatus}>
-                    <XCircle className="mr-2 h-4 w-4" /> {s.cancelInvoice}
-                  </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <Button variant="outline" onClick={printInvoice}>
-            <Printer className="mr-2 h-4 w-4" /> {s.printPdf}
-          </Button>
-          <Button variant="outline" onClick={printInvoice}>
-            <Download className="mr-2 h-4 w-4" /> {s.downloadPdf}
-          </Button>
-          { invoice.status === 'draft' || invoice.status === 'sent' ? (
-            <Button asChild>
-              <Link href={`/invoices/${invoice.id}/edit`}>
-                <Edit className="mr-2 h-4 w-4" /> {s.edit}
+      <AlertDialog>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 print:hidden mb-8">
+          <div className="flex items-center gap-4">
+              <Button variant="outline" size="icon" asChild>
+              <Link href="/invoices">
+                  <ArrowLeft className="h-4 w-4" />
+                  <span className="sr-only">{s.backToInvoices}</span>
               </Link>
+              </Button>
+              <div>
+              <h1 className="font-headline text-3xl md:text-4xl font-bold text-primary">
+                  {s.invoiceTitle} {invoice.invoiceNumber}
+              </h1>
+              <p className="text-muted-foreground mt-1">
+                  {s.invoiceStatus} <Badge variant={getStatusBadgeVariant(invoice.status)} className="capitalize ml-1">{invoice.status}</Badge>
+              </p>
+              </div>
+          </div>
+          <div className="flex gap-2 items-center">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" disabled={isUpdatingStatus || invoice.status === 'paid' || invoice.status === 'cancelled'}>
+                  {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  {s.changeStatus} <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {invoice.status === 'draft' && (
+                  <DropdownMenuItem onClick={() => handleStatusChange('sent')} disabled={isUpdatingStatus}>
+                    <Send className="mr-2 h-4 w-4" /> {s.markAsSent}
+                  </DropdownMenuItem>
+                )}
+                {invoice.status === 'sent' && (
+                  <>
+                    <AlertDialogTrigger asChild>
+                      <DropdownMenuItem onSelect={(e) => e.preventDefault()} disabled={isUpdatingStatus}>
+                        <DollarSign className="mr-2 h-4 w-4" /> {s.markAsPaid}
+                      </DropdownMenuItem>
+                    </AlertDialogTrigger>
+                    <DropdownMenuItem onClick={() => handleStatusChange('overdue')} disabled={isUpdatingStatus}>
+                      <AlertCircleIcon className="mr-2 h-4 w-4" /> {s.markAsOverdue}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => handleStatusChange('cancelled')} className="text-destructive hover:!text-destructive focus:!text-destructive" disabled={isUpdatingStatus}>
+                      <XCircle className="mr-2 h-4 w-4" /> {s.cancelInvoice}
+                    </DropdownMenuItem>
+                  </>
+                )}
+                {invoice.status === 'overdue' && (
+                  <>
+                     <AlertDialogTrigger asChild>
+                      <DropdownMenuItem onSelect={(e) => e.preventDefault()} disabled={isUpdatingStatus}>
+                        <DollarSign className="mr-2 h-4 w-4" /> {s.markAsPaid}
+                      </DropdownMenuItem>
+                    </AlertDialogTrigger>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => handleStatusChange('cancelled')} className="text-destructive hover:!text-destructive focus:!text-destructive" disabled={isUpdatingStatus}>
+                      <XCircle className="mr-2 h-4 w-4" /> {s.cancelInvoice}
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Button variant="outline" onClick={printInvoice}>
+              <Printer className="mr-2 h-4 w-4" /> {s.printPdf}
             </Button>
-          ) : (
-             <Button disabled> 
-                <Edit className="mr-2 h-4 w-4" /> {s.edit}
-             </Button>
-          )}
+            <Button variant="outline" onClick={printInvoice}>
+              <Download className="mr-2 h-4 w-4" /> {s.downloadPdf}
+            </Button>
+            { invoice.status === 'draft' || invoice.status === 'sent' ? (
+              <Button asChild>
+                <Link href={`/invoices/${invoice.id}/edit`}>
+                  <Edit className="mr-2 h-4 w-4" /> {s.edit}
+                </Link>
+              </Button>
+            ) : (
+               <Button disabled> 
+                  <Edit className="mr-2 h-4 w-4" /> {s.edit}
+               </Button>
+            )}
+          </div>
         </div>
-      </div>
+
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{s.confirmPaidTitle}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {s.confirmPaidDescription}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{s.confirmPaidCancel}</AlertDialogCancel>
+            <AlertDialogAction onClick={() => handleStatusChange('paid')} disabled={isUpdatingStatus}>
+              {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {s.confirmPaidAction}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
 
       <Card className="invoice-card-for-print shadow-lg print:shadow-none print:border-none">
-        <CardHeader className="print-card-header border-b print:border-b-slate-200 print:pb-2">
+        <CardHeader className="print-card-header border-b print:pb-2 print:border-b-slate-200">
           <div className="flex flex-col md:flex-row justify-between items-start gap-6">
             <div className="flex-shrink-0">
               {invoice.logoDataUrl && (
@@ -662,3 +704,4 @@ export default function InvoiceDetailPage() {
     </div>
   );
 }
+
