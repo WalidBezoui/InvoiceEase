@@ -8,20 +8,21 @@ import { Label } from "@/components/ui/label";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import { storage, db } from "@/lib/firebase";
-import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
-import { doc, updateDoc, getDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase"; // Removed storage import
+import { doc, updateDoc, getDoc, setDoc } from "firebase/firestore";
 import { UploadCloud, Trash2, Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
+
+const MAX_FILE_SIZE_KB = 200; // Max file size in Kilobytes for Data URI storage
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_KB * 1024;
 
 export default function LogoUploader() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [file, setFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [currentLogoUrl, setCurrentLogoUrl] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [previewDataUrl, setPreviewDataUrl] = useState<string | null>(null);
+  const [currentLogoDataUrl, setCurrentLogoDataUrl] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false); // Combined uploading/deleting state
   const [isLoadingLogo, setIsLoadingLogo] = useState(true);
 
 
@@ -32,36 +33,35 @@ export default function LogoUploader() {
         try {
           const prefDocRef = doc(db, "userPreferences", user.uid);
           const docSnap = await getDoc(prefDocRef);
-          if (docSnap.exists() && docSnap.data().logoUrl) {
-            setCurrentLogoUrl(docSnap.data().logoUrl);
+          if (docSnap.exists() && docSnap.data().logoDataUrl) {
+            setCurrentLogoDataUrl(docSnap.data().logoDataUrl);
           } else {
-            setCurrentLogoUrl(null); // Explicitly set to null if no logo URL
+            setCurrentLogoDataUrl(null);
           }
         } catch (error) {
           console.error("Error fetching current logo:", error);
           toast({
             title: "Error fetching logo",
-            description: "Could not load your current company logo. Please try refreshing.",
+            description: "Could not load your current company logo.",
             variant: "destructive",
           });
-          setCurrentLogoUrl(null); // Reset on error
+          setCurrentLogoDataUrl(null);
         } finally {
           setIsLoadingLogo(false);
         }
       } else {
-        // No user, so no logo to load, and not currently loading.
-        setCurrentLogoUrl(null);
+        setCurrentLogoDataUrl(null);
         setIsLoadingLogo(false);
       }
     }
     fetchCurrentLogo();
-  }, [user, toast]); // Added toast to the dependency array
+  }, [user, toast]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
     if (selectedFile) {
-      if (selectedFile.size > 2 * 1024 * 1024) { // 2MB limit
-        toast({ title: "File too large", description: "Please select an image smaller than 2MB.", variant: "destructive" });
+      if (selectedFile.size > MAX_FILE_SIZE_BYTES) {
+        toast({ title: "File too large", description: `Please select an image smaller than ${MAX_FILE_SIZE_KB}KB.`, variant: "destructive" });
         return;
       }
       if (!['image/jpeg', 'image/png', 'image/gif', 'image/svg+xml'].includes(selectedFile.type)) {
@@ -69,62 +69,52 @@ export default function LogoUploader() {
         return;
       }
       setFile(selectedFile);
-      setPreviewUrl(URL.createObjectURL(selectedFile));
+      
+      // Convert to Data URI for preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewDataUrl(reader.result as string);
+      };
+      reader.readAsDataURL(selectedFile);
     }
   };
 
-  const handleUpload = async () => {
-    if (!file || !user) return;
-    setIsUploading(true);
+  const handleSaveLogo = async () => {
+    if (!file || !user || !previewDataUrl) return;
+    setIsProcessing(true);
     try {
-      // Delete old logo if exists from storage
-      if (currentLogoUrl) {
-        try {
-          const oldLogoRef = ref(storage, currentLogoUrl);
-          await deleteObject(oldLogoRef);
-        } catch (deleteError: any) {
-          // If old logo deletion fails (e.g. doesn't exist or permissions), log and continue.
-          // This is not critical for uploading the new one.
-          console.warn("Could not delete old logo, it might not exist:", deleteError.message);
-        }
-      }
-
-      const storageRef = ref(storage, `logos/${user.uid}/${file.name}`);
-      await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(storageRef);
-      
       const userPrefDocRef = doc(db, "userPreferences", user.uid);
-      await updateDoc(userPrefDocRef, { logoUrl: downloadURL });
+      // Use setDoc with merge: true to create the document if it doesn't exist, or update it if it does.
+      await setDoc(userPrefDocRef, { logoDataUrl: previewDataUrl }, { merge: true });
       
-      setCurrentLogoUrl(downloadURL);
+      setCurrentLogoDataUrl(previewDataUrl);
       setFile(null);
-      setPreviewUrl(null);
-      toast({ title: "Logo Uploaded", description: "Your company logo has been updated." });
+      setPreviewDataUrl(null); // Clear preview after successful save
+      toast({ title: "Logo Saved", description: "Your company logo has been updated." });
     } catch (error) {
-      console.error("Error uploading logo:", error);
-      toast({ title: "Upload Failed", description: "Could not upload your logo. Please try again.", variant: "destructive" });
+      console.error("Error saving logo:", error);
+      toast({ title: "Save Failed", description: "Could not save your logo. Please try again.", variant: "destructive" });
     } finally {
-      setIsUploading(false);
+      setIsProcessing(false);
     }
   };
 
   const handleDeleteLogo = async () => {
-    if (!user || !currentLogoUrl) return;
-    setIsDeleting(true);
+    if (!user || !currentLogoDataUrl) return; // Check currentLogoDataUrl to ensure there's something to delete
+    setIsProcessing(true);
     try {
-      const logoRef = ref(storage, currentLogoUrl);
-      await deleteObject(logoRef);
-      
       const userPrefDocRef = doc(db, "userPreferences", user.uid);
-      await updateDoc(userPrefDocRef, { logoUrl: null });
+      await updateDoc(userPrefDocRef, { logoDataUrl: null }); // Set to null or delete field
 
-      setCurrentLogoUrl(null);
+      setCurrentLogoDataUrl(null);
+      setFile(null); // Also clear any pending file selection
+      setPreviewDataUrl(null); // Clear preview
       toast({ title: "Logo Removed", description: "Your company logo has been removed." });
     } catch (error) {
       console.error("Error deleting logo:", error);
       toast({ title: "Deletion Failed", description: "Could not remove your logo. Please try again.", variant: "destructive" });
     } finally {
-      setIsDeleting(false);
+      setIsProcessing(false);
     }
   };
   
@@ -132,7 +122,7 @@ export default function LogoUploader() {
     <Card className="bg-secondary/30">
       <CardHeader>
         <CardTitle className="font-headline text-lg text-primary">Company Logo</CardTitle>
-        <CardDescription>Upload or change your company logo. Recommended size: 150x50px. Max 2MB.</CardDescription>
+        <CardDescription>Upload or change your company logo. Max {MAX_FILE_SIZE_KB}KB. Stored directly in database.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
@@ -146,30 +136,30 @@ export default function LogoUploader() {
            </div>
         )}
 
-        {!isLoadingLogo && (previewUrl || currentLogoUrl) && (
+        {!isLoadingLogo && (previewDataUrl || currentLogoDataUrl) && (
           <div className="mt-4 p-4 border rounded-md bg-card flex flex-col items-center space-y-4">
-            <p className="text-sm font-medium text-foreground">{previewUrl ? "New Logo Preview:" : "Current Logo:"}</p>
+            <p className="text-sm font-medium text-foreground">{previewDataUrl ? "New Logo Preview:" : "Current Logo:"}</p>
             <Image 
-                src={previewUrl || currentLogoUrl || "https://placehold.co/150x50.png"} 
+                src={previewDataUrl || currentLogoDataUrl || "https://placehold.co/150x50.png"} 
                 alt="Company Logo" 
                 width={150} 
                 height={50} 
                 className="object-contain rounded border"
                 data-ai-hint="logo company"
             />
-            {currentLogoUrl && !previewUrl && (
-               <Button variant="destructive" onClick={handleDeleteLogo} disabled={isDeleting} size="sm">
-                {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+            {currentLogoDataUrl && !previewDataUrl && ( // Show remove only if there's a current logo and no new preview
+               <Button variant="destructive" onClick={handleDeleteLogo} disabled={isProcessing} size="sm">
+                {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
                 Remove Current Logo
               </Button>
             )}
           </div>
         )}
         
-        {file && previewUrl && (
-          <Button onClick={handleUpload} disabled={isUploading || !file} className="w-full md:w-auto">
-            {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UploadCloud className="mr-2 h-4 w-4" />}
-            Upload New Logo
+        {file && previewDataUrl && ( // Show save button if a file is selected and preview is generated
+          <Button onClick={handleSaveLogo} disabled={isProcessing || !file} className="w-full md:w-auto">
+            {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UploadCloud className="mr-2 h-4 w-4" />}
+            Save New Logo
           </Button>
         )}
       </CardContent>

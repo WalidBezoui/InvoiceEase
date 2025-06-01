@@ -1,3 +1,4 @@
+
 import type { Timestamp } from 'firebase/firestore';
 
 export interface UserProfile {
@@ -8,7 +9,7 @@ export interface UserProfile {
 }
 
 export interface UserPreferences {
-  logoUrl?: string;
+  logoDataUrl?: string; // Changed from logoUrl
   invoiceHeader?: string;
   invoiceFooter?: string;
   invoiceWatermark?: string;
@@ -44,7 +45,7 @@ export interface Invoice {
   customHeader?: string;
   customFooter?: string;
   customWatermark?: string;
-  logoUrl?: string; 
+  logoUrl?: string; // This might need to be logoDataUrl if invoices embed company logo directly from new preference
   currency?: string; 
   language?: string; 
   createdAt?: Timestamp; 
