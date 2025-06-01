@@ -292,7 +292,7 @@ export default function InvoiceDetailPage() {
               </Link>
             </Button>
           ) : (
-             <Button disabled> {/* Render a standard button when disabled */}
+             <Button disabled>
                 <Edit className="mr-2 h-4 w-4" /> {s.edit}
              </Button>
           )}
@@ -300,7 +300,7 @@ export default function InvoiceDetailPage() {
       </div>
 
       <Card className="invoice-card-for-print shadow-lg print:shadow-none print:border-none">
-        <CardHeader className="border-b print:border-b-0 print:pb-4 print:pt-0">
+        <CardHeader className="border-b print:border-b-0 print:pb-2 print:pt-0">
           <div className="flex flex-col md:flex-row justify-between items-start gap-4">
             <div>
               {invoice.logoDataUrl && (
@@ -316,7 +316,7 @@ export default function InvoiceDetailPage() {
           </div>
         </CardHeader>
         
-        <CardContent className="pt-6 space-y-6">
+        <CardContent className="pt-6 space-y-6 print:pt-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
             <div>
               <h4 className="font-semibold text-primary mb-1.5">{s.billTo}</h4>
@@ -379,7 +379,7 @@ export default function InvoiceDetailPage() {
                  </div>
               )}
             </div>
-            <div className="space-y-3 p-4 bg-secondary/20 rounded-lg shadow-sm print:bg-transparent print:shadow-none">
+            <div className="space-y-3 p-4 bg-secondary/20 rounded-lg shadow-sm print:bg-transparent print:shadow-none print:p-0 print:border print:border-border print:rounded-md">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{s.subtotal}</span>
                 <span className="font-medium">{invoice.subtotal.toFixed(2)} {invoice.currency}</span>
@@ -433,6 +433,7 @@ export default function InvoiceDetailPage() {
             width: 100% !important;
             height: auto !important;
             overflow: visible !important;
+            font-size: 10pt !important; /* Slightly smaller base font for print */
           }
           html {
             background-color: #fff !important;
@@ -468,7 +469,7 @@ export default function InvoiceDetailPage() {
           /* The Card component holding the invoice content */
           .invoice-card-for-print {
             margin: 0 !important; 
-            padding: 1cm !important; /* This becomes the effective page margin for the content */
+            padding: 0.75cm !important; /* Adjust effective page margin for content */
             box-shadow: none !important; 
             border: none !important; 
             width: 100% !important; 
@@ -477,9 +478,30 @@ export default function InvoiceDetailPage() {
             min-height: initial !important; 
             background-color: #fff !important; /* Ensure white background for print */
           }
+          
+          .invoice-card-for-print .text-3xl { /* Invoice title */
+            font-size: 1.5rem !important; /* Slightly smaller main title */
+          }
+          .invoice-card-for-print .text-xl { /* Section titles like "Bill To" */
+            font-size: 1.125rem !important;
+          }
+          .invoice-card-for-print .text-sm {
+             font-size: 0.875rem !important;
+          }
+           .invoice-card-for-print .text-xs {
+             font-size: 0.75rem !important;
+          }
 
           .invoice-card-for-print .bg-secondary\\/20 { /* Target specific background for totals */
              background-color: transparent !important; /* Make totals background transparent for print */
+             padding: 0 !important;
+             border: 1px solid hsl(var(--border)) !important; /* Add a light border for print */
+             border-radius: 0.25rem !important;
+             padding: 0.5rem !important; /* Add some internal padding for the bordered box */
+          }
+          
+          .invoice-card-for-print table th, .invoice-card-for-print table td {
+            padding: 0.5rem 0.5rem !important; /* Reduce table cell padding for print */
           }
           
           /* General page setup for printing */
@@ -494,7 +516,11 @@ export default function InvoiceDetailPage() {
           .print\\:border-none { border: none !important; }
           .print\\:border-b-0 { border-bottom-width: 0 !important; }
           .print\\:pt-0 { padding-top: 0 !important; }
-          .print\\:pb-4 { padding-bottom: 1rem !important; }
+          .print\\:pb-2 { padding-bottom: 0.5rem !important; }
+          .print\\:pt-4 { padding-top: 1rem !important; }
+          .print\\:p-0 { padding: 0 !important; }
+          .print\\:border { border-width: 1px !important; }
+          .print\\:rounded-md { border-radius: 0.375rem !important; }
           .print\\:bg-transparent { background-color: transparent !important; }
         }
       `}</style>
