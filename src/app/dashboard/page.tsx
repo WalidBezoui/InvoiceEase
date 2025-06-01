@@ -13,6 +13,7 @@ import { collection, query, where, getDocs, orderBy, limit as firestoreLimit } f
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import { Skeleton } from "@/components/ui/skeleton"; // Added import
 
 interface DashboardStats {
   totalRevenue: number;
@@ -228,3 +229,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+
