@@ -39,7 +39,7 @@ const getInvoiceStrings = (languageCode?: string) => {
       invoiceStatus: "Invoice Status",
       backToInvoices: "Back to Invoices",
       printPdf: "Print / PDF",
-      downloadPdfSoon: "Download PDF (Soon)",
+      downloadPdf: "Download PDF",
       edit: "Edit",
       errorLoadingInvoice: "Error Loading Invoice",
       invoiceNotFound: "Invoice Not Found",
@@ -65,7 +65,7 @@ const getInvoiceStrings = (languageCode?: string) => {
       invoiceStatus: "Statut de la facture",
       backToInvoices: "Retour aux factures",
       printPdf: "Imprimer / PDF",
-      downloadPdfSoon: "Télécharger PDF (Bientôt)",
+      downloadPdf: "Télécharger PDF",
       edit: "Modifier",
       errorLoadingInvoice: "Erreur de chargement de la facture",
       invoiceNotFound: "Facture non trouvée",
@@ -198,11 +198,16 @@ export default function InvoiceDetailPage() {
           <Button variant="outline" onClick={printInvoice}>
             <Printer className="mr-2 h-4 w-4" /> {s.printPdf}
           </Button>
-          <Button variant="outline" disabled>
-            <Download className="mr-2 h-4 w-4" /> {s.downloadPdfSoon}
+          <Button variant="outline" onClick={printInvoice}>
+            <Download className="mr-2 h-4 w-4" /> {s.downloadPdf}
           </Button>
-          <Button disabled>
+          <Button disabled> {/* Render as a standard button when disabled */}
             <Edit className="mr-2 h-4 w-4" /> {s.edit}
+            {/* TODO: When enabling, use asChild and Link:
+            <Link href={`/invoices/${invoice.id}/edit`}>
+              <Edit className="mr-2 h-4 w-4" /> {s.edit}
+            </Link>
+            */}
           </Button>
         </div>
       </div>
