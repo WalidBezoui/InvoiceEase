@@ -6,16 +6,25 @@ import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { db } from "@/lib/firebase";
 import type { Invoice, InvoiceItem } from "@/lib/types";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, serverTimestamp, type FieldValue } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Download, Edit, Loader2, AlertTriangle, Printer } from "lucide-react";
+import { ArrowLeft, Download, Edit, Loader2, AlertTriangle, Printer, ChevronDown, Send, DollarSign, AlertCircle as AlertCircleIcon, XCircle, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale"; // Import French locale
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useToast } from "@/hooks/use-toast";
+
 
 // Helper for number to French words
 const currencyWordForms: { [key: string]: { singular: string, plural: string, centimeSingular: string, centimePlural: string } } = {
@@ -125,10 +134,13 @@ const getInvoiceStrings = (languageCode?: string) => {
       errorLoadingInvoice: "Error Loading Invoice",
       invoiceNotFound: "Invoice Not Found",
       invoiceNotFoundMessage: "The invoice you are looking for does not exist or could not be loaded.",
-      markAsSentSoon: "Mark as Sent (Soon)",
-      markAsPaidSoon: "Mark as Paid (Soon)",
       stoppedAtTheSumOf: "This invoice is closed at the sum of:",
       thatIs: "i.e.",
+      changeStatus: "Change Status",
+      markAsSent: "Mark as Sent",
+      markAsPaid: "Mark as Paid",
+      markAsOverdue: "Mark as Overdue",
+      cancelInvoice: "Cancel Invoice",
     },
     fr: {
       invoiceTitle: "Facture",
@@ -153,10 +165,13 @@ const getInvoiceStrings = (languageCode?: string) => {
       errorLoadingInvoice: "Erreur de chargement de la facture",
       invoiceNotFound: "Facture non trouvée",
       invoiceNotFoundMessage: "La facture que vous recherchez n'existe pas ou n'a pas pu être chargée.",
-      markAsSentSoon: "Marquer comme envoyée (Bientôt)",
-      markAsPaidSoon: "Marquer comme payée (Bientôt)",
       stoppedAtTheSumOf: "Arrêtée la présente facture à la somme de :",
       thatIs: "soit",
+      changeStatus: "Changer Statut",
+      markAsSent: "Marquer comme Envoyée",
+      markAsPaid: "Marquer comme Payée",
+      markAsOverdue: "Marquer comme En Retard",
+      cancelInvoice: "Annuler la Facture",
     },
   };
   return strings[lang];
@@ -167,11 +182,13 @@ export default function InvoiceDetailPage() {
   const { user } = useAuth();
   const router = useRouter();
   const params = useParams();
+  const { toast } = useToast();
   const invoiceId = params.id as string;
 
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   
   const [s, setS] = useState(getInvoiceStrings("en")); // Default to English strings initially
 
@@ -218,10 +235,59 @@ export default function InvoiceDetailPage() {
       case "sent": return "secondary";
       case "overdue": return "destructive";
       case "draft": return "outline";
-      case "cancelled": return "destructive"
+      case "cancelled": return "destructive";
       default: return "outline";
     }
   };
+
+  const handleStatusChange = async (newStatus: Invoice['status']) => {
+    if (!invoice || !user || !invoice.id) return;
+    if (isUpdatingStatus) return;
+
+    setIsUpdatingStatus(true);
+    const invoiceRef = doc(db, "invoices", invoice.id);
+    
+    const updateData: { status: Invoice['status']; updatedAt: FieldValue; sentDate?: string; paidDate?: string } = {
+      status: newStatus,
+      updatedAt: serverTimestamp(),
+    };
+
+    if (newStatus === 'sent' && invoice.status === 'draft') {
+      updateData.sentDate = new Date().toISOString();
+    }
+    if (newStatus === 'paid' && (invoice.status === 'sent' || invoice.status === 'overdue')) {
+      updateData.paidDate = new Date().toISOString();
+    }
+
+    try {
+      await updateDoc(invoiceRef, updateData as any); // Use 'as any' for FieldValue compatibility if needed
+      setInvoice(prev => {
+        if (!prev) return null;
+        const updatedInvoice = { 
+          ...prev, 
+          status: newStatus, 
+          updatedAt: new Date() // Approximate for UI, Firestore handles actual server timestamp
+        };
+        if (updateData.sentDate) updatedInvoice.sentDate = updateData.sentDate;
+        if (updateData.paidDate) updatedInvoice.paidDate = updateData.paidDate;
+        return updatedInvoice;
+      });
+      toast({
+        title: "Status Updated",
+        description: `Invoice ${invoice.invoiceNumber} marked as ${newStatus}.`,
+      });
+    } catch (err) {
+      console.error("Error updating invoice status:", err);
+      toast({
+        title: "Error",
+        description: "Failed to update invoice status.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
 
   if (isLoading) {
     return (
@@ -279,7 +345,48 @@ export default function InvoiceDetailPage() {
             </p>
             </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" disabled={isUpdatingStatus || invoice.status === 'paid' || invoice.status === 'cancelled'}>
+                {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                {s.changeStatus} <ChevronDown className="ml-2 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {invoice.status === 'draft' && (
+                <DropdownMenuItem onClick={() => handleStatusChange('sent')} disabled={isUpdatingStatus}>
+                  <Send className="mr-2 h-4 w-4" /> {s.markAsSent}
+                </DropdownMenuItem>
+              )}
+              {invoice.status === 'sent' && (
+                <>
+                  <DropdownMenuItem onClick={() => handleStatusChange('paid')} disabled={isUpdatingStatus}>
+                    <DollarSign className="mr-2 h-4 w-4" /> {s.markAsPaid}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleStatusChange('overdue')} disabled={isUpdatingStatus}>
+                    <AlertCircleIcon className="mr-2 h-4 w-4" /> {s.markAsOverdue}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => handleStatusChange('cancelled')} className="text-destructive hover:!text-destructive focus:!text-destructive" disabled={isUpdatingStatus}>
+                    <XCircle className="mr-2 h-4 w-4" /> {s.cancelInvoice}
+                  </DropdownMenuItem>
+                </>
+              )}
+              {invoice.status === 'overdue' && (
+                <>
+                  <DropdownMenuItem onClick={() => handleStatusChange('paid')} disabled={isUpdatingStatus}>
+                    <DollarSign className="mr-2 h-4 w-4" /> {s.markAsPaid}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => handleStatusChange('cancelled')} className="text-destructive hover:!text-destructive focus:!text-destructive" disabled={isUpdatingStatus}>
+                    <XCircle className="mr-2 h-4 w-4" /> {s.cancelInvoice}
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <Button variant="outline" onClick={printInvoice}>
             <Printer className="mr-2 h-4 w-4" /> {s.printPdf}
           </Button>
@@ -293,7 +400,7 @@ export default function InvoiceDetailPage() {
               </Link>
             </Button>
           ) : (
-             <Button disabled> {/* This was previously an error source if asChild was true */}
+             <Button disabled> 
                 <Edit className="mr-2 h-4 w-4" /> {s.edit}
              </Button>
           )}
@@ -301,7 +408,7 @@ export default function InvoiceDetailPage() {
       </div>
 
       <Card className="invoice-card-for-print shadow-lg print:shadow-none print:border-none">
-        <CardHeader className="print-card-header border-b print:border-b-slate-200">
+        <CardHeader className="print-card-header border-b print:border-b-slate-200 print:pb-2">
           <div className="flex flex-col md:flex-row justify-between items-start gap-6">
             <div className="flex-shrink-0">
               {invoice.logoDataUrl && (
@@ -318,7 +425,7 @@ export default function InvoiceDetailPage() {
         </CardHeader>
         
         <CardContent className={cn(
-          "print-card-content pt-6 space-y-6 print:space-y-4",
+          "print-card-content pt-6 space-y-6 print:pt-4 print:space-y-4",
            invoice.companyInvoiceFooter ? "print-content-has-footer" : "print-content-no-footer"
         )}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
@@ -382,7 +489,7 @@ export default function InvoiceDetailPage() {
                  </div>
               )}
             </div>
-            <div className="space-y-2 p-4 bg-secondary/30 rounded-lg shadow-sm print:bg-slate-50 print:shadow-none print:p-3 print:border print:border-slate-200 print:rounded-md">
+            <div className="space-y-2 p-4 bg-secondary/30 rounded-lg shadow-sm print:bg-transparent print:shadow-none print:p-3 print:border print:border-slate-200 print:rounded-md">
               <div className="flex justify-between text-sm print:text-xs">
                 <span className="text-muted-foreground">{s.subtotal}</span>
                 <span className="font-medium">{invoice.currency} {invoice.subtotal.toFixed(2)}</span>
@@ -415,18 +522,13 @@ export default function InvoiceDetailPage() {
 
         {invoice.companyInvoiceFooter && (
           <CardFooter className={cn(
-            "print-card-footer border-t",
+            "print-card-footer border-t print:mt-2 print:pt-2 print:pb-2",
             invoice.companyInvoiceFooter ? "has-content" : ""
           )}>
             <p className="text-xs text-muted-foreground text-center w-full print:text-[0.65rem]">{invoice.companyInvoiceFooter}</p>
           </CardFooter>
         )}
       </Card>
-
-      <div className="flex justify-end gap-2 mt-8 print:hidden">
-        {invoice.status === 'draft' && <Button variant="outline" disabled>{s.markAsSentSoon}</Button>}
-        {(invoice.status === 'sent' || invoice.status === 'overdue') && <Button disabled>{s.markAsPaidSoon}</Button>}
-      </div>
 
        <style jsx global>{`
         @media print {
@@ -485,7 +587,8 @@ export default function InvoiceDetailPage() {
           }
           
           .invoice-card-for-print > .print-card-header,
-          .invoice-card-for-print > .print-card-content {
+          .invoice-card-for-print > .print-card-content,
+          .invoice-card-for-print > .print-card-footer.has-content {
             padding-left: 0.75cm !important;
             padding-right: 0.75cm !important;
             box-sizing: border-box !important;
@@ -503,10 +606,10 @@ export default function InvoiceDetailPage() {
             flex-grow: 1; 
           }
           .invoice-card-for-print > .print-card-content.print-content-has-footer {
-            padding-bottom: 2.5cm !important; /* Space for footer */
+            padding-bottom: 2.5cm !important; /* Space for footer if present */
           }
           .invoice-card-for-print > .print-card-content.print-content-no-footer {
-            padding-bottom: 0.75cm !important; /* Standard bottom 'page' margin */
+            padding-bottom: 0.75cm !important; /* Standard bottom 'page' margin if no footer */
           }
 
           .invoice-card-for-print > .print-card-footer.has-content { /* CardFooter */
@@ -516,14 +619,11 @@ export default function InvoiceDetailPage() {
             width: 100% !important;
             padding-top: 0.35cm !important;
             padding-bottom: 0.35cm !important; 
-            padding-left: 0.75cm !important;
-            padding-right: 0.75cm !important;
             border-top-width: 1px !important;
             border-color: #e2e8f0 !important; 
             margin-top: 0 !important; 
             text-align: center !important;
             background-color: #fff !important; 
-            box-sizing: border-box !important;
             page-break-inside: avoid !important;
           }
            .invoice-card-for-print > .print-card-footer:not(.has-content) {
@@ -539,7 +639,7 @@ export default function InvoiceDetailPage() {
           .invoice-card-for-print .print\\:text-xs { font-size: 0.7rem !important; }
           .invoice-card-for-print .print\\:text-\\[0\\.65rem\\] { font-size: 0.65rem !important; }
 
-          .invoice-card-for-print .bg-secondary\\/30 { background-color: hsl(var(--secondary) / 0.3) !important; }
+          .invoice-card-for-print .bg-secondary\\/30 { background-color: transparent !important; } /* Make totals bg transparent for print */
           .invoice-card-for-print .print\\:bg-slate-50 { background-color: #f8fafc !important; }
           
           .invoice-card-for-print table th, .invoice-card-for-print table td { padding: 0.35rem 0.5rem !important; }
@@ -562,5 +662,3 @@ export default function InvoiceDetailPage() {
     </div>
   );
 }
-
-    

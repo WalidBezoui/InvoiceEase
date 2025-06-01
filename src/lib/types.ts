@@ -74,6 +74,9 @@ export interface Invoice {
   appliedDefaultNotes?: string; 
   appliedDefaultPaymentTerms?: string;
   
+  sentDate?: string; // ISO string date, when invoice was marked as sent
+  paidDate?: string; // ISO string date, when invoice was marked as paid
+
   createdAt?: Timestamp; 
   updatedAt?: Timestamp; 
 }
