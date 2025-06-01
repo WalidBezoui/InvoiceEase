@@ -261,7 +261,7 @@ export default function InvoiceDetailPage() {
 
   return (
     <div className="invoice-page-wrapper">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 print:hidden">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 print:hidden mb-8">
         <div className="flex items-center gap-4">
             <Button variant="outline" size="icon" asChild>
             <Link href="/invoices">
@@ -285,22 +285,28 @@ export default function InvoiceDetailPage() {
           <Button variant="outline" onClick={printInvoice}>
             <Download className="mr-2 h-4 w-4" /> {s.downloadPdf}
           </Button>
-          <Button asChild>
-            <Link href={`/invoices/${invoice.id}/edit`}>
+          { invoice.status === 'draft' || invoice.status === 'sent' ? (
+            <Button asChild>
+              <Link href={`/invoices/${invoice.id}/edit`}>
+                <Edit className="mr-2 h-4 w-4" /> {s.edit}
+              </Link>
+            </Button>
+          ) : (
+            <Button disabled>
               <Edit className="mr-2 h-4 w-4" /> {s.edit}
-            </Link>
-          </Button>
+            </Button>
+          )}
         </div>
       </div>
 
       <Card className="invoice-card-for-print shadow-lg print:shadow-none print:border-none">
-        <CardHeader className="border-b print:border-b-0 print:pt-0">
+        <CardHeader className="border-b print:border-b-0 print:pb-4 print:pt-0">
           <div className="flex flex-col md:flex-row justify-between items-start gap-4">
             <div>
               {invoice.logoDataUrl && (
                 <img src={invoice.logoDataUrl} alt="Company Logo" className="h-16 object-contain mb-4" data-ai-hint="company logo"/>
               )}
-              <h2 className="text-2xl font-bold text-primary">{invoice.companyInvoiceHeader || "Your Company Name"}</h2>
+              <h2 className="text-xl font-semibold text-primary">{invoice.companyInvoiceHeader || "Your Company Name"}</h2>
             </div>
             <div className="text-left md:text-right">
               <h3 className="text-3xl font-bold text-primary uppercase">{s.invoiceTitle}</h3>
@@ -311,82 +317,86 @@ export default function InvoiceDetailPage() {
         </CardHeader>
         
         <CardContent className="pt-6 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
             <div>
-              <h4 className="font-semibold text-primary mb-1">{s.billTo}</h4>
-              <p className="font-medium">{invoice.clientName}</p>
-              {invoice.clientCompany && <p className="text-sm text-muted-foreground">{invoice.clientCompany}</p>}
-              {invoice.clientAddress && <p className="text-sm text-muted-foreground">{invoice.clientAddress.split('\\n').map((line, i) => (<span key={i}>{line}<br/></span>))}</p>}
-              {invoice.clientEmail && <p className="text-sm text-muted-foreground">{invoice.clientEmail}</p>}
-              {invoice.clientICE && <p className="text-sm text-muted-foreground">ICE: {invoice.clientICE}</p>}
+              <h4 className="font-semibold text-primary mb-1.5">{s.billTo}</h4>
+              <div className="space-y-0.5">
+                <p className="font-medium">{invoice.clientName}</p>
+                {invoice.clientCompany && <p className="text-sm text-muted-foreground">{invoice.clientCompany}</p>}
+                {invoice.clientAddress && <p className="text-sm text-muted-foreground">{invoice.clientAddress.split('\\n').map((line, i) => (<span key={i}>{line}<br/></span>))}</p>}
+                {invoice.clientEmail && <p className="text-sm text-muted-foreground">{invoice.clientEmail}</p>}
+                {invoice.clientICE && <p className="text-sm text-muted-foreground">ICE: {invoice.clientICE}</p>}
+              </div>
             </div>
-            <div className="text-left md:text-right">
-              <div className="mb-2">
-                <span className="font-semibold text-primary">{s.issueDate} </span>
+            <div className="text-left md:text-right space-y-1">
+              <div className="mb-1.5">
+                <h4 className="font-semibold text-primary mb-1">{s.issueDate}</h4>
                 <span>{format(new Date(invoice.issueDate), "PPP", { locale: getDateLocale(invoice.language) })}</span>
               </div>
               <div>
-                <span className="font-semibold text-primary">{s.dueDate} </span>
+                <h4 className="font-semibold text-primary mb-1">{s.dueDate}</h4>
                 <span>{format(new Date(invoice.dueDate), "PPP", { locale: getDateLocale(invoice.language) })}</span>
               </div>
             </div>
           </div>
 
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[50%]">{s.itemDescription}</TableHead>
-                <TableHead className="text-center">{s.itemQuantity}</TableHead>
-                <TableHead className="text-right">{s.itemUnitPrice}</TableHead>
-                <TableHead className="text-right">{s.itemTotal}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {invoice.items.map((item, index) => (
-                <TableRow key={index}>
-                  <TableCell className="font-medium">{item.description}</TableCell>
-                  <TableCell className="text-center">{item.quantity}</TableCell>
-                  <TableCell className="text-right">{item.unitPrice.toFixed(2)}</TableCell>
-                  <TableCell className="text-right">{item.total.toFixed(2)}</TableCell>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[50%]">{s.itemDescription}</TableHead>
+                  <TableHead className="text-center">{s.itemQuantity}</TableHead>
+                  <TableHead className="text-right">{s.itemUnitPrice}</TableHead>
+                  <TableHead className="text-right">{s.itemTotal}</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {invoice.items.map((item, index) => (
+                  <TableRow key={index}>
+                    <TableCell className="font-medium">{item.description}</TableCell>
+                    <TableCell className="text-center">{item.quantity}</TableCell>
+                    <TableCell className="text-right">{item.unitPrice.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">{item.total.toFixed(2)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="md:col-span-2">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+            <div className="md:col-span-2 space-y-4">
               {invoice.notes && (
-                <>
-                  <h4 className="font-semibold text-primary mb-1">{s.notes}</h4>
+                <div>
+                  <h4 className="font-semibold text-primary mb-1.5">{s.notes}</h4>
                   <p className="text-sm text-muted-foreground whitespace-pre-wrap">{invoice.notes}</p>
-                </>
+                </div>
               )}
               {invoice.appliedDefaultPaymentTerms && (
-                 <div className="mt-4">
-                    <h4 className="font-semibold text-primary mb-1">{s.paymentTerms}</h4>
+                 <div>
+                    <h4 className="font-semibold text-primary mb-1.5">{s.paymentTerms}</h4>
                     <p className="text-sm text-muted-foreground">{invoice.appliedDefaultPaymentTerms}</p>
                  </div>
               )}
             </div>
-            <div className="space-y-2 text-right">
+            <div className="space-y-3 p-4 bg-secondary/20 rounded-lg shadow-sm print:bg-transparent print:shadow-none">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{s.subtotal}</span>
                 <span className="font-medium">{invoice.subtotal.toFixed(2)} {invoice.currency}</span>
               </div>
-              {invoice.taxAmount !== undefined && (
+              {invoice.taxAmount !== undefined && invoice.taxAmount !== 0 && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">{s.tax} ({invoice.taxRate || 0}%):</span>
                   <span className="font-medium">{invoice.taxAmount.toFixed(2)} {invoice.currency}</span>
                 </div>
               )}
-              <div className="flex justify-between text-xl font-bold text-primary border-t pt-2 mt-2">
+              <div className="flex justify-between text-xl font-bold text-primary border-t border-border pt-2 mt-2">
                 <span>{s.total}</span>
                 <span>{invoice.totalAmount.toFixed(2)} {invoice.currency}</span>
               </div>
             </div>
           </div>
           
-          {/* Added section for "Arrêtée la présente facture..." */}
           {invoice.language?.toLowerCase().startsWith("fr") && (
             <div className="pt-4 mt-4 border-t">
               <p className="text-sm text-muted-foreground">
@@ -401,13 +411,13 @@ export default function InvoiceDetailPage() {
         </CardContent>
 
         {invoice.companyInvoiceFooter && (
-          <CardFooter className="border-t mt-6 pt-4 print:border-t-0">
+          <CardFooter className="border-t mt-6 pt-4 print:border-t-0 print:pt-4">
             <p className="text-xs text-muted-foreground text-center w-full">{invoice.companyInvoiceFooter}</p>
           </CardFooter>
         )}
       </Card>
 
-      <div className="flex justify-end gap-2 print:hidden">
+      <div className="flex justify-end gap-2 mt-8 print:hidden">
         {invoice.status === 'draft' && <Button variant="outline">{s.markAsSentSoon}</Button>}
         {(invoice.status === 'sent' || invoice.status === 'overdue') && <Button>{s.markAsPaidSoon}</Button>}
       </div>
@@ -465,6 +475,11 @@ export default function InvoiceDetailPage() {
             box-sizing: border-box !important;
             page-break-inside: avoid !important;
             min-height: initial !important; 
+            background-color: #fff !important; /* Ensure white background for print */
+          }
+
+          .invoice-card-for-print .bg-secondary\\/20 { /* Target specific background for totals */
+             background-color: transparent !important; /* Make totals background transparent for print */
           }
           
           /* General page setup for printing */
@@ -477,10 +492,10 @@ export default function InvoiceDetailPage() {
           .print\\:hidden { display: none !important; }
           .print\\:shadow-none { box-shadow: none !important; }
           .print\\:border-none { border: none !important; }
-          .print\\:border-b-0 { border-bottom: 0 !important; }
+          .print\\:border-b-0 { border-bottom-width: 0 !important; }
           .print\\:pt-0 { padding-top: 0 !important; }
-          .print\\:text-sm { font-size: 0.875rem; line-height: 1.25rem; }
-          .print\\:w-full { width: 100% !important; }
+          .print\\:pb-4 { padding-bottom: 1rem !important; }
+          .print\\:bg-transparent { background-color: transparent !important; }
         }
       `}</style>
     </div>
