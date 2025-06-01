@@ -1,31 +1,60 @@
+
 "use client";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
-import { FilePlus, Search, Filter, Download } from "lucide-react";
+import { FilePlus, Search, Filter, Download, Eye, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-
-// Mock data for demonstration
-const mockInvoices = [
-  { id: "INV-001", clientName: "Acme Corp", issueDate: "2023-10-01", dueDate: "2023-10-31", totalAmount: 1500, status: "paid", currency: "USD" },
-  { id: "INV-002", clientName: "Beta LLC", issueDate: "2023-10-05", dueDate: "2023-11-04", totalAmount: 850, status: "sent", currency: "USD" },
-  { id: "INV-003", clientName: "Gamma Inc", issueDate: "2023-09-15", dueDate: "2023-10-15", totalAmount: 2200, status: "overdue", currency: "USD" },
-  { id: "INV-004", clientName: "Delta Co", issueDate: "2023-10-10", dueDate: "2023-11-09", totalAmount: 500, status: "draft", currency: "USD" },
-];
-
+import { useAuth } from "@/hooks/use-auth";
+import { db } from "@/lib/firebase";
+import type { Invoice } from "@/lib/types";
+import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
+import { useEffect, useState } from "react";
+import { format } from "date-fns";
 
 export default function InvoicesPage() {
-  // TODO: Fetch invoices for the logged-in user from Firestore
+  const { user } = useAuth();
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchInvoices() {
+      if (!user) {
+        setIsLoading(false);
+        return;
+      }
+      setIsLoading(true);
+      setError(null);
+      try {
+        const invoicesRef = collection(db, "invoices");
+        const q = query(invoicesRef, where("userId", "==", user.uid), orderBy("issueDate", "desc"));
+        const querySnapshot = await getDocs(q);
+        const fetchedInvoices: Invoice[] = [];
+        querySnapshot.forEach((doc) => {
+          fetchedInvoices.push({ id: doc.id, ...doc.data() } as Invoice);
+        });
+        setInvoices(fetchedInvoices);
+      } catch (err) {
+        console.error("Error fetching invoices:", err);
+        setError("Failed to load invoices. Please try again.");
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchInvoices();
+  }, [user]);
 
   const getStatusBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
     switch (status) {
-      case "paid": return "default"; // Using primary color for paid
+      case "paid": return "default";
       case "sent": return "secondary";
       case "overdue": return "destructive";
       case "draft": return "outline";
+      case "cancelled": return "destructive"
       default: return "outline";
     }
   };
@@ -66,7 +95,18 @@ export default function InvoicesPage() {
           </div>
         </CardHeader>
         <CardContent>
-          {mockInvoices.length > 0 ? (
+          {isLoading && (
+            <div className="flex justify-center items-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+               <p className="ml-2 text-muted-foreground">Loading invoices...</p>
+            </div>
+          )}
+          {!isLoading && error && (
+            <div className="text-center py-12 text-destructive">
+              <p>{error}</p>
+            </div>
+          )}
+          {!isLoading && !error && invoices.length > 0 && (
              <Table>
               <TableHeader>
                 <TableRow>
@@ -80,27 +120,29 @@ export default function InvoicesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {mockInvoices.map((invoice) => (
+                {invoices.map((invoice) => (
                   <TableRow key={invoice.id}>
-                    <TableCell className="font-medium">{invoice.id}</TableCell>
+                    <TableCell className="font-medium">{invoice.invoiceNumber}</TableCell>
                     <TableCell>{invoice.clientName}</TableCell>
-                    <TableCell>{invoice.issueDate}</TableCell>
-                    <TableCell>{invoice.dueDate}</TableCell>
+                    <TableCell>{format(new Date(invoice.issueDate), "MMM dd, yyyy")}</TableCell>
+                    <TableCell>{format(new Date(invoice.dueDate), "MMM dd, yyyy")}</TableCell>
                     <TableCell className="text-right">{invoice.currency} {invoice.totalAmount.toFixed(2)}</TableCell>
                     <TableCell>
                       <Badge variant={getStatusBadgeVariant(invoice.status)} className="capitalize">{invoice.status}</Badge>
                     </TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost" size="sm" asChild>
-                        {/* TODO: Link to /invoices/[id] */}
-                        <Link href={`/invoices/${invoice.id.toLowerCase()}`}>View</Link> 
+                        <Link href={`/invoices/${invoice.id}`}>
+                          <Eye className="mr-1 h-4 w-4" /> View
+                        </Link> 
                       </Button>
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
-          ) : (
+          )}
+          {!isLoading && !error && invoices.length === 0 && (
             <div className="text-center py-12">
               <FilePlus className="mx-auto h-12 w-12 text-muted-foreground" />
               <h3 className="mt-4 text-xl font-semibold text-primary">No invoices yet</h3>

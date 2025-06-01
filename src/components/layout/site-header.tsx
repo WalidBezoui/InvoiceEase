@@ -1,7 +1,8 @@
+
 "use client";
 
 import Link from 'next/link';
-import { Building2, LogIn, LogOut, UserPlus, LayoutDashboard, FileText, Settings } from 'lucide-react';
+import { Building2, LogIn, LogOut, UserPlus, LayoutDashboard, FileText, Settings, Users } from 'lucide-react'; // Added Users icon
 import { useAuth } from '@/hooks/use-auth';
 import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
@@ -47,27 +48,34 @@ export default function SiteHeader() {
           <Building2 className="h-6 w-6 text-primary" />
           <span className="font-headline text-xl font-bold text-primary">InvoiceEase</span>
         </Link>
-        <nav className="flex items-center space-x-4">
+        <nav className="flex items-center space-x-2 md:space-x-4">
           {loading ? (
             <div className="h-8 w-20 animate-pulse rounded-md bg-muted"></div>
           ) : user ? (
             <>
-              <Button variant="ghost" size="sm" asChild className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
+              <Button variant="ghost" size="sm" asChild className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary hidden md:inline-flex">
                 <Link href="/dashboard">
                   <LayoutDashboard className="mr-2 h-4 w-4" /> Dashboard
                 </Link>
               </Button>
-              <Button variant="ghost" size="sm" asChild className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
+              <Button variant="ghost" size="sm" asChild className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary hidden md:inline-flex">
                 <Link href="/invoices">
                   <FileText className="mr-2 h-4 w-4" /> Invoices
                 </Link>
               </Button>
-              <Button variant="ghost" size="sm" asChild className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
+               <Button variant="ghost" size="sm" asChild className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary hidden md:inline-flex">
+                <Link href="/clients">
+                  <Users className="mr-2 h-4 w-4" /> Clients
+                </Link>
+              </Button>
+              <Button variant="ghost" size="sm" asChild className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary hidden md:inline-flex">
                 <Link href="/preferences">
                   <Settings className="mr-2 h-4 w-4" /> Preferences
                 </Link>
               </Button>
-              <DropdownMenu>
+              
+              {/* Mobile Menu Icon and Dropdown */}
+               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                     <Avatar className="h-8 w-8">
@@ -86,6 +94,19 @@ export default function SiteHeader() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
+                   <DropdownMenuItem asChild className="cursor-pointer md:hidden">
+                     <Link href="/dashboard"><LayoutDashboard className="mr-2 h-4 w-4" />Dashboard</Link>
+                   </DropdownMenuItem>
+                   <DropdownMenuItem asChild className="cursor-pointer md:hidden">
+                     <Link href="/invoices"><FileText className="mr-2 h-4 w-4" />Invoices</Link>
+                   </DropdownMenuItem>
+                   <DropdownMenuItem asChild className="cursor-pointer md:hidden">
+                     <Link href="/clients"><Users className="mr-2 h-4 w-4" />Clients</Link>
+                   </DropdownMenuItem>
+                   <DropdownMenuItem asChild className="cursor-pointer md:hidden">
+                     <Link href="/preferences"><Settings className="mr-2 h-4 w-4" />Preferences</Link>
+                   </DropdownMenuItem>
+                   <DropdownMenuSeparator className="md:hidden"/>
                   <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Log out</span>

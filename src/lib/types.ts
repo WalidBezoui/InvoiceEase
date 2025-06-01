@@ -19,6 +19,21 @@ export interface UserPreferences {
   defaultPaymentTerms?: string;
 }
 
+export interface Client {
+  id?: string; // Firestore document ID
+  userId: string;
+  name: string;
+  email?: string;
+  address?: string;
+  phone?: string;
+  clientCompany?: string; // Optional company name for the client
+  ice: string; // Identifiant Commun de l'Entreprise (Morocco) - 15 digits
+  createdAt?: Timestamp;
+  updatedAt?: Timestamp;
+}
+
+export type ClientFormData = Omit<Client, 'id' | 'userId' | 'createdAt' | 'updatedAt'>;
+
 export interface InvoiceItem {
   id?: string; // Optional: mainly for client-side keying in forms
   description: string;
@@ -31,9 +46,15 @@ export interface Invoice {
   id?: string; // Firestore document ID, optional for new invoices
   userId: string;
   invoiceNumber: string;
+  
+  // Client details snapshot at the time of invoice creation
+  clientId?: string; // Optional: ID of the client if selected from a list
   clientName: string;
   clientEmail: string;
   clientAddress?: string;
+  clientCompany?: string; // Snapshot of client's company name
+  clientICE?: string; // Snapshot of client's ICE
+
   issueDate: string; // ISO string date
   dueDate: string; // ISO string date
   items: InvoiceItem[];
@@ -56,3 +77,4 @@ export interface Invoice {
   createdAt?: Timestamp; 
   updatedAt?: Timestamp; 
 }
+
