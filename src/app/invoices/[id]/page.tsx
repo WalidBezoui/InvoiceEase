@@ -176,7 +176,7 @@ export default function InvoiceDetailPage() {
 
 
   return (
-    <div className="space-y-8 print:space-y-4">
+    <div className="invoice-page-wrapper">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 print:hidden">
         <div className="flex items-center gap-4">
             <Button variant="outline" size="icon" asChild>
@@ -209,8 +209,8 @@ export default function InvoiceDetailPage() {
         </div>
       </div>
 
-      <Card className="shadow-lg print:shadow-none print:border-none">
-        <CardHeader className="border-b print:border-b-0">
+      <Card className="invoice-card-for-print shadow-lg print:shadow-none print:border-none">
+        <CardHeader className="border-b print:border-b-0 print:pt-0">
           <div className="flex flex-col md:flex-row justify-between items-start gap-4">
             <div>
               {invoice.logoDataUrl && (
@@ -318,23 +318,75 @@ export default function InvoiceDetailPage() {
        <style jsx global>{`
         @media print {
           body {
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            background-color: #fff !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+            height: auto !important;
+            overflow: visible !important;
           }
+          html {
+            background-color: #fff !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+
+          /* Hide general site header and footer */
+          header, /* Targets <SiteHeader /> */
+          footer { /* Targets <SiteFooter /> */
+            display: none !important;
+          }
+
+          /* Reset main container paddings/margins from AppLayout */
+          main.container { 
+            padding: 0 !important;
+            margin: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            flex-grow: 0 !important; 
+            overflow: visible !important;
+            display: block !important; 
+          }
+          
+          /* The root div of the invoice page itself */
+          .invoice-page-wrapper {
+              margin: 0 !important;
+              padding: 0 !important; 
+              width: 100% !important;
+              min-height: 0 !important; 
+          }
+
+          /* The Card component holding the invoice content */
+          .invoice-card-for-print {
+            margin: 0 !important; 
+            padding: 1cm !important; /* This becomes the effective page margin for the content */
+            box-shadow: none !important; 
+            border: none !important; 
+            width: 100% !important; 
+            box-sizing: border-box !important;
+            page-break-inside: avoid !important;
+            min-height: initial !important; 
+          }
+          
+          /* General page setup for printing */
+          @page {
+            size: A4 portrait; 
+            margin: 0; /* Set printer hardware margins to 0, control via .invoice-card-for-print padding */
+          }
+
+          /* Tailwind print utilities are good and can be kept if used elsewhere, specific overrides above are primary */
           .print\\:hidden { display: none !important; }
           .print\\:shadow-none { box-shadow: none !important; }
           .print\\:border-none { border: none !important; }
           .print\\:border-b-0 { border-bottom: 0 !important; }
           .print\\:pt-0 { padding-top: 0 !important; }
-          .print\\:space-y-4 > :not([hidden]) ~ :not([hidden]) {
-             --tw-space-y-reverse: 0;
-             margin-top: calc(1rem * calc(1 - var(--tw-space-y-reverse)));
-             margin-bottom: calc(1rem * var(--tw-space-y-reverse));
-           }
-           .print\\:text-sm { font-size: 0.875rem; line-height: 1.25rem; }
-           .print\\:w-full { width: 100% !important; }
+          .print\\:text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+          .print\\:w-full { width: 100% !important; }
         }
       `}</style>
     </div>
   );
 }
+
