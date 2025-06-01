@@ -15,6 +15,7 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale"; // Import French locale
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 // Helper for number to French words
 const currencyWordForms: { [key: string]: { singular: string, plural: string, centimeSingular: string, centimePlural: string } } = {
@@ -50,7 +51,7 @@ function numberToFrenchWords(num: number, currencyCode: string): string {
     }
     if (n >= 100) {
       const hundreds = Math.floor(n / 100);
-      words += (hundreds === 1 ? "cent" : units[hundreds] + " cent") + (n % 100 === 0 && hundreds > 1 ? "s" : "") + " ";
+      words += (hundreds === 1 ? "cent" : units[hundreds] + " cent") + (n % 100 === 0 && hundreds > 1 && !isRecursiveCall ? "s" : "") + " ";
       n %= 100;
     }
     if (n >= 10) {
@@ -61,14 +62,14 @@ function numberToFrenchWords(num: number, currencyCode: string): string {
         const ten = Math.floor(n / 10);
         words += tens[ten];
         if (n % 10 !== 0) {
-          if (ten === 7 || ten === 9) { // soixante-dix, quatre-vingt-dix
-            words += (n % 10 === 1 && ten !== 7) ? " et " : "-"; // quatre-vingt-un vs soixante et onze
-            words += teens[(n % 10) -1 + (ten === 7 ? 0 : (ten === 9 ? 0 : 0)) ]; // Handle teens for 70s and 90s
+          if (ten === 7 || ten === 9) { 
+            words += (n % 10 === 1 && ten !== 7 && ten !==9) ? " et " : "-"; 
+            words += teens[(n % 10) -1 ];
           } else {
              words += (n % 10 === 1) ? " et " : (n % 10 !== 0 ? "-" : "");
              words += units[n % 10];
           }
-        } else if (ten === 8) { // quatre-vingts
+        } else if (ten === 8 && !isRecursiveCall) { 
             words += "s";
         }
         words += " ";
@@ -85,14 +86,14 @@ function numberToFrenchWords(num: number, currencyCode: string): string {
   const decimalPart = Math.round((num - integerPart) * 100);
 
   let words = numToWords(integerPart);
-  words = words.charAt(0).toUpperCase() + words.slice(1); // Capitalize first letter
-  words += " " + (integerPart > 1 ? currentCurrency.plural : currentCurrency.singular);
+  words = words.charAt(0).toUpperCase() + words.slice(1); 
+  words += " " + (integerPart !== 1 ? currentCurrency.plural : currentCurrency.singular);
 
   if (decimalPart > 0) {
     words += " et " + numToWords(decimalPart);
-    words += " " + (decimalPart > 1 ? currentCurrency.centimePlural : currentCurrency.centimeSingular);
+    words += " " + (decimalPart !== 1 ? currentCurrency.centimePlural : currentCurrency.centimeSingular);
   }
-  return words.replace(/\s+/g, ' ').trim(); // Clean up extra spaces
+  return words.replace(/\s+/g, ' ').trim();
 }
 
 
@@ -292,7 +293,7 @@ export default function InvoiceDetailPage() {
               </Link>
             </Button>
           ) : (
-             <Button disabled>
+             <Button disabled> {/* This was previously an error source if asChild was true */}
                 <Edit className="mr-2 h-4 w-4" /> {s.edit}
              </Button>
           )}
@@ -300,14 +301,13 @@ export default function InvoiceDetailPage() {
       </div>
 
       <Card className="invoice-card-for-print shadow-lg print:shadow-none print:border-none">
-        <CardHeader className="border-b print:border-b-slate-200 print:pb-4 print:pt-0">
+        <CardHeader className="print-card-header border-b print:border-b-slate-200">
           <div className="flex flex-col md:flex-row justify-between items-start gap-6">
             <div className="flex-shrink-0">
               {invoice.logoDataUrl && (
                 <img src={invoice.logoDataUrl} alt="Company Logo" className="h-16 max-w-[200px] object-contain mb-2 print:h-12" data-ai-hint="company logo"/>
               )}
               <h2 className="text-lg font-semibold text-primary print:text-base">{invoice.companyInvoiceHeader || "Your Company Name"}</h2>
-              {/* Optional: Add company address/contact here if needed in header */}
             </div>
             <div className="text-left md:text-right flex-grow">
               <h3 className="text-3xl font-bold text-primary uppercase tracking-tight print:text-2xl">{s.invoiceTitle}</h3>
@@ -317,10 +317,13 @@ export default function InvoiceDetailPage() {
           </div>
         </CardHeader>
         
-        <CardContent className="pt-6 space-y-6 print:pt-4 print:space-y-4">
+        <CardContent className={cn(
+          "print-card-content pt-6 space-y-6 print:space-y-4",
+           invoice.companyInvoiceFooter ? "print-content-has-footer" : "print-content-no-footer"
+        )}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
             <div>
-              <h4 className="font-semibold text-primary mb-2 print:text-sm">{s.billTo}</h4>
+              <h4 className="font-semibold text-primary mb-1.5 print:text-sm">{s.billTo}</h4>
               <div className="space-y-0.5 text-sm text-muted-foreground print:text-xs">
                 <p className="font-medium text-foreground">{invoice.clientName}</p>
                 {invoice.clientCompany && <p>{invoice.clientCompany}</p>}
@@ -368,13 +371,13 @@ export default function InvoiceDetailPage() {
             <div className="md:col-span-2 space-y-3 print:space-y-2">
               {invoice.notes && (
                 <div>
-                  <h4 className="font-semibold text-primary mb-1 print:text-sm">{s.notes}</h4>
+                  <h4 className="font-semibold text-primary mb-1.5 print:text-sm">{s.notes}</h4>
                   <p className="text-sm text-muted-foreground whitespace-pre-wrap print:text-xs">{invoice.notes}</p>
                 </div>
               )}
               {invoice.appliedDefaultPaymentTerms && (
                  <div>
-                    <h4 className="font-semibold text-primary mb-1 print:text-sm">{s.paymentTerms}</h4>
+                    <h4 className="font-semibold text-primary mb-1.5 print:text-sm">{s.paymentTerms}</h4>
                     <p className="text-sm text-muted-foreground print:text-xs">{invoice.appliedDefaultPaymentTerms}</p>
                  </div>
               )}
@@ -411,7 +414,10 @@ export default function InvoiceDetailPage() {
         </CardContent>
 
         {invoice.companyInvoiceFooter && (
-          <CardFooter className="border-t mt-6 pt-4 print:border-t-slate-200 print:mt-2 print:pt-2 print:pb-2">
+          <CardFooter className={cn(
+            "print-card-footer border-t",
+            invoice.companyInvoiceFooter ? "has-content" : ""
+          )}>
             <p className="text-xs text-muted-foreground text-center w-full print:text-[0.65rem]">{invoice.companyInvoiceFooter}</p>
           </CardFooter>
         )}
@@ -433,7 +439,7 @@ export default function InvoiceDetailPage() {
             width: 100% !important;
             height: auto !important;
             overflow: visible !important;
-            font-size: 9pt !important; /* Overall smaller base font for print */
+            font-size: 9pt !important; 
           }
           html {
             background-color: #fff !important;
@@ -441,13 +447,11 @@ export default function InvoiceDetailPage() {
             padding: 0 !important;
           }
 
-          /* Hide general site header and footer */
-          header, /* Targets <SiteHeader /> */
-          footer { /* Targets <SiteFooter /> */
+          header, 
+          footer { 
             display: none !important;
           }
 
-          /* Reset main container paddings/margins from AppLayout */
           main.container { 
             padding: 0 !important;
             margin: 0 !important;
@@ -458,7 +462,6 @@ export default function InvoiceDetailPage() {
             display: block !important; 
           }
           
-          /* The root div of the invoice page itself */
           .invoice-page-wrapper {
               margin: 0 !important;
               padding: 0 !important; 
@@ -466,94 +469,94 @@ export default function InvoiceDetailPage() {
               min-height: 0 !important; 
           }
 
-          /* The Card component holding the invoice content */
           .invoice-card-for-print {
+            padding: 0 !important; 
             margin: 0 !important; 
-            padding: 0.75cm !important; /* Effective page margin for content */
             box-shadow: none !important; 
             border: none !important; 
             width: 100% !important; 
+            min-height: 282mm; /* Approx A4 height (297mm) minus 1.5cm total for potential printer unprintable area */
             box-sizing: border-box !important;
             page-break-inside: avoid !important;
-            min-height: initial !important; 
-            background-color: #fff !important; /* Ensure white background for print */
+            background-color: #fff !important; 
+            position: relative; 
+            display: flex;
+            flex-direction: column;
           }
           
-          .invoice-card-for-print .text-3xl { /* Invoice title (screen) */
-            font-size: 1.75rem !important; /* Reduce main title size on screen */
+          .invoice-card-for-print > .print-card-header,
+          .invoice-card-for-print > .print-card-content {
+            padding-left: 0.75cm !important;
+            padding-right: 0.75cm !important;
+            box-sizing: border-box !important;
           }
-          .invoice-card-for-print .print\\:text-2xl { /* Invoice title (print) */
-            font-size: 1.5rem !important;
+
+          .invoice-card-for-print > .print-card-header { /* CardHeader */
+            padding-top: 0.75cm !important;
+            padding-bottom: 0.5cm !important; 
+            border-bottom-width: 1px !important;
+            border-color: #e2e8f0 !important; 
           }
-           .invoice-card-for-print .text-lg { /* Company Header Name (screen) */
-             font-size: 1.125rem !important;
-           }
-           .invoice-card-for-print .print\\:text-base { /* Company Header Name (print) */
-             font-size: 1rem !important;
+           
+          .invoice-card-for-print > .print-card-content { /* CardContent */
+            padding-top: 0.5cm !important;
+            flex-grow: 1; 
+          }
+          .invoice-card-for-print > .print-card-content.print-content-has-footer {
+            padding-bottom: 2.5cm !important; /* Space for footer */
+          }
+          .invoice-card-for-print > .print-card-content.print-content-no-footer {
+            padding-bottom: 0.75cm !important; /* Standard bottom 'page' margin */
+          }
+
+          .invoice-card-for-print > .print-card-footer.has-content { /* CardFooter */
+            position: absolute !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            padding-top: 0.35cm !important;
+            padding-bottom: 0.35cm !important; 
+            padding-left: 0.75cm !important;
+            padding-right: 0.75cm !important;
+            border-top-width: 1px !important;
+            border-color: #e2e8f0 !important; 
+            margin-top: 0 !important; 
+            text-align: center !important;
+            background-color: #fff !important; 
+            box-sizing: border-box !important;
+            page-break-inside: avoid !important;
+          }
+           .invoice-card-for-print > .print-card-footer:not(.has-content) {
+             display: none !important;
            }
 
-          .invoice-card-for-print .print\\:text-sm {
-             font-size: 0.8rem !important; /* Smaller than screen 'sm' */
-          }
-           .invoice-card-for-print .print\\:text-xs {
-             font-size: 0.7rem !important; /* Smaller than screen 'xs' */
-          }
-           .invoice-card-for-print .print\\:text-\\[0\\.65rem\\] { /* Footer text */
-             font-size: 0.65rem !important;
-           }
 
-          .invoice-card-for-print .bg-secondary\\/30 { /* Target specific background for totals on screen */
-             background-color: hsl(var(--secondary) / 0.3) !important; 
-          }
-          .invoice-card-for-print .print\\:bg-slate-50 { /* Target specific background for totals for print */
-             background-color: #f8fafc !important; /* Light slate for print totals box */
-          }
+          .invoice-card-for-print .text-3xl { font-size: 1.75rem !important; }
+          .invoice-card-for-print .print\\:text-2xl { font-size: 1.5rem !important; }
+          .invoice-card-for-print .text-lg { font-size: 1.125rem !important; }
+          .invoice-card-for-print .print\\:text-base { font-size: 1rem !important; }
+          .invoice-card-for-print .print\\:text-sm { font-size: 0.8rem !important; }
+          .invoice-card-for-print .print\\:text-xs { font-size: 0.7rem !important; }
+          .invoice-card-for-print .print\\:text-\\[0\\.65rem\\] { font-size: 0.65rem !important; }
+
+          .invoice-card-for-print .bg-secondary\\/30 { background-color: hsl(var(--secondary) / 0.3) !important; }
+          .invoice-card-for-print .print\\:bg-slate-50 { background-color: #f8fafc !important; }
           
-          .invoice-card-for-print table th, .invoice-card-for-print table td {
-            padding: 0.35rem 0.5rem !important; /* Reduced table cell padding for print */
-          }
-           .invoice-card-for-print .print\\:py-2 {
-             padding-top: 0.35rem !important;
-             padding-bottom: 0.35rem !important;
-           }
-           .invoice-card-for-print .print\\:py-1\\.5 {
-             padding-top: 0.25rem !important;
-             padding-bottom: 0.25rem !important;
-           }
+          .invoice-card-for-print table th, .invoice-card-for-print table td { padding: 0.35rem 0.5rem !important; }
+          .invoice-card-for-print .print\\:py-2 { padding-top: 0.35rem !important; padding-bottom: 0.35rem !important; }
+          .invoice-card-for-print .print\\:py-1\\.5 { padding-top: 0.25rem !important; padding-bottom: 0.25rem !important; }
 
           .invoice-card-for-print .print\\:border-slate-200 { border-color: #e2e8f0 !important; }
           .invoice-card-for-print .print\\:border-slate-300 { border-color: #cbd5e1 !important; }
           .invoice-card-for-print .print\\:bg-slate-100 { background-color: #f1f5f9 !important; }
 
 
-          /* General page setup for printing */
           @page {
             size: A4 portrait; 
-            margin: 0; /* Set printer hardware margins to 0, control via .invoice-card-for-print padding */
+            margin: 0; 
           }
 
-          /* Tailwind print utilities are good and can be kept if used elsewhere, specific overrides above are primary */
           .print\\:hidden { display: none !important; }
-          .print\\:shadow-none { box-shadow: none !important; }
-          .print\\:border-none { border: none !important; }
-          .print\\:border-b-0 { border-bottom-width: 0 !important; }
-          .print\\:pt-0 { padding-top: 0 !important; }
-          .print\\:pb-2 { padding-bottom: 0.5rem !important; }
-          .print\\:pt-4 { padding-top: 1rem !important; }
-          .print\\:p-0 { padding: 0 !important; }
-          .print\\:p-3 { padding: 0.75rem !important; }
-          .print\\:border { border-width: 1px !important; }
-          .print\\:rounded-md { border-radius: 0.375rem !important; }
-          .print\\:bg-transparent { background-color: transparent !important; }
-          .print\\:space-y-4 > :not([hidden]) ~ :not([hidden]) { margin-top: 1rem !important; margin-bottom: 1rem !important; }
-          .print\\:space-y-2 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.5rem !important; margin-bottom: 0.5rem !important; }
-          .print\\:pt-1 {padding-top: 0.25rem !important;}
-          .print\\:mt-1 {margin-top: 0.25rem !important;}
-          .print\\:pt-2 {padding-top: 0.5rem !important;}
-          .print\\:mt-2 {margin-top: 0.5rem !important;}
-          .print\\:mb-1 {margin-bottom: 0.25rem !important;}
-          .print\\:mb-2 {margin-bottom: 0.5rem !important;}
-          .print\\:h-12 {height: 3rem !important;}
         }
       `}</style>
     </div>
