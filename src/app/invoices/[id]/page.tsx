@@ -16,6 +16,86 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale"; // Import French locale
 import { Badge } from "@/components/ui/badge";
 
+// Helper for number to French words
+const currencyWordForms: { [key: string]: { singular: string, plural: string, centimeSingular: string, centimePlural: string } } = {
+  MAD: { singular: "Dirham Marocain", plural: "Dirhams Marocains", centimeSingular: "centime", centimePlural: "centimes" },
+  EUR: { singular: "Euro", plural: "Euros", centimeSingular: "centime", centimePlural: "centimes" },
+  USD: { singular: "Dollar Américain", plural: "Dollars Américains", centimeSingular: "cent", centimePlural: "cents" },
+  // Add more currencies as needed
+};
+
+function numberToFrenchWords(num: number, currencyCode: string): string {
+  const currentCurrency = currencyWordForms[currencyCode.toUpperCase()] || currencyWordForms["MAD"]; // Default to MAD if unknown
+
+  const units = ["", "un", "deux", "trois", "quatre", "cinq", "six", "sept", "huit", "neuf"];
+  const teens = ["dix", "onze", "douze", "treize", "quatorze", "quinze", "seize", "dix-sept", "dix-huit", "dix-neuf"];
+  const tens = ["", "", "vingt", "trente", "quarante", "cinquante", "soixante", "soixante-dix", "quatre-vingt", "quatre-vingt-dix"];
+
+  const numToWords = (n: number, isRecursiveCall = false): string => {
+    if (n === 0) return isRecursiveCall ? "" : "zéro";
+    let words = "";
+
+    if (n >= 1000000000) {
+      words += numToWords(Math.floor(n / 1000000000)) + " milliard" + (Math.floor(n / 1000000000) > 1 ? "s" : "") + " ";
+      n %= 1000000000;
+    }
+    if (n >= 1000000) {
+      words += numToWords(Math.floor(n / 1000000)) + " million" + (Math.floor(n / 1000000) > 1 ? "s" : "") + " ";
+      n %= 1000000;
+    }
+    if (n >= 1000) {
+      const thousands = Math.floor(n / 1000);
+      words += (thousands === 1 ? "mille" : numToWords(thousands) + " mille") + " ";
+      n %= 1000;
+    }
+    if (n >= 100) {
+      const hundreds = Math.floor(n / 100);
+      words += (hundreds === 1 ? "cent" : units[hundreds] + " cent") + (n % 100 === 0 && hundreds > 1 ? "s" : "") + " ";
+      n %= 100;
+    }
+    if (n >= 10) {
+      if (n < 20) {
+        words += teens[n - 10] + " ";
+        n = 0;
+      } else {
+        const ten = Math.floor(n / 10);
+        words += tens[ten];
+        if (n % 10 !== 0) {
+          if (ten === 7 || ten === 9) { // soixante-dix, quatre-vingt-dix
+            words += (n % 10 === 1 && ten !== 7) ? " et " : "-"; // quatre-vingt-un vs soixante et onze
+            words += teens[(n % 10) -1 + (ten === 7 ? 0 : (ten === 9 ? 0 : 0)) ]; // Handle teens for 70s and 90s
+          } else {
+             words += (n % 10 === 1) ? " et " : (n % 10 !== 0 ? "-" : "");
+             words += units[n % 10];
+          }
+        } else if (ten === 8) { // quatre-vingts
+            words += "s";
+        }
+        words += " ";
+        n = 0;
+      }
+    }
+    if (n > 0) {
+      words += units[n] + " ";
+    }
+    return words.trim();
+  };
+
+  const integerPart = Math.floor(num);
+  const decimalPart = Math.round((num - integerPart) * 100);
+
+  let words = numToWords(integerPart);
+  words = words.charAt(0).toUpperCase() + words.slice(1); // Capitalize first letter
+  words += " " + (integerPart > 1 ? currentCurrency.plural : currentCurrency.singular);
+
+  if (decimalPart > 0) {
+    words += " et " + numToWords(decimalPart);
+    words += " " + (decimalPart > 1 ? currentCurrency.centimePlural : currentCurrency.centimeSingular);
+  }
+  return words.replace(/\s+/g, ' ').trim(); // Clean up extra spaces
+}
+
+
 // Helper for translations
 const getInvoiceStrings = (languageCode?: string) => {
   const lang = languageCode?.toLowerCase().startsWith("fr") ? "fr" : "en"; // Default to English
@@ -46,6 +126,8 @@ const getInvoiceStrings = (languageCode?: string) => {
       invoiceNotFoundMessage: "The invoice you are looking for does not exist or could not be loaded.",
       markAsSentSoon: "Mark as Sent (Soon)",
       markAsPaidSoon: "Mark as Paid (Soon)",
+      stoppedAtTheSumOf: "This invoice is closed at the sum of:",
+      thatIs: "i.e.",
     },
     fr: {
       invoiceTitle: "Facture",
@@ -72,6 +154,8 @@ const getInvoiceStrings = (languageCode?: string) => {
       invoiceNotFoundMessage: "La facture que vous recherchez n'existe pas ou n'a pas pu être chargée.",
       markAsSentSoon: "Marquer comme envoyée (Bientôt)",
       markAsPaidSoon: "Marquer comme payée (Bientôt)",
+      stoppedAtTheSumOf: "Arrêtée la présente facture à la somme de :",
+      thatIs: "soit",
     },
   };
   return strings[lang];
@@ -301,6 +385,19 @@ export default function InvoiceDetailPage() {
               </div>
             </div>
           </div>
+          
+          {/* Added section for "Arrêtée la présente facture..." */}
+          {invoice.language?.toLowerCase().startsWith("fr") && (
+            <div className="pt-4 mt-4 border-t">
+              <p className="text-sm text-muted-foreground">
+                {s.stoppedAtTheSumOf} <strong className="text-foreground">{numberToFrenchWords(invoice.totalAmount, invoice.currency)}</strong>.
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                ({s.thatIs} {invoice.currency} {invoice.totalAmount.toFixed(2)})
+              </p>
+            </div>
+          )}
+
         </CardContent>
 
         {invoice.companyInvoiceFooter && (
