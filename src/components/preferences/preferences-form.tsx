@@ -1,11 +1,12 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Card, CardContent, CardDescription as ShadcnCardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -79,8 +80,8 @@ export default function PreferencesForm() {
             currency: data.currency || "USD",
             language: data.language || "en",
             // Assuming defaultNotes and defaultPaymentTerms are also part of UserPreferences
-            // defaultNotes: (data as any).defaultNotes || "", 
-            // defaultPaymentTerms: (data as any).defaultPaymentTerms || "",
+            defaultNotes: (data as any).defaultNotes || "", 
+            defaultPaymentTerms: (data as any).defaultPaymentTerms || "",
           });
         }
         setIsFetching(false);
@@ -97,7 +98,7 @@ export default function PreferencesForm() {
     setIsLoading(true);
     try {
       const prefDocRef = doc(db, "userPreferences", user.uid);
-      // Use setDoc with merge:true or updateDoc to avoid overwriting logoUrl managed by LogoUploader
+      // Use setDoc with merge:true to avoid overwriting logoUrl managed by LogoUploader
       await setDoc(prefDocRef, values, { merge: true }); 
       toast({
         title: "Preferences Saved",
@@ -134,7 +135,7 @@ export default function PreferencesForm() {
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <CardHeader>
             <CardTitle className="font-headline text-xl text-primary">Invoice Content Customization</CardTitle>
-            <CardDescription>Personalize the default text and elements on your invoices.</CardDescription>
+            <ShadcnCardDescription>Personalize the default text and elements on your invoices.</ShadcnCardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <FormField control={form.control} name="invoiceHeader" render={({ field }) => (
@@ -193,6 +194,7 @@ export default function PreferencesForm() {
               <FormItem>
                 <FormLabel>Default Notes for New Invoices</FormLabel>
                 <FormControl><Textarea placeholder="e.g., Standard terms and conditions" {...field} /></FormControl>
+                 <FormDescription>These notes will be pre-filled on new invoices.</FormDescription>
                 <FormMessage />
               </FormItem>
             )} />
@@ -200,6 +202,7 @@ export default function PreferencesForm() {
               <FormItem>
                 <FormLabel>Default Payment Terms</FormLabel>
                 <FormControl><Input placeholder="e.g., Net 30 Days" {...field} /></FormControl>
+                <FormDescription>Default payment terms for new invoices.</FormDescription>
                 <FormMessage />
               </FormItem>
             )} />

@@ -1,10 +1,11 @@
+
 "use client";
 
 import PreferencesForm from "@/components/preferences/preferences-form";
 import LogoUploader from "@/components/preferences/logo-uploader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Palette, FileText, Globe, DollarSign } from "lucide-react";
+import { Palette, FileText, Globe, DollarSign, Settings2 } from "lucide-react";
 
 
 export default function PreferencesPage() {
@@ -16,65 +17,48 @@ export default function PreferencesPage() {
       </div>
 
       <Tabs defaultValue="branding" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
-          <TabsTrigger value="branding" className="font-medium">
-            <Palette className="mr-2 h-4 w-4" /> Branding
+        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-1">
+          <TabsTrigger value="branding" className="font-medium text-sm py-2.5">
+            <Palette className="mr-2 h-4 w-4" /> Branding & Logo
           </TabsTrigger>
-          <TabsTrigger value="content" className="font-medium">
+          <TabsTrigger value="content" className="font-medium text-sm py-2.5">
             <FileText className="mr-2 h-4 w-4" /> Invoice Content
           </TabsTrigger>
-          <TabsTrigger value="regional" className="font-medium">
-            <Globe className="mr-2 h-4 w-4" /> Regional
+          <TabsTrigger value="regional" className="font-medium text-sm py-2.5">
+            <Globe className="mr-2 h-4 w-4" /> Regional Defaults
           </TabsTrigger>
-           <TabsTrigger value="defaults" className="font-medium">
-            <DollarSign className="mr-2 h-4 w-4" /> Defaults
+           <TabsTrigger value="invoice_defaults" className="font-medium text-sm py-2.5">
+            <Settings2 className="mr-2 h-4 w-4" /> Invoice Defaults
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="branding">
-          <Card className="shadow-lg mt-6">
-            <CardHeader>
-              <CardTitle className="font-headline text-xl text-primary">Company Branding</CardTitle>
-              <CardDescription>Upload your logo and set brand colors.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <LogoUploader />
-              {/* Placeholder for brand color customization */}
-              <div>
-                <h3 className="text-lg font-medium text-foreground mb-2">Brand Colors (Coming Soon)</h3>
-                <p className="text-sm text-muted-foreground">Customize the primary color of your invoices.</p>
-              </div>
-            </CardContent>
-          </Card>
+            <LogoUploader />
+             {/* Placeholder for brand color customization, can be a separate card or integrated */}
+            <Card className="shadow-lg mt-6 bg-secondary/20">
+                <CardHeader>
+                <CardTitle className="font-headline text-lg text-primary">Brand Colors (Coming Soon)</CardTitle>
+                <CardDescription>Customize the primary color of your invoices to match your brand.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-sm text-muted-foreground">This feature will allow you to select a primary color that will be reflected on your generated PDF invoices.</p>
+                </CardContent>
+            </Card>
         </TabsContent>
 
         <TabsContent value="content">
+           {/* PreferencesForm now handles: Header, Footer, Watermark */}
            <PreferencesForm />
         </TabsContent>
 
         <TabsContent value="regional">
-          <Card className="shadow-lg mt-6">
-            <CardHeader>
-              <CardTitle className="font-headline text-xl text-primary">Regional Settings</CardTitle>
-              <CardDescription>Set your preferred language and currency for invoices.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Form fields for language and currency will be part of PreferencesForm or a separate component */}
-              <p className="text-sm text-muted-foreground">Language and currency settings will appear here. (Part of Preferences Form)</p>
-            </CardContent>
-          </Card>
+          {/* PreferencesForm now handles: Currency, Language */}
+           <PreferencesForm />
         </TabsContent>
         
-        <TabsContent value="defaults">
-          <Card className="shadow-lg mt-6">
-            <CardHeader>
-              <CardTitle className="font-headline text-xl text-primary">Invoice Defaults</CardTitle>
-              <CardDescription>Set default payment terms, notes, etc.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <p className="text-sm text-muted-foreground">Default settings for new invoices will be configurable here. (Part of Preferences Form)</p>
-            </CardContent>
-          </Card>
+        <TabsContent value="invoice_defaults">
+           {/* PreferencesForm now handles: Default Notes, Default Payment Terms */}
+           <PreferencesForm />
         </TabsContent>
       </Tabs>
     </div>
