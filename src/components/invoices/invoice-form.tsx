@@ -52,6 +52,8 @@ interface InvoiceFormProps {
   initialData?: Invoice; // Make initialData the full Invoice type
 }
 
+const MANUAL_ENTRY_CLIENT_ID = "_manual_entry_";
+
 export default function InvoiceForm({ initialData }: InvoiceFormProps) {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -121,22 +123,17 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
   });
   
   useEffect(() => {
-    // This effect ensures that default values from userPrefs (like notes, inv number)
-    // are applied ONLY when creating a new invoice (initialData is undefined).
-    // If initialData is present (editing), form.reset below will handle setting those.
     if (userPrefs && !initialData) {
         form.reset({
-            ...form.getValues(), // Keep already set values like dates if any
-            notes: form.getValues().notes || userPrefs.defaultNotes || "", // Prioritize existing form value if any, then userPrefs
+            ...form.getValues(), 
+            notes: form.getValues().notes || userPrefs.defaultNotes || "", 
             invoiceNumber: form.getValues().invoiceNumber.startsWith('INV-') && form.getValues().invoiceNumber.length > 10 ? form.getValues().invoiceNumber : `INV-${Date.now().toString().slice(-4)}-${user?.uid.slice(0,3) || 'XXX'}`,
         });
     }
-  }, [userPrefs, initialData, form, user?.uid]); // form and user.uid are dependencies for form.reset and invoiceNumber generation
+  }, [userPrefs, initialData, form, user?.uid]); 
 
-  // If initialData is provided (editing), reset the form with its values.
-  // This should run after userPrefs are loaded to ensure correct precedence.
   useEffect(() => {
-    if (initialData && !isPrefsLoading) { // Ensure prefs are loaded before potentially overriding notes
+    if (initialData && !isPrefsLoading) { 
       form.reset({
         clientId: initialData.clientId || "",
         clientName: initialData.clientName,
@@ -152,7 +149,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
           quantity: item.quantity,
           unitPrice: item.unitPrice,
         })),
-        notes: initialData.notes || "", // If initialData.notes is empty, use empty string, not userPrefs.
+        notes: initialData.notes || "", 
         taxRate: initialData.taxRate || 0,
       });
     }
@@ -165,7 +162,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
   const watchClientId = form.watch("clientId");
 
   useEffect(() => {
-    if (watchClientId) {
+    if (watchClientId && watchClientId !== MANUAL_ENTRY_CLIENT_ID) {
       const selectedClient = clients.find(c => c.id === watchClientId);
       if (selectedClient) {
         form.setValue("clientName", selectedClient.name);
@@ -174,6 +171,11 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
         form.setValue("clientCompany", selectedClient.clientCompany || "");
         form.setValue("clientICE", selectedClient.ice || "");
       }
+    } else if (watchClientId === MANUAL_ENTRY_CLIENT_ID) {
+      // Optionally clear fields or allow user to fill them.
+      // For now, if user explicitly selected manual, don't auto-clear fields they might have started typing.
+      // If they switch from a real client, the fields will retain the old client's data until manually changed.
+      // This can be adjusted if clearing is preferred.
     }
   }, [watchClientId, clients, form]);
 
@@ -201,11 +203,12 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
       unitPrice: item.unitPrice,
       total: item.quantity * item.unitPrice,
     }));
+    
+    const finalClientId = values.clientId === MANUAL_ENTRY_CLIENT_ID ? null : (values.clientId || null);
 
-    // Common data for both create and update
     const commonInvoiceData = {
       invoiceNumber: values.invoiceNumber,
-      clientId: values.clientId || null, // Ensure it's null if empty, not undefined
+      clientId: finalClientId, 
       clientName: values.clientName,
       clientEmail: values.clientEmail || "",
       clientAddress: values.clientAddress || "",
@@ -223,27 +226,14 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
 
     try {
       if (initialData?.id) {
-        // Update existing invoice
         const invoiceRef = doc(db, "invoices", initialData.id);
         await updateDoc(invoiceRef, {
           ...commonInvoiceData,
-          // Fields from initialData that don't change on simple edit:
-          // userId: initialData.userId, (already in document)
-          // status: initialData.status, (status changes handled separately)
-          // currency: initialData.currency,
-          // language: initialData.language,
-          // logoDataUrl: initialData.logoDataUrl,
-          // companyInvoiceHeader: initialData.companyInvoiceHeader,
-          // companyInvoiceFooter: initialData.companyInvoiceFooter,
-          // appliedDefaultNotes: initialData.appliedDefaultNotes,
-          // appliedDefaultPaymentTerms: initialData.appliedDefaultPaymentTerms,
-          // createdAt: initialData.createdAt (already in document)
           updatedAt: serverTimestamp(),
         });
         toast({ title: "Invoice Updated", description: `Invoice ${values.invoiceNumber} has been updated.` });
         router.push(`/invoices/${initialData.id}`);
       } else {
-        // Add new invoice
         const invoiceDataToCreate: Omit<Invoice, 'id' | 'createdAt' | 'updatedAt'> = {
           userId: user.uid,
           ...commonInvoiceData,
@@ -272,6 +262,8 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     }
   }
 
+  const isClientSelectedReadOnly = !!(watchClientId && watchClientId !== MANUAL_ENTRY_CLIENT_ID);
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -283,7 +275,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
                 <CardDescription>Select an existing client or fill in the details manually.</CardDescription>
               </div>
               <Button type="button" variant="outline" size="sm" asChild>
-                <Link href="/clients/new?redirect=/invoices/new"> {/* TODO: Better redirect handling */}
+                <Link href="/clients/new?redirect=/invoices/new"> 
                   <UserPlus className="mr-2 h-4 w-4" /> Add New Client
                 </Link>
               </Button>
@@ -303,7 +295,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">-- No client selected / Manual Entry --</SelectItem>
+                      <SelectItem value={MANUAL_ENTRY_CLIENT_ID}>-- No client selected / Manual Entry --</SelectItem>
                       {clients.map(client => (
                         <SelectItem key={client.id} value={client.id!}>
                           {client.name} ({client.clientCompany || client.ice || client.email})
@@ -318,35 +310,35 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
             <FormField control={form.control} name="clientName" render={({ field }) => (
               <FormItem>
                 <FormLabel>Client Name</FormLabel>
-                <FormControl><Input placeholder="Client's full name or company" {...field} readOnly={!!watchClientId} /></FormControl>
+                <FormControl><Input placeholder="Client's full name or company" {...field} readOnly={isClientSelectedReadOnly} /></FormControl>
                 <FormMessage />
               </FormItem>
             )} />
              <FormField control={form.control} name="clientCompany" render={({ field }) => (
               <FormItem>
                 <FormLabel>Client Company Name (Optional)</FormLabel>
-                <FormControl><Input placeholder="Client's legal company name" {...field} readOnly={!!watchClientId} /></FormControl>
+                <FormControl><Input placeholder="Client's legal company name" {...field} readOnly={isClientSelectedReadOnly} /></FormControl>
                 <FormMessage />
               </FormItem>
             )} />
             <FormField control={form.control} name="clientEmail" render={({ field }) => (
               <FormItem>
                 <FormLabel>Client Email (Optional)</FormLabel>
-                <FormControl><Input type="email" placeholder="client@example.com" {...field} readOnly={!!watchClientId} /></FormControl>
+                <FormControl><Input type="email" placeholder="client@example.com" {...field} readOnly={isClientSelectedReadOnly} /></FormControl>
                 <FormMessage />
               </FormItem>
             )} />
             <FormField control={form.control} name="clientICE" render={({ field }) => (
               <FormItem>
                 <FormLabel>Client ICE (Optional)</FormLabel>
-                <FormControl><Input placeholder="Client's ICE (15 digits)" {...field} readOnly={!!watchClientId} /></FormControl>
+                <FormControl><Input placeholder="Client's ICE (15 digits)" {...field} readOnly={isClientSelectedReadOnly} /></FormControl>
                 <FormMessage />
               </FormItem>
             )} />
             <FormField control={form.control} name="clientAddress" render={({ field }) => (
               <FormItem className="md:col-span-2">
                 <FormLabel>Client Address (Optional)</FormLabel>
-                <FormControl><Textarea placeholder="Client's billing address" {...field} readOnly={!!watchClientId} /></FormControl>
+                <FormControl><Textarea placeholder="Client's billing address" {...field} readOnly={isClientSelectedReadOnly} /></FormControl>
                 <FormMessage />
               </FormItem>
             )} />
@@ -500,3 +492,6 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     </Form>
   );
 }
+
+
+    
