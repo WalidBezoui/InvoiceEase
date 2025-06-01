@@ -131,10 +131,15 @@ export default function InvoiceDetailPage() {
           <Button variant="outline" disabled>
             <Download className="mr-2 h-4 w-4" /> Download PDF (Soon)
           </Button>
-          <Button asChild disabled> {/* TODO: Enable and link to edit page */}
-            <Link href={`/invoices/${invoice.id}/edit`}>
-              <Edit className="mr-2 h-4 w-4" /> Edit
-            </Link>
+          {/* When this button is enabled, if it should be a Link, use asChild:
+              <Button asChild>
+                <Link href={`/invoices/${invoice.id}/edit`}>
+                  <Edit className="mr-2 h-4 w-4" /> Edit
+                </Link>
+              </Button>
+          */}
+          <Button disabled> {/* TODO: Enable and link to edit page. When enabled, use asChild with Link. */}
+            <Edit className="mr-2 h-4 w-4" /> Edit
           </Button>
         </div>
       </div>
