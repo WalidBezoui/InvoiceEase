@@ -138,7 +138,7 @@ const getInvoiceStrings = (languageCode?: string) => {
       itemQuantity: "Quantité",
       itemUnitPrice: "Prix Unitaire",
       itemTotal: "Total",
-      notes: "Notes :",
+      notes : "Notes :",
       paymentTerms: "Conditions de paiement :",
       subtotal: "Sous-total :",
       tax: "Taxe",
@@ -300,109 +300,109 @@ export default function InvoiceDetailPage() {
       </div>
 
       <Card className="invoice-card-for-print shadow-lg print:shadow-none print:border-none">
-        <CardHeader className="border-b print:border-b-0 print:pb-2 print:pt-0">
-          <div className="flex flex-col md:flex-row justify-between items-start gap-4">
-            <div>
+        <CardHeader className="border-b print:border-b-slate-200 print:pb-4 print:pt-0">
+          <div className="flex flex-col md:flex-row justify-between items-start gap-6">
+            <div className="flex-shrink-0">
               {invoice.logoDataUrl && (
-                <img src={invoice.logoDataUrl} alt="Company Logo" className="h-16 object-contain mb-4" data-ai-hint="company logo"/>
+                <img src={invoice.logoDataUrl} alt="Company Logo" className="h-16 max-w-[200px] object-contain mb-2 print:h-12" data-ai-hint="company logo"/>
               )}
-              <h2 className="text-xl font-semibold text-primary">{invoice.companyInvoiceHeader || "Your Company Name"}</h2>
+              <h2 className="text-lg font-semibold text-primary print:text-base">{invoice.companyInvoiceHeader || "Your Company Name"}</h2>
+              {/* Optional: Add company address/contact here if needed in header */}
             </div>
-            <div className="text-left md:text-right">
-              <h3 className="text-3xl font-bold text-primary uppercase">{s.invoiceTitle}</h3>
-              <p className="text-muted-foreground"># {invoice.invoiceNumber}</p>
-              <p className="text-sm text-muted-foreground mt-1">{s.currency} {invoice.currency}</p>
+            <div className="text-left md:text-right flex-grow">
+              <h3 className="text-3xl font-bold text-primary uppercase tracking-tight print:text-2xl">{s.invoiceTitle}</h3>
+              <p className="text-muted-foreground text-sm print:text-xs"># {invoice.invoiceNumber}</p>
+              {invoice.currency && <p className="text-sm text-muted-foreground mt-1 print:text-xs">{s.currency} {invoice.currency}</p>}
             </div>
           </div>
         </CardHeader>
         
-        <CardContent className="pt-6 space-y-6 print:pt-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+        <CardContent className="pt-6 space-y-6 print:pt-4 print:space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
             <div>
-              <h4 className="font-semibold text-primary mb-1.5">{s.billTo}</h4>
-              <div className="space-y-0.5">
-                <p className="font-medium">{invoice.clientName}</p>
-                {invoice.clientCompany && <p className="text-sm text-muted-foreground">{invoice.clientCompany}</p>}
-                {invoice.clientAddress && <p className="text-sm text-muted-foreground">{invoice.clientAddress.split('\\n').map((line, i) => (<span key={i}>{line}<br/></span>))}</p>}
-                {invoice.clientEmail && <p className="text-sm text-muted-foreground">{invoice.clientEmail}</p>}
-                {invoice.clientICE && <p className="text-sm text-muted-foreground">ICE: {invoice.clientICE}</p>}
+              <h4 className="font-semibold text-primary mb-2 print:text-sm">{s.billTo}</h4>
+              <div className="space-y-0.5 text-sm text-muted-foreground print:text-xs">
+                <p className="font-medium text-foreground">{invoice.clientName}</p>
+                {invoice.clientCompany && <p>{invoice.clientCompany}</p>}
+                {invoice.clientAddress && <p>{invoice.clientAddress.split('\\n').map((line, i) => (<span key={i}>{line}<br/></span>))}</p>}
+                {invoice.clientEmail && <p>{invoice.clientEmail}</p>}
+                {invoice.clientICE && <p>ICE: {invoice.clientICE}</p>}
               </div>
             </div>
-            <div className="text-left md:text-right space-y-1">
-              <div className="mb-1.5">
-                <h4 className="font-semibold text-primary mb-1">{s.issueDate}</h4>
-                <span>{format(new Date(invoice.issueDate), "PPP", { locale: getDateLocale(invoice.language) })}</span>
+            <div className="text-left md:text-right space-y-2 print:text-xs">
+              <div>
+                <h4 className="font-semibold text-primary mb-0.5 print:text-sm">{s.issueDate}</h4>
+                <span className="text-muted-foreground">{format(new Date(invoice.issueDate), "PPP", { locale: getDateLocale(invoice.language) })}</span>
               </div>
               <div>
-                <h4 className="font-semibold text-primary mb-1">{s.dueDate}</h4>
-                <span>{format(new Date(invoice.dueDate), "PPP", { locale: getDateLocale(invoice.language) })}</span>
+                <h4 className="font-semibold text-primary mb-0.5 print:text-sm">{s.dueDate}</h4>
+                <span className="text-muted-foreground">{format(new Date(invoice.dueDate), "PPP", { locale: getDateLocale(invoice.language) })}</span>
               </div>
             </div>
           </div>
 
           <div className="overflow-x-auto">
-            <Table>
+            <Table className="print:text-xs">
               <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[50%]">{s.itemDescription}</TableHead>
-                  <TableHead className="text-center">{s.itemQuantity}</TableHead>
-                  <TableHead className="text-right">{s.itemUnitPrice}</TableHead>
-                  <TableHead className="text-right">{s.itemTotal}</TableHead>
+                <TableRow className="bg-muted/30 print:bg-slate-100">
+                  <TableHead className="w-[50%] print:py-2">{s.itemDescription}</TableHead>
+                  <TableHead className="text-center print:py-2">{s.itemQuantity}</TableHead>
+                  <TableHead className="text-right print:py-2">{s.itemUnitPrice}</TableHead>
+                  <TableHead className="text-right print:py-2">{s.itemTotal}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {invoice.items.map((item, index) => (
-                  <TableRow key={index}>
-                    <TableCell className="font-medium">{item.description}</TableCell>
-                    <TableCell className="text-center">{item.quantity}</TableCell>
-                    <TableCell className="text-right">{item.unitPrice.toFixed(2)}</TableCell>
-                    <TableCell className="text-right">{item.total.toFixed(2)}</TableCell>
+                  <TableRow key={index} className="print:border-b-slate-200">
+                    <TableCell className="font-medium print:py-1.5">{item.description}</TableCell>
+                    <TableCell className="text-center print:py-1.5">{item.quantity}</TableCell>
+                    <TableCell className="text-right print:py-1.5">{item.unitPrice.toFixed(2)}</TableCell>
+                    <TableCell className="text-right print:py-1.5">{item.total.toFixed(2)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           </div>
           
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
-            <div className="md:col-span-2 space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 print:pt-2">
+            <div className="md:col-span-2 space-y-3 print:space-y-2">
               {invoice.notes && (
                 <div>
-                  <h4 className="font-semibold text-primary mb-1.5">{s.notes}</h4>
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{invoice.notes}</p>
+                  <h4 className="font-semibold text-primary mb-1 print:text-sm">{s.notes}</h4>
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap print:text-xs">{invoice.notes}</p>
                 </div>
               )}
               {invoice.appliedDefaultPaymentTerms && (
                  <div>
-                    <h4 className="font-semibold text-primary mb-1.5">{s.paymentTerms}</h4>
-                    <p className="text-sm text-muted-foreground">{invoice.appliedDefaultPaymentTerms}</p>
+                    <h4 className="font-semibold text-primary mb-1 print:text-sm">{s.paymentTerms}</h4>
+                    <p className="text-sm text-muted-foreground print:text-xs">{invoice.appliedDefaultPaymentTerms}</p>
                  </div>
               )}
             </div>
-            <div className="space-y-3 p-4 bg-secondary/20 rounded-lg shadow-sm print:bg-transparent print:shadow-none print:p-0 print:border print:border-border print:rounded-md">
-              <div className="flex justify-between">
+            <div className="space-y-2 p-4 bg-secondary/30 rounded-lg shadow-sm print:bg-slate-50 print:shadow-none print:p-3 print:border print:border-slate-200 print:rounded-md">
+              <div className="flex justify-between text-sm print:text-xs">
                 <span className="text-muted-foreground">{s.subtotal}</span>
-                <span className="font-medium">{invoice.subtotal.toFixed(2)} {invoice.currency}</span>
+                <span className="font-medium">{invoice.currency} {invoice.subtotal.toFixed(2)}</span>
               </div>
               {invoice.taxAmount !== undefined && invoice.taxAmount !== 0 && (
-                <div className="flex justify-between">
+                <div className="flex justify-between text-sm print:text-xs">
                   <span className="text-muted-foreground">{s.tax} ({invoice.taxRate || 0}%):</span>
-                  <span className="font-medium">{invoice.taxAmount.toFixed(2)} {invoice.currency}</span>
+                  <span className="font-medium">{invoice.currency} {invoice.taxAmount.toFixed(2)}</span>
                 </div>
               )}
-              <div className="flex justify-between text-xl font-bold text-primary border-t border-border pt-2 mt-2">
+              <div className="flex justify-between text-xl font-bold text-primary border-t border-border pt-2 mt-2 print:text-lg print:pt-1 print:mt-1 print:border-slate-300">
                 <span>{s.total}</span>
-                <span>{invoice.totalAmount.toFixed(2)} {invoice.currency}</span>
+                <span>{invoice.currency} {invoice.totalAmount.toFixed(2)}</span>
               </div>
             </div>
           </div>
           
           {invoice.language?.toLowerCase().startsWith("fr") && (
-            <div className="pt-4 mt-4 border-t">
-              <p className="text-sm text-muted-foreground">
+            <div className="pt-4 mt-4 border-t print:pt-2 print:mt-2 print:border-slate-200">
+              <p className="text-sm text-muted-foreground print:text-xs">
                 {s.stoppedAtTheSumOf} <strong className="text-foreground">{numberToFrenchWords(invoice.totalAmount, invoice.currency)}</strong>.
               </p>
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="text-sm text-muted-foreground mt-1 print:text-xs">
                 ({s.thatIs} {invoice.currency} {invoice.totalAmount.toFixed(2)})
               </p>
             </div>
@@ -411,15 +411,15 @@ export default function InvoiceDetailPage() {
         </CardContent>
 
         {invoice.companyInvoiceFooter && (
-          <CardFooter className="border-t mt-6 pt-4 print:border-t-0 print:mt-2 print:pt-2 print:pb-2">
-            <p className="text-xs text-muted-foreground text-center w-full">{invoice.companyInvoiceFooter}</p>
+          <CardFooter className="border-t mt-6 pt-4 print:border-t-slate-200 print:mt-2 print:pt-2 print:pb-2">
+            <p className="text-xs text-muted-foreground text-center w-full print:text-[0.65rem]">{invoice.companyInvoiceFooter}</p>
           </CardFooter>
         )}
       </Card>
 
       <div className="flex justify-end gap-2 mt-8 print:hidden">
-        {invoice.status === 'draft' && <Button variant="outline">{s.markAsSentSoon}</Button>}
-        {(invoice.status === 'sent' || invoice.status === 'overdue') && <Button>{s.markAsPaidSoon}</Button>}
+        {invoice.status === 'draft' && <Button variant="outline" disabled>{s.markAsSentSoon}</Button>}
+        {(invoice.status === 'sent' || invoice.status === 'overdue') && <Button disabled>{s.markAsPaidSoon}</Button>}
       </div>
 
        <style jsx global>{`
@@ -433,7 +433,7 @@ export default function InvoiceDetailPage() {
             width: 100% !important;
             height: auto !important;
             overflow: visible !important;
-            font-size: 10pt !important; /* Slightly smaller base font for print */
+            font-size: 9pt !important; /* Overall smaller base font for print */
           }
           html {
             background-color: #fff !important;
@@ -469,7 +469,7 @@ export default function InvoiceDetailPage() {
           /* The Card component holding the invoice content */
           .invoice-card-for-print {
             margin: 0 !important; 
-            padding: 0.75cm !important; /* Adjust effective page margin for content */
+            padding: 0.75cm !important; /* Effective page margin for content */
             box-shadow: none !important; 
             border: none !important; 
             width: 100% !important; 
@@ -479,31 +479,53 @@ export default function InvoiceDetailPage() {
             background-color: #fff !important; /* Ensure white background for print */
           }
           
-          .invoice-card-for-print .text-3xl { /* Invoice title */
-            font-size: 1.5rem !important; /* Slightly smaller main title */
+          .invoice-card-for-print .text-3xl { /* Invoice title (screen) */
+            font-size: 1.75rem !important; /* Reduce main title size on screen */
           }
-          .invoice-card-for-print .text-xl { /* Section titles like "Bill To" */
-            font-size: 1.125rem !important;
+          .invoice-card-for-print .print\\:text-2xl { /* Invoice title (print) */
+            font-size: 1.5rem !important;
           }
-          .invoice-card-for-print .text-sm {
-             font-size: 0.875rem !important;
-          }
-           .invoice-card-for-print .text-xs {
-             font-size: 0.75rem !important;
-          }
+           .invoice-card-for-print .text-lg { /* Company Header Name (screen) */
+             font-size: 1.125rem !important;
+           }
+           .invoice-card-for-print .print\\:text-base { /* Company Header Name (print) */
+             font-size: 1rem !important;
+           }
 
-          .invoice-card-for-print .bg-secondary\\/20 { /* Target specific background for totals */
-             background-color: transparent !important; /* Make totals background transparent for print */
-             padding: 0 !important;
-             border: 1px solid hsl(var(--border)) !important; /* Add a light border for print */
-             border-radius: 0.25rem !important;
-             padding: 0.5rem !important; /* Add some internal padding for the bordered box */
+          .invoice-card-for-print .print\\:text-sm {
+             font-size: 0.8rem !important; /* Smaller than screen 'sm' */
+          }
+           .invoice-card-for-print .print\\:text-xs {
+             font-size: 0.7rem !important; /* Smaller than screen 'xs' */
+          }
+           .invoice-card-for-print .print\\:text-\\[0\\.65rem\\] { /* Footer text */
+             font-size: 0.65rem !important;
+           }
+
+          .invoice-card-for-print .bg-secondary\\/30 { /* Target specific background for totals on screen */
+             background-color: hsl(var(--secondary) / 0.3) !important; 
+          }
+          .invoice-card-for-print .print\\:bg-slate-50 { /* Target specific background for totals for print */
+             background-color: #f8fafc !important; /* Light slate for print totals box */
           }
           
           .invoice-card-for-print table th, .invoice-card-for-print table td {
-            padding: 0.5rem 0.5rem !important; /* Reduce table cell padding for print */
+            padding: 0.35rem 0.5rem !important; /* Reduced table cell padding for print */
           }
-          
+           .invoice-card-for-print .print\\:py-2 {
+             padding-top: 0.35rem !important;
+             padding-bottom: 0.35rem !important;
+           }
+           .invoice-card-for-print .print\\:py-1\\.5 {
+             padding-top: 0.25rem !important;
+             padding-bottom: 0.25rem !important;
+           }
+
+          .invoice-card-for-print .print\\:border-slate-200 { border-color: #e2e8f0 !important; }
+          .invoice-card-for-print .print\\:border-slate-300 { border-color: #cbd5e1 !important; }
+          .invoice-card-for-print .print\\:bg-slate-100 { background-color: #f1f5f9 !important; }
+
+
           /* General page setup for printing */
           @page {
             size: A4 portrait; 
@@ -519,12 +541,23 @@ export default function InvoiceDetailPage() {
           .print\\:pb-2 { padding-bottom: 0.5rem !important; }
           .print\\:pt-4 { padding-top: 1rem !important; }
           .print\\:p-0 { padding: 0 !important; }
+          .print\\:p-3 { padding: 0.75rem !important; }
           .print\\:border { border-width: 1px !important; }
           .print\\:rounded-md { border-radius: 0.375rem !important; }
           .print\\:bg-transparent { background-color: transparent !important; }
+          .print\\:space-y-4 > :not([hidden]) ~ :not([hidden]) { margin-top: 1rem !important; margin-bottom: 1rem !important; }
+          .print\\:space-y-2 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.5rem !important; margin-bottom: 0.5rem !important; }
+          .print\\:pt-1 {padding-top: 0.25rem !important;}
+          .print\\:mt-1 {margin-top: 0.25rem !important;}
+          .print\\:pt-2 {padding-top: 0.5rem !important;}
+          .print\\:mt-2 {margin-top: 0.5rem !important;}
+          .print\\:mb-1 {margin-bottom: 0.25rem !important;}
+          .print\\:mb-2 {margin-bottom: 0.5rem !important;}
+          .print\\:h-12 {height: 3rem !important;}
         }
       `}</style>
     </div>
   );
 }
 
+    
