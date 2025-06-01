@@ -13,7 +13,70 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ArrowLeft, Download, Edit, Loader2, AlertTriangle, Printer } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
+import { fr } from "date-fns/locale"; // Import French locale
 import { Badge } from "@/components/ui/badge";
+
+// Helper for translations
+const getInvoiceStrings = (languageCode?: string) => {
+  const lang = languageCode?.toLowerCase().startsWith("fr") ? "fr" : "en"; // Default to English
+
+  const strings = {
+    en: {
+      invoiceTitle: "Invoice",
+      billTo: "Bill To:",
+      issueDate: "Issue Date:",
+      dueDate: "Due Date:",
+      itemDescription: "Description",
+      itemQuantity: "Quantity",
+      itemUnitPrice: "Unit Price",
+      itemTotal: "Total",
+      notes: "Notes:",
+      paymentTerms: "Payment Terms:",
+      subtotal: "Subtotal:",
+      tax: "Tax",
+      total: "Total:",
+      currency: "Currency:",
+      invoiceStatus: "Invoice Status",
+      backToInvoices: "Back to Invoices",
+      printPdf: "Print / PDF",
+      downloadPdfSoon: "Download PDF (Soon)",
+      edit: "Edit",
+      errorLoadingInvoice: "Error Loading Invoice",
+      invoiceNotFound: "Invoice Not Found",
+      invoiceNotFoundMessage: "The invoice you are looking for does not exist or could not be loaded.",
+      markAsSentSoon: "Mark as Sent (Soon)",
+      markAsPaidSoon: "Mark as Paid (Soon)",
+    },
+    fr: {
+      invoiceTitle: "Facture",
+      billTo: "Facturé à :",
+      issueDate: "Date d'émission :",
+      dueDate: "Date d'échéance :",
+      itemDescription: "Description",
+      itemQuantity: "Quantité",
+      itemUnitPrice: "Prix Unitaire",
+      itemTotal: "Total",
+      notes: "Notes :",
+      paymentTerms: "Conditions de paiement :",
+      subtotal: "Sous-total :",
+      tax: "Taxe",
+      total: "Total :",
+      currency: "Devise :",
+      invoiceStatus: "Statut de la facture",
+      backToInvoices: "Retour aux factures",
+      printPdf: "Imprimer / PDF",
+      downloadPdfSoon: "Télécharger PDF (Bientôt)",
+      edit: "Modifier",
+      errorLoadingInvoice: "Erreur de chargement de la facture",
+      invoiceNotFound: "Facture non trouvée",
+      invoiceNotFoundMessage: "La facture que vous recherchez n'existe pas ou n'a pas pu être chargée.",
+      markAsSentSoon: "Marquer comme envoyée (Bientôt)",
+      markAsPaidSoon: "Marquer comme payée (Bientôt)",
+    },
+  };
+  return strings[lang];
+};
+
 
 export default function InvoiceDetailPage() {
   const { user } = useAuth();
@@ -24,6 +87,8 @@ export default function InvoiceDetailPage() {
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  const [s, setS] = useState(getInvoiceStrings("en")); // Default to English strings initially
 
   useEffect(() => {
     async function fetchInvoice() {
@@ -41,6 +106,7 @@ export default function InvoiceDetailPage() {
           const fetchedInvoice = { id: docSnap.id, ...docSnap.data() } as Invoice;
           if (fetchedInvoice.userId === user.uid) {
             setInvoice(fetchedInvoice);
+            setS(getInvoiceStrings(fetchedInvoice.language)); // Set strings based on invoice language
           } else {
             setError("You do not have permission to view this invoice.");
           }
@@ -56,6 +122,10 @@ export default function InvoiceDetailPage() {
     }
     fetchInvoice();
   }, [user, invoiceId]);
+  
+  const getDateLocale = (languageCode?: string) => {
+    return languageCode?.toLowerCase().startsWith("fr") ? fr : undefined;
+  };
 
   const getStatusBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
     switch (status) {
@@ -80,10 +150,10 @@ export default function InvoiceDetailPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
         <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
-        <h2 className="text-xl font-semibold text-destructive mb-2">Error Loading Invoice</h2>
+        <h2 className="text-xl font-semibold text-destructive mb-2">{s.errorLoadingInvoice}</h2>
         <p className="text-muted-foreground mb-6">{error}</p>
         <Button onClick={() => router.push("/invoices")}>
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Invoices
+          <ArrowLeft className="mr-2 h-4 w-4" /> {s.backToInvoices}
         </Button>
       </div>
     );
@@ -93,10 +163,10 @@ export default function InvoiceDetailPage() {
     return (
        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
         <AlertTriangle className="h-12 w-12 text-muted-foreground mb-4" />
-        <h2 className="text-xl font-semibold text-primary mb-2">Invoice Not Found</h2>
-        <p className="text-muted-foreground mb-6">The invoice you are looking for does not exist or could not be loaded.</p>
+        <h2 className="text-xl font-semibold text-primary mb-2">{s.invoiceNotFound}</h2>
+        <p className="text-muted-foreground mb-6">{s.invoiceNotFoundMessage}</p>
         <Button onClick={() => router.push("/invoices")}>
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Invoices
+          <ArrowLeft className="mr-2 h-4 w-4" /> {s.backToInvoices}
         </Button>
       </div>
     );
@@ -112,39 +182,31 @@ export default function InvoiceDetailPage() {
             <Button variant="outline" size="icon" asChild>
             <Link href="/invoices">
                 <ArrowLeft className="h-4 w-4" />
-                <span className="sr-only">Back to Invoices</span>
+                <span className="sr-only">{s.backToInvoices}</span>
             </Link>
             </Button>
             <div>
             <h1 className="font-headline text-3xl md:text-4xl font-bold text-primary">
-                Invoice {invoice.invoiceNumber}
+                {s.invoiceTitle} {invoice.invoiceNumber}
             </h1>
             <p className="text-muted-foreground mt-1">
-                Details for invoice <Badge variant={getStatusBadgeVariant(invoice.status)} className="capitalize ml-1">{invoice.status}</Badge>
+                {s.invoiceStatus} <Badge variant={getStatusBadgeVariant(invoice.status)} className="capitalize ml-1">{invoice.status}</Badge>
             </p>
             </div>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={printInvoice}>
-            <Printer className="mr-2 h-4 w-4" /> Print / PDF
+            <Printer className="mr-2 h-4 w-4" /> {s.printPdf}
           </Button>
           <Button variant="outline" disabled>
-            <Download className="mr-2 h-4 w-4" /> Download PDF (Soon)
+            <Download className="mr-2 h-4 w-4" /> {s.downloadPdfSoon}
           </Button>
-          {/* When this button is enabled, if it should be a Link, use asChild:
-              <Button asChild>
-                <Link href={`/invoices/${invoice.id}/edit`}>
-                  <Edit className="mr-2 h-4 w-4" /> Edit
-                </Link>
-              </Button>
-          */}
-          <Button disabled> {/* TODO: Enable and link to edit page. When enabled, use asChild with Link. */}
-            <Edit className="mr-2 h-4 w-4" /> Edit
+          <Button disabled>
+            <Edit className="mr-2 h-4 w-4" /> {s.edit}
           </Button>
         </div>
       </div>
 
-      {/* Printable Invoice Section */}
       <Card className="shadow-lg print:shadow-none print:border-none">
         <CardHeader className="border-b print:border-b-0">
           <div className="flex flex-col md:flex-row justify-between items-start gap-4">
@@ -153,12 +215,11 @@ export default function InvoiceDetailPage() {
                 <img src={invoice.logoDataUrl} alt="Company Logo" className="h-16 object-contain mb-4" data-ai-hint="company logo"/>
               )}
               <h2 className="text-2xl font-bold text-primary">{invoice.companyInvoiceHeader || "Your Company Name"}</h2>
-              {/* Add more company details if available from preferences */}
             </div>
             <div className="text-left md:text-right">
-              <h3 className="text-3xl font-bold text-primary uppercase">Invoice</h3>
+              <h3 className="text-3xl font-bold text-primary uppercase">{s.invoiceTitle}</h3>
               <p className="text-muted-foreground"># {invoice.invoiceNumber}</p>
-              <p className="text-sm text-muted-foreground mt-1">Currency: {invoice.currency}</p>
+              <p className="text-sm text-muted-foreground mt-1">{s.currency} {invoice.currency}</p>
             </div>
           </div>
         </CardHeader>
@@ -166,7 +227,7 @@ export default function InvoiceDetailPage() {
         <CardContent className="pt-6 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <h4 className="font-semibold text-primary mb-1">Bill To:</h4>
+              <h4 className="font-semibold text-primary mb-1">{s.billTo}</h4>
               <p className="font-medium">{invoice.clientName}</p>
               {invoice.clientCompany && <p className="text-sm text-muted-foreground">{invoice.clientCompany}</p>}
               {invoice.clientAddress && <p className="text-sm text-muted-foreground">{invoice.clientAddress.split('\n').map((line, i) => (<span key={i}>{line}<br/></span>))}</p>}
@@ -175,12 +236,12 @@ export default function InvoiceDetailPage() {
             </div>
             <div className="text-left md:text-right">
               <div className="mb-2">
-                <span className="font-semibold text-primary">Issue Date: </span>
-                <span>{format(new Date(invoice.issueDate), "MMMM dd, yyyy")}</span>
+                <span className="font-semibold text-primary">{s.issueDate} </span>
+                <span>{format(new Date(invoice.issueDate), "PPP", { locale: getDateLocale(invoice.language) })}</span>
               </div>
               <div>
-                <span className="font-semibold text-primary">Due Date: </span>
-                <span>{format(new Date(invoice.dueDate), "MMMM dd, yyyy")}</span>
+                <span className="font-semibold text-primary">{s.dueDate} </span>
+                <span>{format(new Date(invoice.dueDate), "PPP", { locale: getDateLocale(invoice.language) })}</span>
               </div>
             </div>
           </div>
@@ -188,10 +249,10 @@ export default function InvoiceDetailPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[50%]">Description</TableHead>
-                <TableHead className="text-center">Quantity</TableHead>
-                <TableHead className="text-right">Unit Price</TableHead>
-                <TableHead className="text-right">Total</TableHead>
+                <TableHead className="w-[50%]">{s.itemDescription}</TableHead>
+                <TableHead className="text-center">{s.itemQuantity}</TableHead>
+                <TableHead className="text-right">{s.itemUnitPrice}</TableHead>
+                <TableHead className="text-right">{s.itemTotal}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -210,30 +271,30 @@ export default function InvoiceDetailPage() {
             <div className="md:col-span-2">
               {invoice.notes && (
                 <>
-                  <h4 className="font-semibold text-primary mb-1">Notes:</h4>
+                  <h4 className="font-semibold text-primary mb-1">{s.notes}</h4>
                   <p className="text-sm text-muted-foreground whitespace-pre-wrap">{invoice.notes}</p>
                 </>
               )}
               {invoice.appliedDefaultPaymentTerms && (
                  <div className="mt-4">
-                    <h4 className="font-semibold text-primary mb-1">Payment Terms:</h4>
+                    <h4 className="font-semibold text-primary mb-1">{s.paymentTerms}</h4>
                     <p className="text-sm text-muted-foreground">{invoice.appliedDefaultPaymentTerms}</p>
                  </div>
               )}
             </div>
             <div className="space-y-2 text-right">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Subtotal:</span>
+                <span className="text-muted-foreground">{s.subtotal}</span>
                 <span className="font-medium">{invoice.subtotal.toFixed(2)} {invoice.currency}</span>
               </div>
               {invoice.taxAmount !== undefined && (
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Tax ({invoice.taxRate || 0}%):</span>
+                  <span className="text-muted-foreground">{s.tax} ({invoice.taxRate || 0}%):</span>
                   <span className="font-medium">{invoice.taxAmount.toFixed(2)} {invoice.currency}</span>
                 </div>
               )}
               <div className="flex justify-between text-xl font-bold text-primary border-t pt-2 mt-2">
-                <span>Total:</span>
+                <span>{s.total}</span>
                 <span>{invoice.totalAmount.toFixed(2)} {invoice.currency}</span>
               </div>
             </div>
@@ -247,10 +308,9 @@ export default function InvoiceDetailPage() {
         )}
       </Card>
 
-      {/* Actions for different statuses can be added here, e.g., Mark as Paid, Send Invoice */}
       <div className="flex justify-end gap-2 print:hidden">
-        {invoice.status === 'draft' && <Button variant="outline">Mark as Sent (Soon)</Button>}
-        {(invoice.status === 'sent' || invoice.status === 'overdue') && <Button>Mark as Paid (Soon)</Button>}
+        {invoice.status === 'draft' && <Button variant="outline">{s.markAsSentSoon}</Button>}
+        {(invoice.status === 'sent' || invoice.status === 'overdue') && <Button>{s.markAsPaidSoon}</Button>}
       </div>
 
        <style jsx global>{`
@@ -271,9 +331,9 @@ export default function InvoiceDetailPage() {
            }
            .print\\:text-sm { font-size: 0.875rem; line-height: 1.25rem; }
            .print\\:w-full { width: 100% !important; }
-           /* Add any other print-specific styles here */
         }
       `}</style>
     </div>
   );
 }
+
