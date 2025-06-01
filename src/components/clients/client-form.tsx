@@ -11,11 +11,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { db } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp, doc, setDoc } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, doc, setDoc, updateDoc } from "firebase/firestore";
 import type { Client, ClientFormData } from "@/lib/types";
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, Save } from "lucide-react";
 
 const clientFormSchema = z.object({
@@ -29,13 +29,14 @@ const clientFormSchema = z.object({
 
 interface ClientFormProps {
   initialData?: Client;
-  onSave?: (clientId: string) => void; // Callback after saving
+  onSave?: (clientId: string) => void; 
 }
 
 export default function ClientForm({ initialData, onSave }: ClientFormProps) {
   const { toast } = useToast();
   const { user } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isSaving, setIsSaving] = useState(false);
 
   const form = useForm<ClientFormData>({
@@ -59,25 +60,31 @@ export default function ClientForm({ initialData, onSave }: ClientFormProps) {
 
     const clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt'> = {
       userId: user.uid,
-      ...values,
+      name: values.name,
+      email: values.email || "",
+      address: values.address || "",
+      phone: values.phone || "",
+      clientCompany: values.clientCompany || "",
+      ice: values.ice || "",
     };
 
     try {
       if (initialData?.id) {
-        // Update existing client
         const clientRef = doc(db, "clients", initialData.id);
-        await setDoc(clientRef, { ...clientData, updatedAt: serverTimestamp() }, { merge: true });
+        await updateDoc(clientRef, { ...clientData, updatedAt: serverTimestamp() });
         toast({ title: "Client Updated", description: `${values.name} has been updated.` });
         if (onSave) onSave(initialData.id); else router.push("/clients");
       } else {
-        // Add new client
         const docRef = await addDoc(collection(db, "clients"), {
           ...clientData,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         });
         toast({ title: "Client Added", description: `${values.name} has been added.` });
-        if (onSave) onSave(docRef.id); else router.push("/clients");
+        const redirectUrl = searchParams.get('redirect');
+        if (onSave) onSave(docRef.id);
+        else if (redirectUrl) router.push(redirectUrl);
+        else router.push("/clients");
       }
     } catch (error) {
       console.error("Error saving client:", error);

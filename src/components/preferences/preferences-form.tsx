@@ -5,8 +5,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card";
+import { Form, FormControl, FormDescription as UiFormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { db } from "@/lib/firebase";
-import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore"; // Removed updateDoc as setDoc with merge handles it
 import type { UserPreferences } from "@/lib/types";
 import { Loader2, Save } from "lucide-react";
 
@@ -26,6 +26,7 @@ const preferencesSchema = z.object({
   language: z.string().min(2, "Language code must be 2 letters").optional().default("fr"),
   defaultNotes: z.string().optional(),
   defaultPaymentTerms: z.string().optional(),
+  defaultTaxRate: z.coerce.number().min(0).max(100).optional().default(0),
 });
 
 type PreferencesFormValues = z.infer<typeof preferencesSchema>;
@@ -61,9 +62,10 @@ export default function PreferencesForm() {
       invoiceFooter: "",
       invoiceWatermark: "",
       currency: "MAD",
-      language: "fr", // Set default language to French
+      language: "fr",
       defaultNotes: "",
       defaultPaymentTerms: "",
+      defaultTaxRate: 0,
     },
   });
 
@@ -80,13 +82,13 @@ export default function PreferencesForm() {
             invoiceFooter: data.invoiceFooter || "",
             invoiceWatermark: data.invoiceWatermark || "",
             currency: data.currency || "MAD",
-            language: data.language || "fr", // Default to French if not set
-            defaultNotes: (data as any).defaultNotes || "", 
-            defaultPaymentTerms: (data as any).defaultPaymentTerms || "",
+            language: data.language || "fr",
+            defaultNotes: data.defaultNotes || "", 
+            defaultPaymentTerms: data.defaultPaymentTerms || "",
+            defaultTaxRate: data.defaultTaxRate || 0,
           });
         } else {
-           // If no preferences doc exists, still set defaults including French
-          form.reset({
+          form.reset({ // Set default values including the new tax rate if no prefs exist
             invoiceHeader: "",
             invoiceFooter: "",
             invoiceWatermark: "",
@@ -94,11 +96,12 @@ export default function PreferencesForm() {
             language: "fr",
             defaultNotes: "",
             defaultPaymentTerms: "",
+            defaultTaxRate: 0,
           });
         }
         setIsFetching(false);
       } else {
-        setIsFetching(false); // Also set fetching to false if no user
+        setIsFetching(false);
       }
     }
     fetchPreferences();
@@ -136,7 +139,7 @@ export default function PreferencesForm() {
             <CardTitle className="font-headline text-xl text-primary">Loading Preferences...</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {[...Array(4)].map((_, i) => ( <div key={i} className="h-10 bg-muted rounded animate-pulse"/> ))}
+            {[...Array(5)].map((_, i) => ( <div key={i} className="h-10 bg-muted rounded animate-pulse"/> ))}
           </CardContent>
         </Card>
      );
@@ -148,14 +151,14 @@ export default function PreferencesForm() {
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <CardHeader>
             <CardTitle className="font-headline text-xl text-primary">Invoice Customization</CardTitle>
-            <FormDescription>Personalize the default text, regional settings, and elements on your invoices.</FormDescription>
+            <UiFormDescription>Personalize the default text, regional settings, and elements on your invoices.</UiFormDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <FormField control={form.control} name="invoiceHeader" render={({ field }) => (
               <FormItem>
                 <FormLabel>Default Invoice Header</FormLabel>
                 <FormControl><Textarea placeholder="e.g., Your Company Name & Address" {...field} /></FormControl>
-                <FormDescription>This will appear at the top of your invoices.</FormDescription>
+                <UiFormDescription>This will appear at the top of your invoices.</UiFormDescription>
                 <FormMessage />
               </FormItem>
             )} />
@@ -163,7 +166,7 @@ export default function PreferencesForm() {
               <FormItem>
                 <FormLabel>Default Invoice Footer</FormLabel>
                 <FormControl><Textarea placeholder="e.g., Thank you for your business! Payment due in 30 days." {...field} /></FormControl>
-                 <FormDescription>This will appear at the bottom of your invoices.</FormDescription>
+                 <UiFormDescription>This will appear at the bottom of your invoices.</UiFormDescription>
                 <FormMessage />
               </FormItem>
             )} />
@@ -171,12 +174,12 @@ export default function PreferencesForm() {
               <FormItem>
                 <FormLabel>Invoice Watermark Text (Optional)</FormLabel>
                 <FormControl><Input placeholder="e.g., DRAFT, PAID" {...field} /></FormControl>
-                <FormDescription>Text to display as a watermark (e.g., for draft or paid invoices).</FormDescription>
+                <UiFormDescription>Text to display as a watermark (e.g., for draft or paid invoices).</UiFormDescription>
                 <FormMessage />
               </FormItem>
             )} />
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t">
               <FormField control={form.control} name="currency" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Default Currency</FormLabel>
@@ -201,13 +204,21 @@ export default function PreferencesForm() {
                   <FormMessage />
                 </FormItem>
               )} />
+               <FormField control={form.control} name="defaultTaxRate" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Default Tax Rate (%)</FormLabel>
+                  <FormControl><Input type="number" placeholder="0" {...field} min="0" max="100" step="0.01" /></FormControl>
+                  <UiFormDescription>Applied to new invoices (0-100).</UiFormDescription>
+                  <FormMessage />
+                </FormItem>
+              )} />
             </div>
 
              <FormField control={form.control} name="defaultNotes" render={({ field }) => (
               <FormItem>
                 <FormLabel>Default Notes for New Invoices</FormLabel>
                 <FormControl><Textarea placeholder="e.g., Standard terms and conditions" {...field} /></FormControl>
-                 <FormDescription>These notes will be pre-filled on new invoices.</FormDescription>
+                 <UiFormDescription>These notes will be pre-filled on new invoices.</UiFormDescription>
                 <FormMessage />
               </FormItem>
             )} />
@@ -215,7 +226,7 @@ export default function PreferencesForm() {
               <FormItem>
                 <FormLabel>Default Payment Terms</FormLabel>
                 <FormControl><Input placeholder="e.g., Net 30 Days" {...field} /></FormControl>
-                <FormDescription>Default payment terms for new invoices.</FormDescription>
+                <UiFormDescription>Default payment terms for new invoices.</UiFormDescription>
                 <FormMessage />
               </FormItem>
             )} />
@@ -232,4 +243,3 @@ export default function PreferencesForm() {
     </Card>
   );
 }
-

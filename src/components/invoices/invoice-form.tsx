@@ -6,7 +6,7 @@ import { useForm, useFieldArray } from "react-hook-form";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormDescription as UiFormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { db } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp, doc, getDoc, query, where, getDocs, orderBy, updateDoc, setDoc } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, doc, getDoc, query, where, getDocs, orderBy, updateDoc } from "firebase/firestore";
 import type { Invoice, InvoiceItem, UserPreferences, Client } from "@/lib/types";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
@@ -25,7 +25,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 const invoiceItemSchema = z.object({
-  id: z.string().optional(), // Keep id for client-side keying, not for Firestore
+  id: z.string().optional(), 
   description: z.string().min(1, "Description is required"),
   quantity: z.coerce.number().min(0.01, "Quantity must be at least 0.01"),
   unitPrice: z.coerce.number().min(0.01, "Unit price must be positive"),
@@ -49,7 +49,7 @@ const formSchema = z.object({
 type InvoiceFormValues = z.infer<typeof formSchema>;
 
 interface InvoiceFormProps {
-  initialData?: Invoice; // Make initialData the full Invoice type
+  initialData?: Invoice; 
 }
 
 const MANUAL_ENTRY_CLIENT_ID = "_manual_entry_";
@@ -75,7 +75,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
           if (prefDocSnap.exists()) {
             setUserPrefs(prefDocSnap.data() as UserPreferences);
           } else {
-            setUserPrefs({ currency: "MAD", language: "fr" });
+            setUserPrefs({ currency: "MAD", language: "fr", defaultTaxRate: 0 });
           }
 
           const clientsQuery = query(collection(db, "clients"), where("userId", "==", user.uid), orderBy("name"));
@@ -87,7 +87,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
         } catch (error) {
           console.error("Error fetching initial data:", error);
           toast({ title: "Error", description: "Could not load user preferences or clients.", variant: "destructive" });
-          setUserPrefs({ currency: "MAD", language: "fr" });
+          setUserPrefs({ currency: "MAD", language: "fr", defaultTaxRate: 0 });
         } finally {
           setIsPrefsLoading(false);
           setIsClientsLoading(false);
@@ -117,22 +117,27 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
         quantity: item.quantity,
         unitPrice: item.unitPrice 
       })) || [{ description: "", quantity: 1, unitPrice: 0 }],
-      notes: initialData?.notes || userPrefs?.defaultNotes || "", // Apply userPrefs default only if no initialData.notes
-      taxRate: initialData?.taxRate || 0,
+      notes: initialData?.notes || userPrefs?.defaultNotes || "",
+      taxRate: initialData?.taxRate ?? userPrefs?.defaultTaxRate ?? 0,
     },
   });
   
   useEffect(() => {
+    // Apply user preferences to new invoices (when initialData is not present)
     if (userPrefs && !initialData) {
         form.reset({
             ...form.getValues(), 
             notes: form.getValues().notes || userPrefs.defaultNotes || "", 
-            invoiceNumber: form.getValues().invoiceNumber.startsWith('INV-') && form.getValues().invoiceNumber.length > 10 ? form.getValues().invoiceNumber : `INV-${Date.now().toString().slice(-4)}-${user?.uid.slice(0,3) || 'XXX'}`,
+            taxRate: form.getValues().taxRate ?? userPrefs.defaultTaxRate ?? 0,
+            invoiceNumber: form.getValues().invoiceNumber.startsWith('INV-') && form.getValues().invoiceNumber.length > 10 
+                           ? form.getValues().invoiceNumber 
+                           : `INV-${Date.now().toString().slice(-4)}-${user?.uid.slice(0,3) || 'XXX'}`,
         });
     }
   }, [userPrefs, initialData, form, user?.uid]); 
 
   useEffect(() => {
+    // Reset form if initialData changes (e.g., when editing an existing invoice)
     if (initialData && !isPrefsLoading) { 
       form.reset({
         clientId: initialData.clientId || "",
@@ -150,10 +155,10 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
           unitPrice: item.unitPrice,
         })),
         notes: initialData.notes || "", 
-        taxRate: initialData.taxRate || 0,
+        taxRate: initialData.taxRate ?? userPrefs?.defaultTaxRate ?? 0, // Apply default tax rate if initialData doesn't have one
       });
     }
-  }, [initialData, form, isPrefsLoading]);
+  }, [initialData, form, isPrefsLoading, userPrefs]);
 
 
   const { fields, append, remove } = useFieldArray({ control: form.control, name: "items" });
@@ -171,11 +176,6 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
         form.setValue("clientCompany", selectedClient.clientCompany || "");
         form.setValue("clientICE", selectedClient.ice || "");
       }
-    } else if (watchClientId === MANUAL_ENTRY_CLIENT_ID) {
-      // Optionally clear fields or allow user to fill them.
-      // For now, if user explicitly selected manual, don't auto-clear fields they might have started typing.
-      // If they switch from a real client, the fields will retain the old client's data until manually changed.
-      // This can be adjusted if clearing is preferred.
     }
   }, [watchClientId, clients, form]);
 
@@ -230,6 +230,17 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
         await updateDoc(invoiceRef, {
           ...commonInvoiceData,
           updatedAt: serverTimestamp(),
+          // Preserve existing creation-time fields unless they are directly editable here
+          currency: initialData.currency,
+          language: initialData.language,
+          logoDataUrl: initialData.logoDataUrl,
+          companyInvoiceHeader: initialData.companyInvoiceHeader,
+          companyInvoiceFooter: initialData.companyInvoiceFooter,
+          appliedDefaultNotes: initialData.appliedDefaultNotes,
+          appliedDefaultPaymentTerms: initialData.appliedDefaultPaymentTerms,
+          status: initialData.status, // Status is managed on detail page
+          userId: initialData.userId,
+          createdAt: initialData.createdAt,
         });
         toast({ title: "Invoice Updated", description: `Invoice ${values.invoiceNumber} has been updated.` });
         router.push(`/invoices/${initialData.id}`);
@@ -458,7 +469,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
                 <FormItem>
                   <FormLabel>Invoice Notes (Optional)</FormLabel>
                   <FormControl><Textarea placeholder="Payment terms, thank you note, specific instructions for this invoice..." {...field} rows={4} /></FormControl>
-                  <FormDescription>These notes are specific to this invoice. Default notes from preferences will be applied if this is empty and creating a new invoice.</FormDescription>
+                  <UiFormDescription>These notes are specific to this invoice. Default notes from preferences will be applied if this is empty and creating a new invoice.</UiFormDescription>
                   <FormMessage />
                 </FormItem>
               )} />
@@ -468,7 +479,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
                 <FormItem>
                   <FormLabel>Tax Rate (%)</FormLabel>
                   <FormControl><Input type="number" placeholder="0" {...field} min="0" max="100" step="0.01" /></FormControl>
-                  <FormDescription>Enter 0 if no tax.</FormDescription>
+                  <UiFormDescription>Enter 0 if no tax. Defaults from preferences if set.</UiFormDescription>
                   <FormMessage />
                 </FormItem>
               )} />
@@ -492,6 +503,3 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     </Form>
   );
 }
-
-
-    

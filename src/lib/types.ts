@@ -17,6 +17,7 @@ export interface UserPreferences {
   language?: string; // e.g., "en", "es"
   defaultNotes?: string;
   defaultPaymentTerms?: string;
+  defaultTaxRate?: number; // Added default tax rate
 }
 
 export interface Client {
@@ -48,7 +49,7 @@ export interface Invoice {
   invoiceNumber: string;
   
   // Client details snapshot at the time of invoice creation
-  clientId?: string; // Optional: ID of the client if selected from a list
+  clientId?: string | null; // Optional: ID of the client if selected from a list
   clientName: string;
   clientEmail: string;
   clientAddress?: string;
@@ -74,8 +75,8 @@ export interface Invoice {
   appliedDefaultNotes?: string; 
   appliedDefaultPaymentTerms?: string;
   
-  sentDate?: string; // ISO string date, when invoice was marked as sent
-  paidDate?: string; // ISO string date, when invoice was marked as paid
+  sentDate?: string | null; // ISO string date, when invoice was marked as sent
+  paidDate?: string | null; // ISO string date, when invoice was marked as paid
 
   createdAt?: Timestamp; 
   updatedAt?: Timestamp; 

@@ -92,7 +92,7 @@ export default function ClientsPage() {
                   <TableHead>Name</TableHead>
                   <TableHead>Company</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>ICE</TableHead>
+                  <TableHead>Client ICE</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -105,8 +105,7 @@ export default function ClientsPage() {
                     <TableCell>{client.ice || "N/A"}</TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost" size="sm" asChild>
-                        {/* TODO: Link to /clients/[id]/edit or /clients/[id] for view */}
-                        <Link href={`/clients/new?edit=${client.id}`}>Edit</Link> 
+                        <Link href={`/clients/${client.id}/edit`}>Edit</Link> 
                       </Button>
                     </TableCell>
                   </TableRow>
