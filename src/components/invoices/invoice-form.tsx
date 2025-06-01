@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -9,25 +10,27 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, PlusCircle, Trash2, Save } from "lucide-react";
+import { CalendarIcon, PlusCircle, Trash2, Save, Loader2 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-// import { db, auth } from "@/lib/firebase";
-// import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import type { Invoice, InvoiceItem } from "@/lib/types";
-import { useState } from "react";
+import { db } from "@/lib/firebase";
+import { collection, addDoc, serverTimestamp, doc, getDoc } from "firebase/firestore";
+import type { Invoice, InvoiceItem, UserPreferences } from "@/lib/types";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/hooks/use-auth";
+import { useRouter } from "next/navigation";
 
 const invoiceItemSchema = z.object({
   description: z.string().min(1, "Description is required"),
-  quantity: z.coerce.number().min(1, "Quantity must be at least 1"),
+  quantity: z.coerce.number().min(0.01, "Quantity must be at least 0.01"), // Allow fractional quantities
   unitPrice: z.coerce.number().min(0.01, "Unit price must be positive"),
 });
 
 const formSchema = z.object({
   clientName: z.string().min(1, "Client name is required"),
-  clientEmail: z.string().email("Invalid email address"),
+  clientEmail: z.string().email("Invalid email address").or(z.literal("")), // Allow empty string
   clientAddress: z.string().optional(),
   invoiceNumber: z.string().min(1, "Invoice number is required"),
   issueDate: z.date({ required_error: "Issue date is required" }),
@@ -41,8 +44,37 @@ type InvoiceFormValues = z.infer<typeof formSchema>;
 
 export default function InvoiceForm({ initialData }: { initialData?: Partial<Invoice> }) {
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
-  // const { user } = useAuth(); // Assuming useAuth hook is available
+  const { user } = useAuth();
+  const router = useRouter();
+  const [isSaving, setIsSaving] = useState(false);
+  const [isPrefsLoading, setIsPrefsLoading] = useState(true);
+  const [userPrefs, setUserPrefs] = useState<UserPreferences | null>(null);
+
+  useEffect(() => {
+    async function fetchPrefs() {
+      if (user) {
+        setIsPrefsLoading(true);
+        try {
+          const prefDocRef = doc(db, "userPreferences", user.uid);
+          const prefDocSnap = await getDoc(prefDocRef);
+          if (prefDocSnap.exists()) {
+            setUserPrefs(prefDocSnap.data() as UserPreferences);
+          } else {
+            setUserPrefs({ currency: "MAD", language: "fr" }); // Default if no prefs found
+          }
+        } catch (error) {
+          console.error("Error fetching user preferences:", error);
+          toast({ title: "Error", description: "Could not load user preferences.", variant: "destructive" });
+          setUserPrefs({ currency: "MAD", language: "fr" }); // Fallback
+        } finally {
+          setIsPrefsLoading(false);
+        }
+      } else {
+        setIsPrefsLoading(false);
+      }
+    }
+    fetchPrefs();
+  }, [user, toast]);
 
   const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(formSchema),
@@ -53,11 +85,21 @@ export default function InvoiceForm({ initialData }: { initialData?: Partial<Inv
       invoiceNumber: initialData?.invoiceNumber || `INV-${Date.now().toString().slice(-6)}`,
       issueDate: initialData?.issueDate ? new Date(initialData.issueDate) : new Date(),
       dueDate: initialData?.dueDate ? new Date(initialData.dueDate) : new Date(new Date().setDate(new Date().getDate() + 30)),
-      items: initialData?.items?.map(item => ({...item})) || [{ description: "", quantity: 1, unitPrice: 0 }],
-      notes: initialData?.notes || "",
+      items: initialData?.items?.map(item => ({ description: item.description, quantity: item.quantity, unitPrice: item.unitPrice })) || [{ description: "", quantity: 1, unitPrice: 0 }],
+      notes: initialData?.notes || userPrefs?.defaultNotes || "",
       taxRate: initialData?.taxRate || 0,
     },
   });
+  
+  useEffect(() => {
+    if (userPrefs && !initialData) { // Only apply pref notes if it's a new invoice and prefs are loaded
+        form.reset({
+            ...form.getValues(), // Keep existing form values if any
+            notes: form.getValues().notes || userPrefs.defaultNotes || "", // Prioritize existing notes if user typed something before prefs loaded
+        });
+    }
+  }, [userPrefs, initialData, form]);
+
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -71,9 +113,9 @@ export default function InvoiceForm({ initialData }: { initialData?: Partial<Inv
     return watchItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice || 0), 0);
   };
 
-  const calculateTaxAmount = (subtotal: number) => {
-    const taxRate = watchTaxRate || 0;
-    return subtotal * (taxRate / 100);
+  const calculateTaxAmount = (subtotalValue: number) => {
+    const taxRateValue = watchTaxRate || 0;
+    return subtotalValue * (taxRateValue / 100);
   };
 
   const subtotal = calculateSubtotal();
@@ -81,48 +123,68 @@ export default function InvoiceForm({ initialData }: { initialData?: Partial<Inv
   const totalAmount = subtotal + taxAmount;
 
   async function onSubmit(values: InvoiceFormValues) {
-    setIsLoading(true);
-    // TODO: Implement actual saving to Firebase
-    console.log("Form submitted", values);
-    // if (!user) {
-    //   toast({ title: "Error", description: "You must be logged in to create an invoice.", variant: "destructive" });
-    //   setIsLoading(false);
-    //   return;
-    // }
-    // const invoiceData: Omit<Invoice, 'id' | 'createdAt' | 'updatedAt'> = {
-    //   ...values,
-    //   userId: user.uid,
-    //   issueDate: format(values.issueDate, "yyyy-MM-dd"),
-    //   dueDate: format(values.dueDate, "yyyy-MM-dd"),
-    //   items: values.items.map(item => ({...item, total: item.quantity * item.unitPrice})),
-    //   subtotal,
-    //   taxAmount,
-    //   totalAmount,
-    //   status: 'draft',
-    //   // TODO: Add currency, language from user preferences
-    // };
+    if (!user) {
+      toast({ title: "Authentication Error", description: "You must be logged in to create an invoice.", variant: "destructive" });
+      return;
+    }
+    if (isPrefsLoading) {
+      toast({ title: "Please wait", description: "User preferences are still loading.", variant: "default" });
+      return;
+    }
+
+    setIsSaving(true);
+
+    const invoiceItemsToSave: InvoiceItem[] = values.items.map(item => ({
+      description: item.description,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      total: item.quantity * item.unitPrice,
+    }));
+
+    const invoiceDataToSave: Omit<Invoice, 'id' | 'createdAt' | 'updatedAt'> = {
+      userId: user.uid,
+      invoiceNumber: values.invoiceNumber,
+      clientName: values.clientName,
+      clientEmail: values.clientEmail || "",
+      clientAddress: values.clientAddress || "",
+      issueDate: format(values.issueDate, "yyyy-MM-dd"),
+      dueDate: format(values.dueDate, "yyyy-MM-dd"),
+      items: invoiceItemsToSave,
+      subtotal,
+      taxRate: values.taxRate,
+      taxAmount,
+      totalAmount,
+      status: 'draft',
+      notes: values.notes || "",
+      currency: userPrefs?.currency || "MAD",
+      language: userPrefs?.language || "fr",
+      logoDataUrl: userPrefs?.logoDataUrl || null,
+      companyInvoiceHeader: userPrefs?.invoiceHeader || "",
+      companyInvoiceFooter: userPrefs?.invoiceFooter || "",
+      appliedDefaultNotes: userPrefs?.defaultNotes || "",
+      appliedDefaultPaymentTerms: userPrefs?.defaultPaymentTerms || "",
+    };
 
     try {
-      // const docRef = await addDoc(collection(db, "invoices"), {
-      //   ...invoiceData,
-      //   createdAt: serverTimestamp(),
-      //   updatedAt: serverTimestamp(),
-      // });
+      const docRef = await addDoc(collection(db, "invoices"), {
+        ...invoiceDataToSave,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
       toast({
         title: "Invoice Saved",
-        description: `Invoice ${values.invoiceNumber} has been saved as a draft.`,
+        description: `Invoice ${values.invoiceNumber} has been saved.`,
       });
-      // router.push(`/invoices/${docRef.id}`); // Or to invoices list
-      form.reset(); // Reset form after successful submission
+      router.push(`/invoices/${docRef.id}`); 
     } catch (error) {
       console.error("Error saving invoice:", error);
       toast({
-        title: "Error",
+        title: "Error Saving Invoice",
         description: "Failed to save invoice. Please try again.",
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsSaving(false);
     }
   }
 
@@ -144,7 +206,7 @@ export default function InvoiceForm({ initialData }: { initialData?: Partial<Inv
             )} />
             <FormField control={form.control} name="clientEmail" render={({ field }) => (
               <FormItem>
-                <FormLabel>Client Email</FormLabel>
+                <FormLabel>Client Email (Optional)</FormLabel>
                 <FormControl><Input placeholder="contact@acme.com" {...field} /></FormControl>
                 <FormMessage />
               </FormItem>
@@ -219,8 +281,8 @@ export default function InvoiceForm({ initialData }: { initialData?: Partial<Inv
             <CardDescription>Add products or services provided.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {fields.map((field, index) => (
-              <div key={field.id} className="flex flex-col md:flex-row gap-4 items-start p-4 border rounded-md bg-secondary/30">
+            {fields.map((item, index) => (
+              <div key={item.id} className="flex flex-col md:flex-row gap-4 items-start p-4 border rounded-md bg-secondary/30">
                 <FormField control={form.control} name={`items.${index}.description`} render={({ field: itemField }) => (
                   <FormItem className="flex-grow">
                     <FormLabel>Description</FormLabel>
@@ -270,8 +332,9 @@ export default function InvoiceForm({ initialData }: { initialData?: Partial<Inv
             <div className="md:col-span-2 space-y-4">
                <FormField control={form.control} name="notes" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Notes (Optional)</FormLabel>
-                  <FormControl><Textarea placeholder="Payment terms, thank you note, etc." {...field} rows={4} /></FormControl>
+                  <FormLabel>Invoice Notes (Optional)</FormLabel>
+                  <FormControl><Textarea placeholder="Payment terms, thank you note, specific instructions for this invoice..." {...field} rows={4} /></FormControl>
+                  <FormDescription>These notes are specific to this invoice. Default notes from preferences will be applied if this is empty.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )} />
@@ -280,25 +343,31 @@ export default function InvoiceForm({ initialData }: { initialData?: Partial<Inv
               <FormField control={form.control} name="taxRate" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Tax Rate (%)</FormLabel>
-                  <FormControl><Input type="number" placeholder="0" {...field} /></FormControl>
+                  <FormControl><Input type="number" placeholder="0" {...field} min="0" max="100" step="0.01" /></FormControl>
                   <FormDescription>Enter 0 if no tax.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )} />
               <div className="text-sm space-y-1">
-                <div className="flex justify-between"><span>Subtotal:</span> <span className="font-medium">${subtotal.toFixed(2)}</span></div>
-                <div className="flex justify-between"><span>Tax ({watchTaxRate || 0}%):</span> <span className="font-medium">${taxAmount.toFixed(2)}</span></div>
-                <div className="flex justify-between text-lg font-bold text-primary pt-2 border-t"><span>Total:</span> <span>${totalAmount.toFixed(2)}</span></div>
+                <div className="flex justify-between"><span>Subtotal:</span> <span className="font-medium">{(userPrefs?.currency || "MAD")} {subtotal.toFixed(2)}</span></div>
+                <div className="flex justify-between"><span>Tax ({watchTaxRate || 0}%):</span> <span className="font-medium">{(userPrefs?.currency || "MAD")} {taxAmount.toFixed(2)}</span></div>
+                <div className="flex justify-between text-lg font-bold text-primary pt-2 border-t"><span>Total:</span> <span>{(userPrefs?.currency || "MAD")} {totalAmount.toFixed(2)}</span></div>
               </div>
             </div>
           </CardContent>
         </Card>
         
         <CardFooter className="flex justify-end gap-4 pt-6">
-            <Button type="button" variant="outline" onClick={() => form.reset()}>Cancel</Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading && <Save className="mr-2 h-4 w-4 animate-spin" />}
-              Save Invoice
+            <Button type="button" variant="outline" onClick={() => form.reset({
+                 clientName: "", clientEmail: "", clientAddress: "",
+                 invoiceNumber: `INV-${Date.now().toString().slice(-6)}`,
+                 issueDate: new Date(), dueDate: new Date(new Date().setDate(new Date().getDate() + 30)),
+                 items: [{ description: "", quantity: 1, unitPrice: 0 }],
+                 notes: userPrefs?.defaultNotes || "", taxRate: 0,
+            })}>Cancel</Button>
+            <Button type="submit" disabled={isSaving || isPrefsLoading}>
+              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+              {isPrefsLoading ? "Loading Prefs..." : "Save Invoice"}
             </Button>
         </CardFooter>
       </form>

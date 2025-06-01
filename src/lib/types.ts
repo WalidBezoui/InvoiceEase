@@ -9,20 +9,22 @@ export interface UserProfile {
 }
 
 export interface UserPreferences {
-  logoDataUrl?: string; // Changed from logoUrl
+  logoDataUrl?: string | null;
   invoiceHeader?: string;
   invoiceFooter?: string;
   invoiceWatermark?: string;
   currency?: string; // e.g., "USD", "EUR"
   language?: string; // e.g., "en", "es"
+  defaultNotes?: string;
+  defaultPaymentTerms?: string;
 }
 
 export interface InvoiceItem {
-  id: string;
+  id?: string; // Optional: mainly for client-side keying in forms
   description: string;
   quantity: number;
   unitPrice: number;
-  total: number;
+  total: number; // Calculated: quantity * unitPrice
 }
 
 export interface Invoice {
@@ -40,14 +42,17 @@ export interface Invoice {
   taxAmount?: number;
   totalAmount: number;
   status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
-  notes?: string;
-  // Customized elements based on preferences at time of creation/update
-  customHeader?: string;
-  customFooter?: string;
-  customWatermark?: string;
-  logoUrl?: string; // This might need to be logoDataUrl if invoices embed company logo directly from new preference
-  currency?: string; 
-  language?: string; 
+  notes?: string; // Invoice-specific notes
+
+  // Fields populated from UserPreferences at the time of invoice creation
+  currency: string; 
+  language: string; 
+  logoDataUrl?: string | null;
+  companyInvoiceHeader?: string;
+  companyInvoiceFooter?: string;
+  appliedDefaultNotes?: string; 
+  appliedDefaultPaymentTerms?: string;
+  
   createdAt?: Timestamp; 
   updatedAt?: Timestamp; 
 }
