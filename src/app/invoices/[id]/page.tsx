@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ArrowLeft, Download, Edit, Loader2, AlertTriangle, Printer, ChevronDown, Send, DollarSign, AlertCircle as AlertCircleIcon, XCircle, Undo, FilePenLine } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
-import { fr } from "date-fns/locale"; // Import French locale
+import { fr } from "date-fns/locale"; 
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
@@ -37,16 +37,14 @@ import {
 import { useToast } from "@/hooks/use-toast";
 
 
-// Helper for number to French words
 const currencyWordForms: { [key: string]: { singular: string, plural: string, centimeSingular: string, centimePlural: string } } = {
   MAD: { singular: "Dirham Marocain", plural: "Dirhams Marocains", centimeSingular: "centime", centimePlural: "centimes" },
   EUR: { singular: "Euro", plural: "Euros", centimeSingular: "centime", centimePlural: "centimes" },
   USD: { singular: "Dollar Américain", plural: "Dollars Américains", centimeSingular: "cent", centimePlural: "cents" },
-  // Add more currencies as needed
 };
 
 function numberToFrenchWords(num: number, currencyCode: string): string {
-  const currentCurrency = currencyWordForms[currencyCode.toUpperCase()] || currencyWordForms["MAD"]; // Default to MAD if unknown
+  const currentCurrency = currencyWordForms[currencyCode.toUpperCase()] || currencyWordForms["MAD"]; 
 
   const units = ["", "un", "deux", "trois", "quatre", "cinq", "six", "sept", "huit", "neuf"];
   const teens = ["dix", "onze", "douze", "treize", "quatorze", "quinze", "seize", "dix-sept", "dix-huit", "dix-neuf"];
@@ -117,9 +115,8 @@ function numberToFrenchWords(num: number, currencyCode: string): string {
 }
 
 
-// Helper for translations
 const getInvoiceStrings = (languageCode?: string) => {
-  const lang = languageCode?.toLowerCase().startsWith("fr") ? "fr" : "en"; // Default to English
+  const lang = languageCode?.toLowerCase().startsWith("fr") ? "fr" : "en"; 
 
   const strings = {
     en: {
@@ -237,7 +234,7 @@ export default function InvoiceDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   
-  const [s, setS] = useState(getInvoiceStrings("en")); // Default to English strings initially
+  const [s, setS] = useState(getInvoiceStrings("en")); 
 
   useEffect(() => {
     async function fetchInvoice() {
@@ -255,7 +252,7 @@ export default function InvoiceDetailPage() {
           const fetchedInvoice = { id: docSnap.id, ...docSnap.data() } as Invoice;
           if (fetchedInvoice.userId === user.uid) {
             setInvoice(fetchedInvoice);
-            setS(getInvoiceStrings(fetchedInvoice.language)); // Set strings based on invoice language
+            setS(getInvoiceStrings(fetchedInvoice.language)); 
           } else {
             setError("You do not have permission to view this invoice.");
           }
@@ -300,19 +297,15 @@ export default function InvoiceDetailPage() {
     };
 
     if (newStatus === 'sent') {
-      if (invoice.status === 'draft') { // Draft to Sent
+      if (invoice.status === 'draft') { 
         updateData.sentDate = new Date().toISOString();
-      } else if (invoice.status === 'paid') { // Paid to Sent (Revert)
-        updateData.paidDate = null; // Clear paid date
+      } else if (invoice.status === 'paid') { 
+        updateData.paidDate = null; 
       }
-    } else if (newStatus === 'paid' && (invoice.status === 'sent' || invoice.status === 'overdue')) { // Sent/Overdue to Paid
+    } else if (newStatus === 'paid' && (invoice.status === 'sent' || invoice.status === 'overdue')) { 
       updateData.paidDate = new Date().toISOString();
     }
-    // For newStatus === 'draft' (e.g. from cancelled), no specific date fields need to be set other than updatedAt
-    // For newStatus === 'cancelled', no specific date fields other than updatedAt
-    // For newStatus === 'overdue', no specific date fields other than updatedAt
-
-
+    
     try {
       await updateDoc(invoiceRef, updateData as any); 
       setInvoice(prev => {
@@ -539,7 +532,15 @@ export default function InvoiceDetailPage() {
       </div>
 
 
-      <Card className="invoice-card-for-print shadow-lg print:shadow-none print:border-none">
+      <Card className="invoice-card-for-print shadow-lg print:shadow-none print:border-none relative">
+        {invoice.watermarkLogoDataUrl && (
+          <div 
+            className="print-only-watermark-container"
+            style={{
+              backgroundImage: `url(${invoice.watermarkLogoDataUrl})`,
+            }}
+          ></div>
+        )}
         <CardHeader className="print-card-header border-b print:pb-2 print:border-b-slate-200">
           <div className="flex flex-col md:flex-row justify-between items-start gap-6">
             <div className="flex-shrink-0">
@@ -621,7 +622,7 @@ export default function InvoiceDetailPage() {
                  </div>
               )}
             </div>
-            <div className="space-y-2 p-4 bg-secondary/30 rounded-lg shadow-sm print:bg-transparent print:shadow-none print:p-3 print:border print:border-slate-200 print:rounded-md">
+            <div className="space-y-2 p-4 bg-secondary/20 rounded-lg shadow-sm print:bg-transparent print:shadow-none print:p-3 print:border print:border-slate-200 print:rounded-md">
               <div className="flex justify-between text-sm print:text-xs">
                 <span className="text-muted-foreground">{s.subtotal}</span>
                 <span className="font-medium">{invoice.currency} {invoice.subtotal.toFixed(2)}</span>
@@ -709,7 +710,7 @@ export default function InvoiceDetailPage() {
             box-shadow: none !important; 
             border: none !important; 
             width: 100% !important; 
-            min-height: 282mm; /* Approx A4 height (297mm) minus 1.5cm total for potential printer unprintable area */
+            min-height: 282mm; 
             box-sizing: border-box !important;
             page-break-inside: avoid !important;
             background-color: #fff !important; 
@@ -726,25 +727,25 @@ export default function InvoiceDetailPage() {
             box-sizing: border-box !important;
           }
 
-          .invoice-card-for-print > .print-card-header { /* CardHeader */
+          .invoice-card-for-print > .print-card-header {
             padding-top: 0.75cm !important;
             padding-bottom: 0.5cm !important; 
             border-bottom-width: 1px !important;
             border-color: #e2e8f0 !important; 
           }
            
-          .invoice-card-for-print > .print-card-content { /* CardContent */
+          .invoice-card-for-print > .print-card-content {
             padding-top: 0.5cm !important;
             flex-grow: 1; 
           }
           .invoice-card-for-print > .print-card-content.print-content-has-footer {
-            padding-bottom: 2.5cm !important; /* Space for footer if present */
+            padding-bottom: 2.5cm !important;
           }
           .invoice-card-for-print > .print-card-content.print-content-no-footer {
-            padding-bottom: 0.75cm !important; /* Standard bottom 'page' margin if no footer */
+            padding-bottom: 0.75cm !important;
           }
 
-          .invoice-card-for-print > .print-card-footer.has-content { /* CardFooter */
+          .invoice-card-for-print > .print-card-footer.has-content {
             position: absolute !important;
             bottom: 0 !important;
             left: 0 !important;
@@ -761,6 +762,22 @@ export default function InvoiceDetailPage() {
            .invoice-card-for-print > .print-card-footer:not(.has-content) {
              display: none !important;
            }
+          
+          .print-only-watermark-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0; 
+            background-repeat: no-repeat;
+            background-position: center center;
+            background-size: 60% auto; 
+            opacity: 0.07; 
+            pointer-events: none;
+            display: block !important; 
+          }
+          .screen-only-watermark-text { display: none !important; }
 
 
           .invoice-card-for-print .text-3xl { font-size: 1.75rem !important; }
@@ -771,7 +788,7 @@ export default function InvoiceDetailPage() {
           .invoice-card-for-print .print\\:text-xs { font-size: 0.7rem !important; }
           .invoice-card-for-print .print\\:text-\\[0\\.65rem\\] { font-size: 0.65rem !important; }
 
-          .invoice-card-for-print .bg-secondary\\/30 { background-color: transparent !important; } /* Make totals bg transparent for print */
+          .invoice-card-for-print .bg-secondary\\/30 { background-color: transparent !important; } 
           .invoice-card-for-print .print\\:bg-slate-50 { background-color: #f8fafc !important; }
           
           .invoice-card-for-print table th, .invoice-card-for-print table td { padding: 0.35rem 0.5rem !important; }
@@ -790,8 +807,10 @@ export default function InvoiceDetailPage() {
 
           .print\\:hidden { display: none !important; }
         }
+        @media screen {
+           .print-only-watermark-container { display: none !important; }
+        }
       `}</style>
     </div>
   );
 }
-

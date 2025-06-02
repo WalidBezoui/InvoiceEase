@@ -10,14 +10,15 @@ export interface UserProfile {
 
 export interface UserPreferences {
   logoDataUrl?: string | null;
+  watermarkLogoDataUrl?: string | null; // Added for watermark logo
   invoiceHeader?: string;
   invoiceFooter?: string;
-  invoiceWatermark?: string;
+  invoiceWatermark?: string; // This is for text watermark, distinct from logo
   currency?: string; // e.g., "USD", "EUR"
   language?: string; // e.g., "en", "es"
   defaultNotes?: string;
   defaultPaymentTerms?: string;
-  defaultTaxRate?: number; // Added default tax rate
+  defaultTaxRate?: number;
 }
 
 export interface Client {
@@ -70,6 +71,7 @@ export interface Invoice {
   currency: string; 
   language: string; 
   logoDataUrl?: string | null;
+  watermarkLogoDataUrl?: string | null; // Added for watermark logo
   companyInvoiceHeader?: string;
   companyInvoiceFooter?: string;
   appliedDefaultNotes?: string; 
@@ -81,4 +83,3 @@ export interface Invoice {
   createdAt?: Timestamp; 
   updatedAt?: Timestamp; 
 }
-

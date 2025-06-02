@@ -3,9 +3,10 @@
 
 import PreferencesForm from "@/components/preferences/preferences-form";
 import LogoUploader from "@/components/preferences/logo-uploader";
+import WatermarkUploader from "@/components/preferences/watermark-uploader"; // Added import
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Palette, FileText, Globe, Settings2, Brush } from "lucide-react";
+import { Palette, FileText, Globe, Settings2, Brush, Image as ImageIcon } from "lucide-react";
 
 
 export default function PreferencesPage() {
@@ -30,9 +31,10 @@ export default function PreferencesPage() {
             <PreferencesForm />
         </TabsContent>
 
-        <TabsContent value="branding">
+        <TabsContent value="branding" className="space-y-6">
             <LogoUploader />
-            <Card className="shadow-lg mt-6 bg-secondary/20">
+            <WatermarkUploader /> 
+            <Card className="shadow-lg bg-secondary/20">
                 <CardHeader>
                 <CardTitle className="font-headline text-lg text-primary">Brand Colors (Coming Soon)</CardTitle>
                 <CardDescription>Customize the primary color of your invoices to match your brand.</CardDescription>
@@ -46,4 +48,3 @@ export default function PreferencesPage() {
     </div>
   );
 }
-

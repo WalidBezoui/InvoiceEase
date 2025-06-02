@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { db } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp, doc, getDoc, query, where, getDocs, orderBy, updateDoc } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, doc, getDoc, query, where, getDocs, orderBy, updateDoc, type FieldValue } from "firebase/firestore";
 import type { Invoice, InvoiceItem, UserPreferences, Client } from "@/lib/types";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
@@ -123,12 +123,11 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
   });
 
   useEffect(() => {
-    // Apply user preferences to new invoices (when initialData is not present)
     if (userPrefs && !initialData) {
         form.reset({
             ...form.getValues(),
             notes: form.getValues().notes || userPrefs.defaultNotes || "",
-            taxRate: userPrefs.defaultTaxRate ?? 0, // Apply default tax rate or 0
+            taxRate: userPrefs.defaultTaxRate ?? 0, 
             invoiceNumber: form.getValues().invoiceNumber.startsWith('INV-') && form.getValues().invoiceNumber.length > 10
                            ? form.getValues().invoiceNumber
                            : `INV-${Date.now().toString().slice(-4)}-${user?.uid.slice(0,3) || 'XXX'}`,
@@ -137,12 +136,10 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
   }, [userPrefs, initialData, form, user?.uid]);
 
   useEffect(() => {
-    // Reset form if initialData changes (e.g., when editing an existing invoice)
-    // Or apply user preferences to tax rate if creating a new invoice and prefs are loaded
     if (!isPrefsLoading) {
         if (initialData) {
             form.reset({
-                clientId: initialData.clientId || "",
+                clientId: initialData.clientId || MANUAL_ENTRY_CLIENT_ID,
                 clientName: initialData.clientName,
                 clientEmail: initialData.clientEmail || "",
                 clientAddress: initialData.clientAddress || "",
@@ -152,15 +149,20 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
                 issueDate: new Date(initialData.issueDate),
                 dueDate: new Date(initialData.dueDate),
                 items: initialData.items.map(item => ({
-                description: item.description,
-                quantity: item.quantity,
-                unitPrice: item.unitPrice,
+                  description: item.description,
+                  quantity: item.quantity,
+                  unitPrice: item.unitPrice,
                 })),
                 notes: initialData.notes || "",
                 taxRate: initialData.taxRate ?? userPrefs?.defaultTaxRate ?? 0,
             });
+        } else if (userPrefs) { // Apply default tax rate from userPrefs if creating new invoice
+            form.reset({
+              ...form.getValues(), // keep existing form values
+              notes: form.getValues().notes || userPrefs.defaultNotes || "", // if notes empty, use default
+              taxRate: userPrefs.defaultTaxRate ?? 0, // apply userPrefs tax rate for new invoices
+            });
         }
-        // The case for !initialData is handled by the separate useEffect above for userPrefs.
     }
   }, [initialData, form, isPrefsLoading, userPrefs]);
 
@@ -180,8 +182,14 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
         form.setValue("clientCompany", selectedClient.clientCompany || "");
         form.setValue("clientICE", selectedClient.ice || "");
       }
+    } else if (watchClientId === MANUAL_ENTRY_CLIENT_ID && !initialData) { // Clear fields if manual entry selected for a new invoice
+        form.setValue("clientName", "");
+        form.setValue("clientEmail", "");
+        form.setValue("clientAddress", "");
+        form.setValue("clientCompany", "");
+        form.setValue("clientICE", "");
     }
-  }, [watchClientId, clients, form]);
+  }, [watchClientId, clients, form, initialData]);
 
 
   const calculateSubtotal = () => watchItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice || 0), 0);
@@ -210,7 +218,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
 
     const finalClientId = values.clientId === MANUAL_ENTRY_CLIENT_ID ? null : (values.clientId || null);
 
-    const commonInvoiceData = {
+    const commonInvoiceData: Partial<Invoice> = { // Made partial to accommodate differences
       invoiceNumber: values.invoiceNumber,
       clientId: finalClientId,
       clientName: values.clientName,
@@ -226,48 +234,44 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
       taxAmount,
       totalAmount,
       notes: values.notes || "",
+      updatedAt: serverTimestamp() as Timestamp, // Add updatedAt for both create and update
     };
 
     try {
       if (initialData?.id) {
         const invoiceRef = doc(db, "invoices", initialData.id);
+        // For updates, we preserve most fields from initialData unless explicitly changed by commonInvoiceData
         await updateDoc(invoiceRef, {
-          ...commonInvoiceData,
-          updatedAt: serverTimestamp(),
-          currency: initialData.currency,
-          language: initialData.language,
-          logoDataUrl: initialData.logoDataUrl,
-          companyInvoiceHeader: initialData.companyInvoiceHeader,
-          companyInvoiceFooter: initialData.companyInvoiceFooter,
-          appliedDefaultNotes: initialData.appliedDefaultNotes,
-          appliedDefaultPaymentTerms: initialData.appliedDefaultPaymentTerms,
-          status: initialData.status,
-          userId: initialData.userId,
+          ...initialData, // Start with existing data
+          ...commonInvoiceData, // Override with form values
+          // Ensure `createdAt` and `userId` are not overwritten if they exist
+          userId: initialData.userId, 
           createdAt: initialData.createdAt,
-          // Preserve existing sentDate and paidDate unless status logic explicitly changes them
-          sentDate: initialData.sentDate,
-          paidDate: initialData.paidDate,
+          // Watermark logo is set at creation and should not be changed here
+          watermarkLogoDataUrl: initialData.watermarkLogoDataUrl, 
         });
         toast({ title: "Invoice Updated", description: `Invoice ${values.invoiceNumber} has been updated.` });
         router.push(`/invoices/${initialData.id}`);
       } else {
+        // For new invoices, construct the full object
         const invoiceDataToCreate: Omit<Invoice, 'id' | 'createdAt' | 'updatedAt'> = {
           userId: user.uid,
-          ...commonInvoiceData,
           status: 'draft',
           currency: userPrefs?.currency || "MAD",
           language: userPrefs?.language || "fr",
           logoDataUrl: userPrefs?.logoDataUrl || null,
+          watermarkLogoDataUrl: userPrefs?.watermarkLogoDataUrl || null, // Add watermark logo from prefs
           companyInvoiceHeader: userPrefs?.invoiceHeader || "",
           companyInvoiceFooter: userPrefs?.invoiceFooter || "",
           appliedDefaultNotes: values.notes === (userPrefs?.defaultNotes || "") ? userPrefs?.defaultNotes : "",
           appliedDefaultPaymentTerms: userPrefs?.defaultPaymentTerms || "",
-          // sentDate and paidDate are not set on creation
+          // commonInvoiceData needs to be asserted as Omit to fit
+          ...(commonInvoiceData as Omit<Invoice, 'id' | 'userId' | 'status' | 'currency' | 'language' | 'logoDataUrl' | 'watermarkLogoDataUrl' | 'companyInvoiceHeader' | 'companyInvoiceFooter' | 'appliedDefaultNotes' | 'appliedDefaultPaymentTerms' | 'createdAt' | 'updatedAt'>),
         };
         const docRef = await addDoc(collection(db, "invoices"), {
           ...invoiceDataToCreate,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
+          createdAt: serverTimestamp() as Timestamp,
+          updatedAt: serverTimestamp() as Timestamp, // Also set updatedAt on creation
         });
         toast({ title: "Invoice Saved", description: `Invoice ${values.invoiceNumber} has been saved.` });
         router.push(`/invoices/${docRef.id}`);
@@ -306,7 +310,11 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
               render={({ field }) => (
                 <FormItem className="md:col-span-2">
                   <FormLabel>Select Client (Optional)</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value || ""} disabled={isClientsLoading}>
+                  <Select 
+                    onValueChange={field.onChange} 
+                    value={field.value || MANUAL_ENTRY_CLIENT_ID} // Ensure value is never empty string for Select
+                    disabled={isClientsLoading}
+                  >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder={isClientsLoading ? "Loading clients..." : "Select a client or fill manually"} />
