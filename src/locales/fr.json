@@ -128,7 +128,8 @@
       "email": "E-mail :",
       "phone": "Téléphone :",
       "ice": "ICE :",
-      "address": "Adresse :"
+      "address": "Adresse :",
+      "clientId": "ID Client"
     },
     "stats": {
       "totalInvoices": "Total Factures",
@@ -142,7 +143,8 @@
       "noStatusData": "Aucune donnée de facture pour afficher la distribution des statuts.",
       "monthlyTotalsTitle": "Totaux Mensuels Factures",
       "monthlyTotalsDesc": "Montant total facturé par mois pour {{clientName}}.",
-      "noMonthlyData": "Aucune donnée de facture pour afficher les totaux mensuels."
+      "noMonthlyData": "Aucune donnée de facture pour afficher les totaux mensuels.",
+      "barLabelTotal": "Montant Total"
     },
     "invoiceHistory": {
       "title": "Historique des Factures",
@@ -357,6 +359,13 @@
     "statusUpdatedToastDesc": "La facture {{invoiceNumber}} est maintenant {{status}}.",
     "errorToastTitle": "Erreur",
     "statusUpdateErrorToastDesc": "Échec de la mise à jour du statut de la facture."
+  },
+  "invoiceStatus": {
+    "draft": "Brouillon",
+    "sent": "Envoyée",
+    "paid": "Payée",
+    "overdue": "En Retard",
+    "cancelled": "Annulée"
   },
   "loginPage": {
     "title": "Content de vous revoir",

@@ -128,7 +128,8 @@
       "email": "Email:",
       "phone": "Phone:",
       "ice": "ICE:",
-      "address": "Address:"
+      "address": "Address:",
+      "clientId": "Client ID"
     },
     "stats": {
       "totalInvoices": "Total Invoices",
@@ -142,7 +143,8 @@
       "noStatusData": "No invoice data to display status distribution.",
       "monthlyTotalsTitle": "Monthly Invoice Totals",
       "monthlyTotalsDesc": "Total invoiced amount per month for {{clientName}}.",
-      "noMonthlyData": "No invoice data to display monthly totals."
+      "noMonthlyData": "No invoice data to display monthly totals.",
+      "barLabelTotal": "Total Amount"
     },
     "invoiceHistory": {
       "title": "Invoice History",
@@ -357,6 +359,13 @@
     "statusUpdatedToastDesc": "Invoice {{invoiceNumber}} is now {{status}}.",
     "errorToastTitle": "Error",
     "statusUpdateErrorToastDesc": "Failed to update invoice status."
+  },
+  "invoiceStatus": {
+    "draft": "Draft",
+    "sent": "Sent",
+    "paid": "Paid",
+    "overdue": "Overdue",
+    "cancelled": "Cancelled"
   },
   "loginPage": {
     "title": "Welcome Back",

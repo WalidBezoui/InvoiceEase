@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -140,8 +140,10 @@ export default function ClientDetailPage() {
         setIsLoadingData(false);
       }
     }
-    fetchClientData();
-  }, [user, clientId, t]);
+    if (!isLoadingLocale) { // Ensure t is ready before fetching
+        fetchClientData();
+    }
+  }, [user, clientId, t, isLoadingLocale]);
 
   const getStatusBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
     switch (status) {
@@ -154,14 +156,15 @@ export default function ClientDetailPage() {
     }
   };
   
-  const chartConfig = {
-    total: { label: "Total Amount", color: "hsl(var(--chart-1))" },
+  const chartConfig = useMemo(() => ({
     Draft: { label: t('invoiceStatus.draft', { default: "Draft"}), color: "hsl(var(--chart-1))" },
     Sent: { label: t('invoiceStatus.sent', { default: "Sent"}), color: "hsl(var(--chart-2))" },
     Paid: { label: t('invoiceStatus.paid', { default: "Paid"}), color: "hsl(var(--chart-3))" },
     Overdue: { label: t('invoiceStatus.overdue', { default: "Overdue"}), color: "hsl(var(--chart-4))" },
     Cancelled: { label: t('invoiceStatus.cancelled', { default: "Cancelled"}), color: "hsl(var(--chart-5))" },
-  } satisfies Record<string, { label: string; color: string }>;
+    // For the bar chart
+    total: { label: t('clientDetailPage.charts.barLabelTotal', { default: "Total Amount" }), color: "hsl(var(--chart-1))" },
+  }), [t]);
 
 
   if (isLoading) {
