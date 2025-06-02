@@ -4,7 +4,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
-import { User, Search, Loader2, Users, Download } from "lucide-react"; // Added Download
+import { User, Search, Loader2, Users, Download, Eye } from "lucide-react"; 
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuth } from "@/hooks/use-auth";
@@ -51,11 +51,12 @@ export default function ClientsPage() {
     if (!searchTerm) {
       return allClients;
     }
+    const lowerSearchTerm = searchTerm.toLowerCase();
     return allClients.filter(client =>
-      client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (client.clientCompany && client.clientCompany.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (client.email && client.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (client.ice && client.ice.toLowerCase().includes(searchTerm.toLowerCase()))
+      client.name.toLowerCase().includes(lowerSearchTerm) ||
+      (client.clientCompany && client.clientCompany.toLowerCase().includes(lowerSearchTerm)) ||
+      (client.email && client.email.toLowerCase().includes(lowerSearchTerm)) ||
+      (client.ice && client.ice.toLowerCase().includes(lowerSearchTerm))
     );
   }, [allClients, searchTerm]);
 
@@ -65,13 +66,13 @@ export default function ClientsPage() {
       return;
     }
     const filename = `clients_export_${new Date().toISOString().slice(0,10)}.csv`;
-    const headers = ["Name", "Company", "Email", "Phone", "Address", "ICE"];
+    const headers = ["Name", "Company", "Email", "Phone", "Address", "Client ICE"];
     const rows = filteredClients.map(client => [
       client.name,
       client.clientCompany || "",
       client.email || "",
       client.phone || "",
-      (client.address || "").replace(/\n/g, " "), // Replace newlines for CSV
+      (client.address || "").replace(/\n/g, " "), 
       client.ice || "",
     ]);
 
@@ -155,7 +156,12 @@ export default function ClientsPage() {
                     <TableCell>{client.clientCompany || "N/A"}</TableCell>
                     <TableCell>{client.email || "N/A"}</TableCell>
                     <TableCell>{client.ice || "N/A"}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right space-x-1">
+                      <Button variant="ghost" size="sm" asChild>
+                        <Link href={`/clients/${client.id}`}>
+                           <Eye className="mr-1 h-4 w-4" /> View
+                        </Link> 
+                      </Button>
                       <Button variant="ghost" size="sm" asChild>
                         <Link href={`/clients/${client.id}/edit`}>Edit</Link> 
                       </Button>
@@ -189,5 +195,3 @@ export default function ClientsPage() {
     </div>
   );
 }
-
-    

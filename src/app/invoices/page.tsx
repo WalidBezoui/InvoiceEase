@@ -4,7 +4,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
-import { FilePlus, Search, Download, Eye, Loader2, ChevronDown } from "lucide-react";
+import { FilePlus, Search, Download, Eye, Loader2, ChevronDown, FilterX } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +21,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 
 const ALL_STATUSES: Invoice['status'][] = ['draft', 'sent', 'paid', 'overdue', 'cancelled'];
@@ -71,14 +72,19 @@ export default function InvoicesPage() {
       return newSelected;
     });
   };
+  
+  const handleClearStatusFilters = () => {
+    setSelectedStatuses(new Set());
+  };
 
   const filteredInvoices = useMemo(() => {
     let invoicesToDisplay = [...allInvoices];
+    const lowerSearchTerm = searchTerm.toLowerCase();
 
     if (searchTerm) {
       invoicesToDisplay = invoicesToDisplay.filter(invoice =>
-        invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        invoice.clientName.toLowerCase().includes(searchTerm.toLowerCase())
+        invoice.invoiceNumber.toLowerCase().includes(lowerSearchTerm) ||
+        invoice.clientName.toLowerCase().includes(lowerSearchTerm)
       );
     }
 
@@ -164,7 +170,7 @@ export default function InvoicesPage() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline">
-                    Filter Status <ChevronDown className="ml-2 h-4 w-4" />
+                    Filter Status ({selectedStatuses.size > 0 ? selectedStatuses.size : 'All'}) <ChevronDown className="ml-2 h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -175,11 +181,20 @@ export default function InvoicesPage() {
                       key={status}
                       checked={selectedStatuses.has(status)}
                       onCheckedChange={() => handleStatusToggle(status)}
+                      onSelect={(e) => e.preventDefault()} // Prevent auto-close
                       className="capitalize"
                     >
                       {status}
                     </DropdownMenuCheckboxItem>
                   ))}
+                  {selectedStatuses.size > 0 && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onSelect={handleClearStatusFilters} className="text-sm">
+                        <FilterX className="mr-2 h-4 w-4" /> Clear All Filters
+                      </DropdownMenuItem>
+                    </>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
               <Button variant="outline" onClick={exportToCsv}>
@@ -260,5 +275,4 @@ export default function InvoicesPage() {
     </div>
   );
 }
-
     
