@@ -4,7 +4,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
-import { User, Search, Loader2, Users, Download, Eye } from "lucide-react"; 
+import { User, Search, Loader2, Users, Download, Eye, Edit } from "lucide-react"; 
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuth } from "@/hooks/use-auth";
@@ -156,15 +156,19 @@ export default function ClientsPage() {
                     <TableCell>{client.clientCompany || "N/A"}</TableCell>
                     <TableCell>{client.email || "N/A"}</TableCell>
                     <TableCell>{client.ice || "N/A"}</TableCell>
-                    <TableCell className="text-right space-x-1">
-                      <Button variant="ghost" size="sm" asChild>
-                        <Link href={`/clients/${client.id}`}>
-                           <Eye className="mr-1 h-4 w-4" /> View
-                        </Link> 
-                      </Button>
-                      <Button variant="ghost" size="sm" asChild>
-                        <Link href={`/clients/${client.id}/edit`}>Edit</Link> 
-                      </Button>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button variant="ghost" size="sm" asChild>
+                          <Link href={`/clients/${client.id}`}>
+                             <Eye className="mr-1 h-4 w-4" /> View
+                          </Link> 
+                        </Button>
+                        <Button variant="ghost" size="sm" asChild>
+                          <Link href={`/clients/${client.id}/edit`}>
+                            <Edit className="mr-1 h-4 w-4" /> Edit
+                          </Link> 
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -195,3 +199,4 @@ export default function ClientsPage() {
     </div>
   );
 }
+
