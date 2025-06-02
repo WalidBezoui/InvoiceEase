@@ -2,8 +2,9 @@
 "use client";
 
 import Link from 'next/link';
-import { Building2, LogIn, LogOut, UserPlus, LayoutDashboard, FileText, Settings, Users } from 'lucide-react'; // Added Users icon
+import { Building2, LogIn, LogOut, UserPlus, LayoutDashboard, FileText, Settings, Users } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
+import { useLanguage } from '@/hooks/use-language'; // Import useLanguage
 import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
@@ -17,9 +18,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Skeleton } from '@/components/ui/skeleton'; // For loading state
 
 export default function SiteHeader() {
-  const { user, loading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const { t, isLoadingLocale } = useLanguage(); // Use language hook
   const router = useRouter();
 
   const handleSignOut = async () => {
@@ -40,6 +43,7 @@ export default function SiteHeader() {
     return names[0].substring(0, 2);
   };
 
+  const isLoading = authLoading || isLoadingLocale;
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -49,32 +53,35 @@ export default function SiteHeader() {
           <span className="font-headline text-xl font-bold text-primary">InvoiceEase</span>
         </Link>
         <nav className="flex items-center space-x-2 md:space-x-4">
-          {loading ? (
-            <div className="h-8 w-20 animate-pulse rounded-md bg-muted"></div>
+          {isLoading ? (
+            <div className="flex items-center space-x-2 md:space-x-4">
+              <Skeleton className="h-8 w-24 hidden md:inline-flex" />
+              <Skeleton className="h-8 w-20 hidden md:inline-flex" />
+              <Skeleton className="h-8 w-8 rounded-full" />
+            </div>
           ) : user ? (
             <>
-              <Button variant="ghost" size="sm" asChild className="text-sm font-medium text-muted-foreground transition-colors hidden md:inline-flex">
+              <Button variant="ghost" size="sm" asChild className="text-sm font-medium text-muted-foreground transition-colors hidden md:inline-flex hover:text-accent-foreground">
                 <Link href="/dashboard">
-                  <LayoutDashboard className="mr-2 h-4 w-4" /> Dashboard
+                  <LayoutDashboard className="mr-2 h-4 w-4" /> {t('siteNav.dashboard')}
                 </Link>
               </Button>
-              <Button variant="ghost" size="sm" asChild className="text-sm font-medium text-muted-foreground transition-colors hidden md:inline-flex">
+              <Button variant="ghost" size="sm" asChild className="text-sm font-medium text-muted-foreground transition-colors hidden md:inline-flex hover:text-accent-foreground">
                 <Link href="/invoices">
-                  <FileText className="mr-2 h-4 w-4" /> Invoices
+                  <FileText className="mr-2 h-4 w-4" /> {t('siteNav.invoices')}
                 </Link>
               </Button>
-               <Button variant="ghost" size="sm" asChild className="text-sm font-medium text-muted-foreground transition-colors hidden md:inline-flex">
+               <Button variant="ghost" size="sm" asChild className="text-sm font-medium text-muted-foreground transition-colors hidden md:inline-flex hover:text-accent-foreground">
                 <Link href="/clients">
-                  <Users className="mr-2 h-4 w-4" /> Clients
+                  <Users className="mr-2 h-4 w-4" /> {t('siteNav.clients')}
                 </Link>
               </Button>
-              <Button variant="ghost" size="sm" asChild className="text-sm font-medium text-muted-foreground transition-colors hidden md:inline-flex">
+              <Button variant="ghost" size="sm" asChild className="text-sm font-medium text-muted-foreground transition-colors hidden md:inline-flex hover:text-accent-foreground">
                 <Link href="/preferences">
-                  <Settings className="mr-2 h-4 w-4" /> Preferences
+                  <Settings className="mr-2 h-4 w-4" /> {t('siteNav.preferences')}
                 </Link>
               </Button>
               
-              {/* Mobile Menu Icon and Dropdown */}
                <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
@@ -95,21 +102,21 @@ export default function SiteHeader() {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                    <DropdownMenuItem asChild className="cursor-pointer md:hidden">
-                     <Link href="/dashboard"><LayoutDashboard className="mr-2 h-4 w-4" />Dashboard</Link>
+                     <Link href="/dashboard"><LayoutDashboard className="mr-2 h-4 w-4" />{t('siteNav.dashboard')}</Link>
                    </DropdownMenuItem>
                    <DropdownMenuItem asChild className="cursor-pointer md:hidden">
-                     <Link href="/invoices"><FileText className="mr-2 h-4 w-4" />Invoices</Link>
+                     <Link href="/invoices"><FileText className="mr-2 h-4 w-4" />{t('siteNav.invoices')}</Link>
                    </DropdownMenuItem>
                    <DropdownMenuItem asChild className="cursor-pointer md:hidden">
-                     <Link href="/clients"><Users className="mr-2 h-4 w-4" />Clients</Link>
+                     <Link href="/clients"><Users className="mr-2 h-4 w-4" />{t('siteNav.clients')}</Link>
                    </DropdownMenuItem>
                    <DropdownMenuItem asChild className="cursor-pointer md:hidden">
-                     <Link href="/preferences"><Settings className="mr-2 h-4 w-4" />Preferences</Link>
+                     <Link href="/preferences"><Settings className="mr-2 h-4 w-4" />{t('siteNav.preferences')}</Link>
                    </DropdownMenuItem>
                    <DropdownMenuSeparator className="md:hidden"/>
                   <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
                     <LogOut className="mr-2 h-4 w-4" />
-                    <span>Log out</span>
+                    <span>{t('siteNav.logout')}</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -118,12 +125,12 @@ export default function SiteHeader() {
             <>
               <Button variant="ghost" asChild>
                 <Link href="/login">
-                  <LogIn className="mr-2 h-4 w-4" /> Login
+                  <LogIn className="mr-2 h-4 w-4" /> {t('siteNav.login')}
                 </Link>
               </Button>
               <Button asChild>
                 <Link href="/signup">
-                  <UserPlus className="mr-2 h-4 w-4" /> Sign Up
+                  <UserPlus className="mr-2 h-4 w-4" /> {t('siteNav.signup')}
                 </Link>
               </Button>
             </>

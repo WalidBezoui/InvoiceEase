@@ -1,6 +1,8 @@
+
 import type { Metadata } from 'next';
 import './globals.css';
 import { AuthProvider } from '@/contexts/auth-context';
+import { LanguageProvider } from '@/contexts/language-context'; // Import
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
@@ -14,7 +16,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className="h-full">
+    <html lang="fr" suppressHydrationWarning className="h-full">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -22,8 +24,10 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased bg-background text-foreground min-h-screen flex flex-col">
         <AuthProvider>
-          {children}
-          <Toaster />
+          <LanguageProvider> {/* Wrap children with LanguageProvider */}
+            {children}
+            <Toaster />
+          </LanguageProvider>
         </AuthProvider>
       </body>
     </html>

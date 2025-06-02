@@ -4,16 +4,17 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
+import { useLanguage, type Locale } from "@/hooks/use-language"; // Import useLanguage
 import { db } from "@/lib/firebase";
 import type { Invoice, InvoiceItem } from "@/lib/types";
 import { doc, getDoc, updateDoc, serverTimestamp, type FieldValue } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowLeft, Download, Edit, Loader2, AlertTriangle, Printer, ChevronDown, Send, DollarSign, AlertCircle as AlertCircleIcon, XCircle, Undo, FilePenLine } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
-import { fr } from "date-fns/locale"; 
+import { fr, enUS as en } from "date-fns/locale"; 
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
@@ -32,7 +33,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 
@@ -114,135 +114,30 @@ function numberToFrenchWords(num: number, currencyCode: string): string {
   return words.replace(/\s+/g, ' ').trim();
 }
 
-
-const getInvoiceStrings = (languageCode?: string) => {
-  const lang = languageCode?.toLowerCase().startsWith("fr") ? "fr" : "en"; 
-
-  const strings = {
-    en: {
-      invoiceTitle: "Invoice",
-      billTo: "Bill To:",
-      issueDate: "Issue Date:",
-      dueDate: "Due Date:",
-      itemDescription: "Description",
-      itemQuantity: "Quantity",
-      itemUnitPrice: "Unit Price",
-      itemTotal: "Total",
-      notes: "Notes:",
-      paymentTerms: "Payment Terms:",
-      subtotal: "Subtotal:",
-      tax: "Tax",
-      total: "Total:",
-      currency: "Currency:",
-      invoiceStatus: "Invoice Status",
-      backToInvoices: "Back to Invoices",
-      printPdf: "Print / PDF",
-      downloadPdf: "Download PDF",
-      edit: "Edit",
-      errorLoadingInvoice: "Error Loading Invoice",
-      invoiceNotFound: "Invoice Not Found",
-      invoiceNotFoundMessage: "The invoice you are looking for does not exist or could not be loaded.",
-      stoppedAtTheSumOf: "This invoice is closed at the sum of:",
-      thatIs: "i.e.",
-      changeStatus: "Change Status",
-      markAsSent: "Mark as Sent",
-      markAsPaid: "Mark as Paid",
-      markAsOverdue: "Mark as Overdue",
-      cancelInvoice: "Cancel Invoice",
-      revertToSent: "Revert to Sent",
-      reopenAsDraft: "Re-open as Draft",
-      confirmPaidTitle: "Confirm Payment",
-      confirmPaidDescription: "Are you sure you want to mark this invoice as paid? This action cannot be easily undone.",
-      confirmPaidAction: "Confirm Paid",
-      confirmPaidCancel: "Cancel",
-      confirmCancelTitle: "Confirm Cancellation",
-      confirmCancelDescription: "Are you sure you want to cancel this invoice? This action marks the invoice as void.",
-      confirmCancelAction: "Confirm Cancel",
-      confirmCancelCancel: "Keep Invoice",
-      confirmRevertToSentTitle: "Confirm Revert to Sent",
-      confirmRevertToSentDescription: "Are you sure you want to mark this invoice as 'Sent' (not paid)? This will clear the payment date.",
-      confirmRevertToSentAction: "Confirm Revert",
-      confirmRevertToSentCancel: "Keep as Paid",
-      confirmReopenAsDraftTitle: "Confirm Re-open",
-      confirmReopenAsDraftDescription: "Are you sure you want to re-open this cancelled invoice? It will be moved to 'Draft' status.",
-      confirmReopenAsDraftAction: "Confirm Re-open",
-      confirmReopenAsDraftCancel: "Keep Cancelled",
-    },
-    fr: {
-      invoiceTitle: "Facture",
-      billTo: "Facturé à :",
-      issueDate: "Date d'émission :",
-      dueDate: "Date d'échéance :",
-      itemDescription: "Description",
-      itemQuantity: "Quantité",
-      itemUnitPrice: "Prix Unitaire",
-      itemTotal: "Total",
-      notes : "Notes :",
-      paymentTerms: "Conditions de paiement :",
-      subtotal: "Sous-total :",
-      tax: "Taxe",
-      total: "Total :",
-      currency: "Devise :",
-      invoiceStatus: "Statut de la facture",
-      backToInvoices: "Retour aux factures",
-      printPdf: "Imprimer / PDF",
-      downloadPdf: "Télécharger PDF",
-      edit: "Modifier",
-      errorLoadingInvoice: "Erreur de chargement de la facture",
-      invoiceNotFound: "Facture non trouvée",
-      invoiceNotFoundMessage: "La facture que vous recherchez n'existe pas ou n'a pas pu être chargée.",
-      stoppedAtTheSumOf: "Arrêtée la présente facture à la somme de :",
-      thatIs: "soit",
-      changeStatus: "Changer Statut",
-      markAsSent: "Marquer comme Envoyée",
-      markAsPaid: "Marquer comme Payée",
-      markAsOverdue: "Marquer comme En Retard",
-      cancelInvoice: "Annuler la Facture",
-      revertToSent: "Revenir à Envoyée",
-      reopenAsDraft: "Réouvrir comme Brouillon",
-      confirmPaidTitle: "Confirmer le Paiement",
-      confirmPaidDescription: "Êtes-vous sûr de vouloir marquer cette facture comme payée ? Cette action ne peut pas être facilement annulée.",
-      confirmPaidAction: "Confirmer Payée",
-      confirmPaidCancel: "Annuler",
-      confirmCancelTitle: "Confirmer l'Annulation",
-      confirmCancelDescription: "Êtes-vous sûr de vouloir annuler cette facture ? Cette action rendra la facture nulle.",
-      confirmCancelAction: "Confirmer Annulation",
-      confirmCancelCancel: "Conserver Facture",
-      confirmRevertToSentTitle: "Confirmer Retour à Envoyée",
-      confirmRevertToSentDescription: "Êtes-vous sûr de vouloir marquer cette facture comme 'Envoyée' (non payée) ? La date de paiement sera effacée.",
-      confirmRevertToSentAction: "Confirmer Retour",
-      confirmRevertToSentCancel: "Garder Payée",
-      confirmReopenAsDraftTitle: "Confirmer Réouverture",
-      confirmReopenAsDraftDescription: "Êtes-vous sûr de vouloir réouvrir cette facture annulée ? Elle passera au statut 'Brouillon'.",
-      confirmReopenAsDraftAction: "Confirmer Réouverture",
-      confirmReopenAsDraftCancel: "Garder Annulée",
-    },
-  };
-  return strings[lang];
-};
-
+const dateLocales: Record<Locale, typeof fr | typeof en> = { en, fr };
 
 export default function InvoiceDetailPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const { t, locale, isLoadingLocale } = useLanguage(); // Use language hook
   const router = useRouter();
   const params = useParams();
   const { toast } = useToast();
   const invoiceId = params.id as string;
 
   const [invoice, setInvoice] = useState<Invoice | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingData, setIsLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
-  
-  const [s, setS] = useState(getInvoiceStrings("en")); 
 
+  const isLoading = authLoading || isLoadingLocale || isLoadingData;
+  
   useEffect(() => {
     async function fetchInvoice() {
       if (!user || !invoiceId) {
-        setIsLoading(false);
+        setIsLoadingData(false);
         return;
       }
-      setIsLoading(true);
+      setIsLoadingData(true);
       setError(null);
       try {
         const invoiceRef = doc(db, "invoices", invoiceId);
@@ -252,25 +147,24 @@ export default function InvoiceDetailPage() {
           const fetchedInvoice = { id: docSnap.id, ...docSnap.data() } as Invoice;
           if (fetchedInvoice.userId === user.uid) {
             setInvoice(fetchedInvoice);
-            setS(getInvoiceStrings(fetchedInvoice.language)); 
           } else {
-            setError("You do not have permission to view this invoice.");
+            setError("You do not have permission to view this invoice."); // This should be translated if possible or use a generic error key
           }
         } else {
-          setError("Invoice not found.");
+          setError(t('invoiceDetailPage.invoiceNotFound'));
         }
       } catch (err) {
         console.error("Error fetching invoice:", err);
-        setError("Failed to load invoice details. Please try again.");
+        setError(t('invoiceDetailPage.errorLoadingInvoice'));
       } finally {
-        setIsLoading(false);
+        setIsLoadingData(false);
       }
     }
     fetchInvoice();
-  }, [user, invoiceId]);
+  }, [user, invoiceId, t]);
   
-  const getDateLocale = (languageCode?: string) => {
-    return languageCode?.toLowerCase().startsWith("fr") ? fr : undefined;
+  const getDateFnsLocale = () => {
+    return dateLocales[invoice?.language as Locale || locale] || en;
   };
 
   const getStatusBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
@@ -293,7 +187,7 @@ export default function InvoiceDetailPage() {
     
     const updateData: { status: Invoice['status']; updatedAt: FieldValue; sentDate?: string | null; paidDate?: string | null } = {
       status: newStatus,
-      updatedAt: serverTimestamp(),
+      updatedAt: serverTimestamp() as FieldValue,
     };
 
     if (newStatus === 'sent') {
@@ -304,6 +198,8 @@ export default function InvoiceDetailPage() {
       }
     } else if (newStatus === 'paid' && (invoice.status === 'sent' || invoice.status === 'overdue')) { 
       updateData.paidDate = new Date().toISOString();
+    } else if (newStatus === 'draft' && invoice.status === 'cancelled') {
+      // No specific date change needed when reopening from cancelled to draft
     }
     
     try {
@@ -320,14 +216,14 @@ export default function InvoiceDetailPage() {
         return updatedInvoice;
       });
       toast({
-        title: "Status Updated",
-        description: `Invoice ${invoice.invoiceNumber} status changed to ${newStatus}.`,
+        title: t('invoiceDetailPage.statusUpdatedToastTitle', {status: newStatus}), // Example of a new key needed
+        description: t('invoiceDetailPage.statusUpdatedToastDesc', {invoiceNumber: invoice.invoiceNumber, status: newStatus}), // Example
       });
     } catch (err) {
       console.error("Error updating invoice status:", err);
       toast({
-        title: "Error",
-        description: "Failed to update invoice status.",
+        title: t('invoiceDetailPage.errorToastTitle'), // Example
+        description: t('invoiceDetailPage.statusUpdateErrorToastDesc'), // Example
         variant: "destructive",
       });
     } finally {
@@ -348,10 +244,9 @@ export default function InvoiceDetailPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
         <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
-        <h2 className="text-xl font-semibold text-destructive mb-2">{s.errorLoadingInvoice}</h2>
-        <p className="text-muted-foreground mb-6">{error}</p>
+        <h2 className="text-xl font-semibold text-destructive mb-2">{error}</h2>
         <Button onClick={() => router.push("/invoices")}>
-          <ArrowLeft className="mr-2 h-4 w-4" /> {s.backToInvoices}
+          <ArrowLeft className="mr-2 h-4 w-4" /> {t('invoiceDetailPage.backToInvoices')}
         </Button>
       </div>
     );
@@ -361,10 +256,10 @@ export default function InvoiceDetailPage() {
     return (
        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
         <AlertTriangle className="h-12 w-12 text-muted-foreground mb-4" />
-        <h2 className="text-xl font-semibold text-primary mb-2">{s.invoiceNotFound}</h2>
-        <p className="text-muted-foreground mb-6">{s.invoiceNotFoundMessage}</p>
+        <h2 className="text-xl font-semibold text-primary mb-2">{t('invoiceDetailPage.invoiceNotFound')}</h2>
+        <p className="text-muted-foreground mb-6">{t('invoiceDetailPage.invoiceNotFoundMessage')}</p>
         <Button onClick={() => router.push("/invoices")}>
-          <ArrowLeft className="mr-2 h-4 w-4" /> {s.backToInvoices}
+          <ArrowLeft className="mr-2 h-4 w-4" /> {t('invoiceDetailPage.backToInvoices')}
         </Button>
       </div>
     );
@@ -388,15 +283,15 @@ export default function InvoiceDetailPage() {
             <Button variant="outline" size="icon" asChild>
             <Link href="/invoices">
                 <ArrowLeft className="h-4 w-4" />
-                <span className="sr-only">{s.backToInvoices}</span>
+                <span className="sr-only">{t('invoiceDetailPage.backToInvoices')}</span>
             </Link>
             </Button>
             <div>
             <h1 className="font-headline text-3xl md:text-4xl font-bold text-primary">
-                {s.invoiceTitle} {invoice.invoiceNumber}
+                {t('invoiceDetailPage.invoiceTitle')} {invoice.invoiceNumber}
             </h1>
             <p className="text-muted-foreground mt-1">
-                {s.invoiceStatus} <Badge variant={getStatusBadgeVariant(invoice.status)} className="capitalize ml-1">{invoice.status}</Badge>
+                {t('invoiceDetailPage.invoiceStatus')} <Badge variant={getStatusBadgeVariant(invoice.status)} className="capitalize ml-1">{invoice.status}</Badge>
             </p>
             </div>
         </div>
@@ -405,32 +300,32 @@ export default function InvoiceDetailPage() {
             <DropdownMenuTrigger asChild>
               <Button variant="outline" disabled={isUpdatingStatus || !hasAvailableActions}>
                 {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                {s.changeStatus} <ChevronDown className="ml-2 h-4 w-4" />
+                {t('invoiceDetailPage.changeStatus')} <ChevronDown className="ml-2 h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               {canMarkAsSent && (
                 <DropdownMenuItem onClick={() => handleStatusChange('sent')} disabled={isUpdatingStatus}>
-                  <Send className="mr-2 h-4 w-4" /> {s.markAsSent}
+                  <Send className="mr-2 h-4 w-4" /> {t('invoiceDetailPage.markAsSent')}
                 </DropdownMenuItem>
               )}
               {canMarkAsPaid && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <DropdownMenuItem onSelect={(e) => e.preventDefault()} disabled={isUpdatingStatus}>
-                      <DollarSign className="mr-2 h-4 w-4" /> {s.markAsPaid}
+                      <DollarSign className="mr-2 h-4 w-4" /> {t('invoiceDetailPage.markAsPaid')}
                     </DropdownMenuItem>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>{s.confirmPaidTitle}</AlertDialogTitle>
-                      <AlertDialogDescription>{s.confirmPaidDescription}</AlertDialogDescription>
+                      <AlertDialogTitle>{t('invoiceDetailPage.confirmPaidTitle')}</AlertDialogTitle>
+                      <AlertDialogDescription>{t('invoiceDetailPage.confirmPaidDescription')}</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>{s.confirmPaidCancel}</AlertDialogCancel>
+                      <AlertDialogCancel>{t('invoiceDetailPage.confirmPaidCancel')}</AlertDialogCancel>
                       <AlertDialogAction onClick={() => handleStatusChange('paid')} disabled={isUpdatingStatus}>
                         {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                        {s.confirmPaidAction}
+                        {t('invoiceDetailPage.confirmPaidAction')}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
@@ -438,26 +333,26 @@ export default function InvoiceDetailPage() {
               )}
               {canMarkAsOverdue && (
                 <DropdownMenuItem onClick={() => handleStatusChange('overdue')} disabled={isUpdatingStatus}>
-                  <AlertCircleIcon className="mr-2 h-4 w-4" /> {s.markAsOverdue}
+                  <AlertCircleIcon className="mr-2 h-4 w-4" /> {t('invoiceDetailPage.markAsOverdue')}
                 </DropdownMenuItem>
               )}
               {canCancel && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                      <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive hover:!text-destructive focus:!text-destructive" disabled={isUpdatingStatus}>
-                       <XCircle className="mr-2 h-4 w-4" /> {s.cancelInvoice}
+                       <XCircle className="mr-2 h-4 w-4" /> {t('invoiceDetailPage.cancelInvoice')}
                      </DropdownMenuItem>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>{s.confirmCancelTitle}</AlertDialogTitle>
-                      <AlertDialogDescription>{s.confirmCancelDescription}</AlertDialogDescription>
+                      <AlertDialogTitle>{t('invoiceDetailPage.confirmCancelTitle')}</AlertDialogTitle>
+                      <AlertDialogDescription>{t('invoiceDetailPage.confirmCancelDescription')}</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>{s.confirmCancelCancel}</AlertDialogCancel>
+                      <AlertDialogCancel>{t('invoiceDetailPage.confirmCancelCancel')}</AlertDialogCancel>
                       <AlertDialogAction onClick={() => handleStatusChange('cancelled')} disabled={isUpdatingStatus} className="bg-destructive hover:bg-destructive/90">
                         {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                        {s.confirmCancelAction}
+                        {t('invoiceDetailPage.confirmCancelAction')}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
@@ -468,19 +363,19 @@ export default function InvoiceDetailPage() {
                  <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <DropdownMenuItem onSelect={(e) => e.preventDefault()} disabled={isUpdatingStatus}>
-                      <Undo className="mr-2 h-4 w-4" /> {s.revertToSent}
+                      <Undo className="mr-2 h-4 w-4" /> {t('invoiceDetailPage.revertToSent')}
                     </DropdownMenuItem>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>{s.confirmRevertToSentTitle}</AlertDialogTitle>
-                      <AlertDialogDescription>{s.confirmRevertToSentDescription}</AlertDialogDescription>
+                      <AlertDialogTitle>{t('invoiceDetailPage.confirmRevertToSentTitle')}</AlertDialogTitle>
+                      <AlertDialogDescription>{t('invoiceDetailPage.confirmRevertToSentDescription')}</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>{s.confirmRevertToSentCancel}</AlertDialogCancel>
+                      <AlertDialogCancel>{t('invoiceDetailPage.confirmRevertToSentCancel')}</AlertDialogCancel>
                       <AlertDialogAction onClick={() => handleStatusChange('sent')} disabled={isUpdatingStatus}>
                         {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                        {s.confirmRevertToSentAction}
+                        {t('invoiceDetailPage.confirmRevertToSentAction')}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
@@ -490,19 +385,19 @@ export default function InvoiceDetailPage() {
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <DropdownMenuItem onSelect={(e) => e.preventDefault()} disabled={isUpdatingStatus}>
-                     <FilePenLine className="mr-2 h-4 w-4" /> {s.reopenAsDraft}
+                     <FilePenLine className="mr-2 h-4 w-4" /> {t('invoiceDetailPage.reopenAsDraft')}
                     </DropdownMenuItem>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>{s.confirmReopenAsDraftTitle}</AlertDialogTitle>
-                      <AlertDialogDescription>{s.confirmReopenAsDraftDescription}</AlertDialogDescription>
+                      <AlertDialogTitle>{t('invoiceDetailPage.confirmReopenAsDraftTitle')}</AlertDialogTitle>
+                      <AlertDialogDescription>{t('invoiceDetailPage.confirmReopenAsDraftDescription')}</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>{s.confirmReopenAsDraftCancel}</AlertDialogCancel>
+                      <AlertDialogCancel>{t('invoiceDetailPage.confirmReopenAsDraftCancel')}</AlertDialogCancel>
                       <AlertDialogAction onClick={() => handleStatusChange('draft')} disabled={isUpdatingStatus}>
                         {isUpdatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                        {s.confirmReopenAsDraftAction}
+                        {t('invoiceDetailPage.confirmReopenAsDraftAction')}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
@@ -512,20 +407,20 @@ export default function InvoiceDetailPage() {
           </DropdownMenu>
 
           <Button variant="outline" onClick={printInvoice}>
-            <Printer className="mr-2 h-4 w-4" /> {s.printPdf}
+            <Printer className="mr-2 h-4 w-4" /> {t('invoiceDetailPage.printPdf')}
           </Button>
           <Button variant="outline" onClick={printInvoice}>
-            <Download className="mr-2 h-4 w-4" /> {s.downloadPdf}
+            <Download className="mr-2 h-4 w-4" /> {t('invoiceDetailPage.downloadPdf')}
           </Button>
           { invoice.status === 'draft' || invoice.status === 'sent' ? (
             <Button asChild>
               <Link href={`/invoices/${invoice.id}/edit`}>
-                <Edit className="mr-2 h-4 w-4" /> {s.edit}
+                <Edit className="mr-2 h-4 w-4" /> {t('invoiceDetailPage.edit')}
               </Link>
             </Button>
           ) : (
              <Button disabled> 
-                <Edit className="mr-2 h-4 w-4" /> {s.edit}
+                <Edit className="mr-2 h-4 w-4" /> {t('invoiceDetailPage.edit')}
              </Button>
           )}
         </div>
@@ -550,9 +445,9 @@ export default function InvoiceDetailPage() {
               <h2 className="text-lg font-semibold text-primary print:text-base">{invoice.companyInvoiceHeader || "Your Company Name"}</h2>
             </div>
             <div className="text-left md:text-right flex-grow">
-              <h3 className="text-3xl font-bold text-primary uppercase tracking-tight print:text-2xl">{s.invoiceTitle}</h3>
+              <h3 className="text-3xl font-bold text-primary uppercase tracking-tight print:text-2xl">{t('invoiceDetailPage.invoiceTitle')}</h3>
               <p className="text-muted-foreground text-sm print:text-xs"># {invoice.invoiceNumber}</p>
-              {invoice.currency && <p className="text-sm text-muted-foreground mt-1 print:text-xs">{s.currency} {invoice.currency}</p>}
+              {invoice.currency && <p className="text-sm text-muted-foreground mt-1 print:text-xs">{t('invoiceDetailPage.currency')} {invoice.currency}</p>}
             </div>
           </div>
         </CardHeader>
@@ -563,7 +458,7 @@ export default function InvoiceDetailPage() {
         )}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
             <div>
-              <h4 className="font-semibold text-primary mb-1.5 print:text-sm">{s.billTo}</h4>
+              <h4 className="font-semibold text-primary mb-1.5 print:text-sm">{t('invoiceDetailPage.billTo')}</h4>
               <div className="space-y-0.5 text-sm text-muted-foreground print:text-xs">
                 <p className="font-medium text-foreground">{invoice.clientName}</p>
                 {invoice.clientCompany && <p>{invoice.clientCompany}</p>}
@@ -574,12 +469,12 @@ export default function InvoiceDetailPage() {
             </div>
             <div className="text-left md:text-right space-y-2 print:text-xs">
               <div>
-                <h4 className="font-semibold text-primary mb-0.5 print:text-sm">{s.issueDate}</h4>
-                <span className="text-muted-foreground">{format(new Date(invoice.issueDate), "PPP", { locale: getDateLocale(invoice.language) })}</span>
+                <h4 className="font-semibold text-primary mb-0.5 print:text-sm">{t('invoiceDetailPage.issueDate')}</h4>
+                <span className="text-muted-foreground">{format(new Date(invoice.issueDate), "PPP", { locale: getDateFnsLocale() })}</span>
               </div>
               <div>
-                <h4 className="font-semibold text-primary mb-0.5 print:text-sm">{s.dueDate}</h4>
-                <span className="text-muted-foreground">{format(new Date(invoice.dueDate), "PPP", { locale: getDateLocale(invoice.language) })}</span>
+                <h4 className="font-semibold text-primary mb-0.5 print:text-sm">{t('invoiceDetailPage.dueDate')}</h4>
+                <span className="text-muted-foreground">{format(new Date(invoice.dueDate), "PPP", { locale: getDateFnsLocale() })}</span>
               </div>
             </div>
           </div>
@@ -588,10 +483,10 @@ export default function InvoiceDetailPage() {
             <Table className="print:text-xs">
               <TableHeader>
                 <TableRow className="bg-muted/30 print:bg-slate-100">
-                  <TableHead className="w-[50%] print:py-2">{s.itemDescription}</TableHead>
-                  <TableHead className="text-center print:py-2">{s.itemQuantity}</TableHead>
-                  <TableHead className="text-right print:py-2">{s.itemUnitPrice}</TableHead>
-                  <TableHead className="text-right print:py-2">{s.itemTotal}</TableHead>
+                  <TableHead className="w-[50%] print:py-2">{t('invoiceDetailPage.itemDescription')}</TableHead>
+                  <TableHead className="text-center print:py-2">{t('invoiceDetailPage.itemQuantity')}</TableHead>
+                  <TableHead className="text-right print:py-2">{t('invoiceDetailPage.itemUnitPrice')}</TableHead>
+                  <TableHead className="text-right print:py-2">{t('invoiceDetailPage.itemTotal')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -611,42 +506,42 @@ export default function InvoiceDetailPage() {
             <div className="md:col-span-2 space-y-3 print:space-y-2">
               {invoice.notes && (
                 <div>
-                  <h4 className="font-semibold text-primary mb-1.5 print:text-sm">{s.notes}</h4>
+                  <h4 className="font-semibold text-primary mb-1.5 print:text-sm">{t('invoiceDetailPage.notes')}</h4>
                   <p className="text-sm text-muted-foreground whitespace-pre-wrap print:text-xs">{invoice.notes}</p>
                 </div>
               )}
               {invoice.appliedDefaultPaymentTerms && (
                  <div>
-                    <h4 className="font-semibold text-primary mb-1.5 print:text-sm">{s.paymentTerms}</h4>
+                    <h4 className="font-semibold text-primary mb-1.5 print:text-sm">{t('invoiceDetailPage.paymentTerms')}</h4>
                     <p className="text-sm text-muted-foreground print:text-xs">{invoice.appliedDefaultPaymentTerms}</p>
                  </div>
               )}
             </div>
             <div className="space-y-2 p-4 bg-secondary/20 rounded-lg shadow-sm print:bg-transparent print:shadow-none print:p-3 print:border print:border-slate-200 print:rounded-md">
               <div className="flex justify-between text-sm print:text-xs">
-                <span className="text-muted-foreground">{s.subtotal}</span>
+                <span className="text-muted-foreground">{t('invoiceDetailPage.subtotal')}</span>
                 <span className="font-medium">{invoice.currency} {invoice.subtotal.toFixed(2)}</span>
               </div>
               {invoice.taxAmount !== undefined && invoice.taxAmount !== 0 && (
                 <div className="flex justify-between text-sm print:text-xs">
-                  <span className="text-muted-foreground">{s.tax} ({invoice.taxRate || 0}%):</span>
+                  <span className="text-muted-foreground">{t('invoiceDetailPage.tax')} ({invoice.taxRate || 0}%):</span>
                   <span className="font-medium">{invoice.currency} {invoice.taxAmount.toFixed(2)}</span>
                 </div>
               )}
               <div className="flex justify-between text-xl font-bold text-primary border-t border-border pt-2 mt-2 print:text-lg print:pt-1 print:mt-1 print:border-slate-300">
-                <span>{s.total}</span>
+                <span>{t('invoiceDetailPage.total')}</span>
                 <span>{invoice.currency} {invoice.totalAmount.toFixed(2)}</span>
               </div>
             </div>
           </div>
           
-          {invoice.language?.toLowerCase().startsWith("fr") && (
+          {(invoice.language?.toLowerCase().startsWith("fr") || (!invoice.language && locale === 'fr')) && (
             <div className="pt-4 mt-4 border-t print:pt-2 print:mt-2 print:border-slate-200">
               <p className="text-sm text-muted-foreground print:text-xs">
-                {s.stoppedAtTheSumOf} <strong className="text-foreground">{numberToFrenchWords(invoice.totalAmount, invoice.currency)}</strong>.
+                {t('invoiceDetailPage.stoppedAtTheSumOf')} <strong className="text-foreground">{numberToFrenchWords(invoice.totalAmount, invoice.currency)}</strong>.
               </p>
               <p className="text-sm text-muted-foreground mt-1 print:text-xs">
-                ({s.thatIs} {invoice.currency} {invoice.totalAmount.toFixed(2)})
+                ({t('invoiceDetailPage.thatIs')} {invoice.currency} {invoice.totalAmount.toFixed(2)})
               </p>
             </div>
           )}

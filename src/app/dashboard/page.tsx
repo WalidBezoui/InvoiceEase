@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { FilePlus, Eye, BarChart3, Settings, Loader2, Users, ListChecks } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { useLanguage } from "@/hooks/use-language"; // Import useLanguage
 import { useEffect, useState } from "react";
 import { db } from "@/lib/firebase";
 import type { Invoice } from "@/lib/types";
@@ -24,18 +25,21 @@ interface DashboardStats {
 }
 
 export default function DashboardPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const { t, isLoadingLocale } = useLanguage(); // Use language hook
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [recentInvoices, setRecentInvoices] = useState<Invoice[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingData, setIsLoadingData] = useState(true);
+
+  const isLoading = authLoading || isLoadingLocale || isLoadingData;
 
   useEffect(() => {
     async function fetchDashboardData() {
       if (!user) {
-        setIsLoading(false);
+        setIsLoadingData(false);
         return;
       }
-      setIsLoading(true);
+      setIsLoadingData(true);
       try {
         const invoicesRef = collection(db, "invoices");
         const q = query(invoicesRef, where("userId", "==", user.uid));
@@ -76,7 +80,7 @@ export default function DashboardPage() {
         console.error("Error fetching dashboard data:", error);
         setStats({ totalRevenue: 0, outstandingInvoicesCount: 0, outstandingInvoicesAmount: 0, draftInvoicesCount: 0, totalClients: 0 });
       } finally {
-        setIsLoading(false);
+        setIsLoadingData(false);
       }
     }
     fetchDashboardData();
@@ -97,18 +101,31 @@ export default function DashboardPage() {
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="font-headline text-3xl md:text-4xl font-bold text-primary">
-            Welcome, {user?.displayName || 'User'}!
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Here&apos;s an overview of your business activity.
-          </p>
+          {isLoading ? (
+            <>
+              <Skeleton className="h-10 w-72 mb-2" />
+              <Skeleton className="h-5 w-96" />
+            </>
+          ) : (
+            <>
+            <h1 className="font-headline text-3xl md:text-4xl font-bold text-primary">
+              {t('dashboardPage.welcome', { name: user?.displayName || 'User' })}
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              {t('dashboardPage.overview')}
+            </p>
+            </>
+          )}
         </div>
-        <Button asChild size="lg">
-          <Link href="/invoices/new">
-            <FilePlus className="mr-2 h-5 w-5" /> Create New Invoice
-          </Link>
-        </Button>
+        {isLoading ? (
+          <Skeleton className="h-12 w-48" />
+        ) : (
+          <Button asChild size="lg">
+            <Link href="/invoices/new">
+              <FilePlus className="mr-2 h-5 w-5" /> {t('dashboardPage.createNewInvoice')}
+            </Link>
+          </Button>
+        )}
       </div>
 
       {isLoading ? (
@@ -244,5 +261,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
