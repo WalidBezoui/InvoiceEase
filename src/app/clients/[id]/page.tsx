@@ -62,10 +62,15 @@ export default function ClientDetailPage() {
 
   useEffect(() => {
     async function fetchClientData() {
+      // This function is now called when user or clientId changes,
+      // independent of isLoadingLocale.
       if (!user || !clientId) {
-        setIsLoadingData(false);
+        setIsLoadingData(false); // Ensure loading stops if prerequisites aren't met
+        setClient(null);
+        setInvoices([]);
         return;
       }
+
       setIsLoadingData(true);
       setError(null);
       try {
@@ -114,8 +119,13 @@ export default function ClientDetailPage() {
           const statusKey = inv.status.charAt(0).toUpperCase() + inv.status.slice(1);
           statuses[statusKey] = (statuses[statusKey] || 0) + 1;
 
-          const monthYear = format(parseISO(inv.issueDate), "MMM yyyy");
-          monthlyData[monthYear] = (monthlyData[monthYear] || 0) + inv.totalAmount;
+          // Ensure inv.issueDate is valid before parsing
+          try {
+            const monthYear = format(parseISO(inv.issueDate), "MMM yyyy");
+            monthlyData[monthYear] = (monthlyData[monthYear] || 0) + inv.totalAmount;
+          } catch (e) {
+            console.warn(`Invalid issueDate encountered for invoice ID ${inv.id}: ${inv.issueDate}`);
+          }
         });
 
         setTotalInvoiced(invoiced);
@@ -130,20 +140,36 @@ export default function ClientDetailPage() {
         
         const sortedMonthlyTotals = Object.entries(monthlyData)
           .map(([month, total]) => ({ month, total }))
-          .sort((a,b) => new Date(a.month).getTime() - new Date(b.month).getTime()); // Ensure chronological order for bar chart
+          .sort((a,b) => {
+            try {
+              // Ensure month strings are valid before creating Date objects
+              return new Date(a.month).getTime() - new Date(b.month).getTime();
+            } catch (e) {
+              console.warn(`Invalid month string for sorting: ${a.month} or ${b.month}`);
+              return 0; // Keep original order if parsing fails
+            }
+          });
         setMonthlyTotals(sortedMonthlyTotals);
 
       } catch (err) {
         console.error("Error fetching client data:", err);
-        setError(t('clientDetailPage.errorFailedLoadMessage'));
+        setError(t('clientDetailPage.errorFailedLoadMessage')); // t() will be available on re-render
       } finally {
         setIsLoadingData(false);
       }
     }
-    if (!isLoadingLocale) { // Ensure t is ready before fetching
+
+    // Call fetchClientData if user and clientId are available.
+    // The overall isLoading flag will handle cases where translations are not yet ready.
+    if (user && clientId) {
         fetchClientData();
+    } else if (!authLoading && !user) { // Handle case where auth is done but no user
+        setIsLoadingData(false);
+        setClient(null);
+        setInvoices([]);
     }
-  }, [user, clientId, t, isLoadingLocale]);
+  }, [user, clientId, authLoading, t]); // `t` is included here because it's used in error messages within the effect. 
+                                    // It's less critical than before when it controlled the effect's execution.
 
   const getStatusBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
     switch (status) {
