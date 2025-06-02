@@ -158,8 +158,9 @@
     },
     "viewAction": "View",
     "noInvoicesFound": "No invoices found for this client.",
-    "errorLoadingData": "Error Loading Client Data",
-    "errorPermission": "Client not found or you do not have permission to view this client.",
+    "errorLoadingDataTitle": "Error Loading Client Data",
+    "errorPermissionMessage": "Client not found or you do not have permission to view this client.",
+    "errorFailedLoadMessage": "Failed to load client details and invoices. Please try again.",
     "clientNotFoundTitle": "Client Not Found",
     "clientNotFoundMessage": "The client details could not be loaded."
   },
@@ -292,7 +293,16 @@
       "invoiceSavedDesc": "Invoice {{invoiceNumber}} has been saved.",
       "errorSavingTitle": "Error Saving Invoice",
       "errorSavingDesc": "An unexpected error occurred.",
-      "errorFetchingPrefs": "Could not load user preferences or clients."
+      "errorFetchingPrefs": "Could not load user preferences or clients.",
+      "clientNameRequired": "Client name is required (select or fill)",
+      "invalidEmail": "Invalid email address.",
+      "invoiceNumberRequired": "Invoice number is required",
+      "issueDateRequired": "Issue date is required",
+      "dueDateRequired": "Due date is required",
+      "itemDescRequired": "Description is required",
+      "itemQtyMin": "Quantity must be at least 0.01",
+      "itemPriceMin": "Unit price must be positive",
+      "oneItemRequired": "At least one item is required"
     }
   },
   "invoiceDetailPage": {
@@ -522,5 +532,3 @@
     "copyright": "&copy; {{year}} InvoiceEase. All rights reserved."
   }
 }
-
-      

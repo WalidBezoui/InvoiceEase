@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { format, parseISO } from "date-fns";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, PieChart, Pie, Cell, Legend as RechartsLegend, ResponsiveContainer } from "recharts";
+import { useLanguage } from "@/hooks/use-language";
 
 interface MonthlyTotal {
   month: string;
@@ -39,14 +40,15 @@ const CHART_COLORS = [
 ];
 
 export default function ClientDetailPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const { t, isLoadingLocale } = useLanguage();
   const router = useRouter();
   const params = useParams();
   const clientId = params.id as string;
 
   const [client, setClient] = useState<Client | null>(null);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingData, setIsLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [totalInvoiced, setTotalInvoiced] = useState(0);
@@ -55,14 +57,16 @@ export default function ClientDetailPage() {
   const [monthlyTotals, setMonthlyTotals] = useState<MonthlyTotal[]>([]);
   const [statusDistribution, setStatusDistribution] = useState<StatusDistribution[]>([]);
 
+  const isLoading = authLoading || isLoadingLocale || isLoadingData;
+
 
   useEffect(() => {
     async function fetchClientData() {
       if (!user || !clientId) {
-        setIsLoading(false);
+        setIsLoadingData(false);
         return;
       }
-      setIsLoading(true);
+      setIsLoadingData(true);
       setError(null);
       try {
         // Fetch client details
@@ -72,8 +76,8 @@ export default function ClientDetailPage() {
         if (clientSnap.exists() && clientSnap.data().userId === user.uid) {
           setClient({ id: clientSnap.id, ...clientSnap.data() } as Client);
         } else {
-          setError("Client not found or you do not have permission to view this client.");
-          setIsLoading(false);
+          setError(t('clientDetailPage.errorPermissionMessage'));
+          setIsLoadingData(false);
           return;
         }
 
@@ -131,13 +135,13 @@ export default function ClientDetailPage() {
 
       } catch (err) {
         console.error("Error fetching client data:", err);
-        setError("Failed to load client details and invoices. Please try again.");
+        setError(t('clientDetailPage.errorFailedLoadMessage'));
       } finally {
-        setIsLoading(false);
+        setIsLoadingData(false);
       }
     }
     fetchClientData();
-  }, [user, clientId]);
+  }, [user, clientId, t]);
 
   const getStatusBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
     switch (status) {
@@ -152,11 +156,11 @@ export default function ClientDetailPage() {
   
   const chartConfig = {
     total: { label: "Total Amount", color: "hsl(var(--chart-1))" },
-    Draft: { label: "Draft", color: "hsl(var(--chart-1))" },
-    Sent: { label: "Sent", color: "hsl(var(--chart-2))" },
-    Paid: { label: "Paid", color: "hsl(var(--chart-3))" },
-    Overdue: { label: "Overdue", color: "hsl(var(--chart-4))" },
-    Cancelled: { label: "Cancelled", color: "hsl(var(--chart-5))" },
+    Draft: { label: t('invoiceStatus.draft', { default: "Draft"}), color: "hsl(var(--chart-1))" },
+    Sent: { label: t('invoiceStatus.sent', { default: "Sent"}), color: "hsl(var(--chart-2))" },
+    Paid: { label: t('invoiceStatus.paid', { default: "Paid"}), color: "hsl(var(--chart-3))" },
+    Overdue: { label: t('invoiceStatus.overdue', { default: "Overdue"}), color: "hsl(var(--chart-4))" },
+    Cancelled: { label: t('invoiceStatus.cancelled', { default: "Cancelled"}), color: "hsl(var(--chart-5))" },
   } satisfies Record<string, { label: string; color: string }>;
 
 
@@ -198,10 +202,10 @@ export default function ClientDetailPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
         <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
-        <h2 className="text-xl font-semibold text-destructive mb-2">Error Loading Client Data</h2>
+        <h2 className="text-xl font-semibold text-destructive mb-2">{t('clientDetailPage.errorLoadingDataTitle')}</h2>
         <p className="text-muted-foreground mb-6">{error}</p>
         <Button onClick={() => router.push("/clients")}>
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Clients
+          <ArrowLeft className="mr-2 h-4 w-4" /> {t('clientDetailPage.backToClients')}
         </Button>
       </div>
     );
@@ -211,10 +215,10 @@ export default function ClientDetailPage() {
      return (
        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
         <AlertTriangle className="h-12 w-12 text-muted-foreground mb-4" />
-        <h2 className="text-xl font-semibold text-primary mb-2">Client Not Found</h2>
-        <p className="text-muted-foreground mb-6">The client details could not be loaded.</p>
+        <h2 className="text-xl font-semibold text-primary mb-2">{t('clientDetailPage.clientNotFoundTitle')}</h2>
+        <p className="text-muted-foreground mb-6">{t('clientDetailPage.clientNotFoundMessage')}</p>
         <Button onClick={() => router.push("/clients")}>
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Clients
+          <ArrowLeft className="mr-2 h-4 w-4" /> {t('clientDetailPage.backToClients')}
         </Button>
       </div>
     );
@@ -227,39 +231,39 @@ export default function ClientDetailPage() {
           <Button variant="outline" size="icon" asChild>
             <Link href="/clients">
               <ArrowLeft className="h-4 w-4" />
-              <span className="sr-only">Back to Clients</span>
+              <span className="sr-only">{t('clientDetailPage.backToClients')}</span>
             </Link>
           </Button>
           <div>
             <h1 className="font-headline text-3xl md:text-4xl font-bold text-primary">{client.name}</h1>
-            <p className="text-muted-foreground mt-1">{client.clientCompany || client.email || `Client ID: ${client.id}`}</p>
+            <p className="text-muted-foreground mt-1">{client.clientCompany || client.email || `${t('clientDetailPage.labels.clientId', { default: "Client ID" })}: ${client.id}`}</p>
           </div>
         </div>
         <Button asChild>
           <Link href={`/clients/${client.id}/edit`}>
-            <Edit className="mr-2 h-4 w-4" /> Edit Client
+            <Edit className="mr-2 h-4 w-4" /> {t('clientDetailPage.editClient')}
           </Link>
         </Button>
       </div>
 
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle className="font-headline text-xl text-primary">Client Details</CardTitle>
+          <CardTitle className="font-headline text-xl text-primary">{t('clientDetailPage.clientDetailsTitle')}</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm">
-          <div><strong className="text-primary">Name:</strong> {client.name}</div>
-          {client.clientCompany && <div><strong className="text-primary">Company:</strong> {client.clientCompany}</div>}
-          {client.email && <div><strong className="text-primary">Email:</strong> {client.email}</div>}
-          {client.phone && <div><strong className="text-primary">Phone:</strong> {client.phone}</div>}
-          {client.ice && <div><strong className="text-primary">ICE:</strong> {client.ice}</div>}
-          {client.address && <div className="md:col-span-2"><strong className="text-primary">Address:</strong> <span className="whitespace-pre-wrap">{client.address}</span></div>}
+          <div><strong className="text-primary">{t('clientDetailPage.labels.name')}</strong> {client.name}</div>
+          {client.clientCompany && <div><strong className="text-primary">{t('clientDetailPage.labels.company')}</strong> {client.clientCompany}</div>}
+          {client.email && <div><strong className="text-primary">{t('clientDetailPage.labels.email')}</strong> {client.email}</div>}
+          {client.phone && <div><strong className="text-primary">{t('clientDetailPage.labels.phone')}</strong> {client.phone}</div>}
+          {client.ice && <div><strong className="text-primary">{t('clientDetailPage.labels.ice')}</strong> {client.ice}</div>}
+          {client.address && <div className="md:col-span-2"><strong className="text-primary">{t('clientDetailPage.labels.address')}</strong> <span className="whitespace-pre-wrap">{client.address}</span></div>}
         </CardContent>
       </Card>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="shadow-md">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Invoices</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('clientDetailPage.stats.totalInvoices')}</CardTitle>
             <ListChecks className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -268,7 +272,7 @@ export default function ClientDetailPage() {
         </Card>
         <Card className="shadow-md">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Invoiced</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('clientDetailPage.stats.totalInvoiced')}</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -277,7 +281,7 @@ export default function ClientDetailPage() {
         </Card>
         <Card className="shadow-md">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Paid</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('clientDetailPage.stats.totalPaid')}</CardTitle>
             <DollarSign className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
@@ -286,7 +290,7 @@ export default function ClientDetailPage() {
         </Card>
         <Card className="shadow-md">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Outstanding</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('clientDetailPage.stats.totalOutstanding')}</CardTitle>
             <DollarSign className="h-4 w-4 text-orange-500" />
           </CardHeader>
           <CardContent>
@@ -298,8 +302,8 @@ export default function ClientDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle className="font-headline text-xl text-primary">Invoice Status Overview</CardTitle>
-            <CardDescription>Distribution of invoice statuses for {client.name}.</CardDescription>
+            <CardTitle className="font-headline text-xl text-primary">{t('clientDetailPage.charts.statusOverviewTitle')}</CardTitle>
+            <CardDescription>{t('clientDetailPage.charts.statusOverviewDesc', {clientName: client.name})}</CardDescription>
           </CardHeader>
           <CardContent>
             {statusDistribution.length > 0 ? (
@@ -315,15 +319,15 @@ export default function ClientDetailPage() {
                 </PieChart>
               </ChartContainer>
             ) : (
-              <p className="text-muted-foreground text-center py-8">No invoice data to display status distribution.</p>
+              <p className="text-muted-foreground text-center py-8">{t('clientDetailPage.charts.noStatusData')}</p>
             )}
           </CardContent>
         </Card>
 
         <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle className="font-headline text-xl text-primary">Monthly Invoice Totals</CardTitle>
-             <CardDescription>Total invoiced amount per month for {client.name}.</CardDescription>
+            <CardTitle className="font-headline text-xl text-primary">{t('clientDetailPage.charts.monthlyTotalsTitle')}</CardTitle>
+             <CardDescription>{t('clientDetailPage.charts.monthlyTotalsDesc', {clientName: client.name})}</CardDescription>
           </CardHeader>
           <CardContent>
             {monthlyTotals.length > 0 ? (
@@ -337,7 +341,7 @@ export default function ClientDetailPage() {
                 </BarChart>
               </ChartContainer>
             ) : (
-               <p className="text-muted-foreground text-center py-8">No invoice data to display monthly totals.</p>
+               <p className="text-muted-foreground text-center py-8">{t('clientDetailPage.charts.noMonthlyData')}</p>
             )}
           </CardContent>
         </Card>
@@ -345,20 +349,20 @@ export default function ClientDetailPage() {
 
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle className="font-headline text-xl text-primary">Invoice History</CardTitle>
-          <CardDescription>All invoices associated with {client.name}.</CardDescription>
+          <CardTitle className="font-headline text-xl text-primary">{t('clientDetailPage.invoiceHistory.title')}</CardTitle>
+          <CardDescription>{t('clientDetailPage.invoiceHistory.description', {clientName: client.name})}</CardDescription>
         </CardHeader>
         <CardContent>
           {invoices.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Invoice #</TableHead>
-                  <TableHead>Issue Date</TableHead>
-                  <TableHead>Due Date</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>{t('clientDetailPage.table.invoiceNo')}</TableHead>
+                  <TableHead>{t('clientDetailPage.table.issueDate')}</TableHead>
+                  <TableHead>{t('clientDetailPage.table.dueDate')}</TableHead>
+                  <TableHead className="text-right">{t('clientDetailPage.table.amount')}</TableHead>
+                  <TableHead>{t('clientDetailPage.table.status')}</TableHead>
+                  <TableHead className="text-right">{t('clientDetailPage.table.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -373,12 +377,12 @@ export default function ClientDetailPage() {
                     <TableCell>{format(parseISO(invoice.dueDate), "MMM dd, yyyy")}</TableCell>
                     <TableCell className="text-right">{invoice.currency} {invoice.totalAmount.toFixed(2)}</TableCell>
                     <TableCell>
-                      <Badge variant={getStatusBadgeVariant(invoice.status)} className="capitalize">{invoice.status}</Badge>
+                      <Badge variant={getStatusBadgeVariant(invoice.status)} className="capitalize">{t(`invoiceStatus.${invoice.status}`, { default: invoice.status})}</Badge>
                     </TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost" size="sm" asChild>
                         <Link href={`/invoices/${invoice.id}`}>
-                          <Eye className="mr-1 h-4 w-4" /> View
+                          <Eye className="mr-1 h-4 w-4" /> {t('clientDetailPage.viewAction')}
                         </Link> 
                       </Button>
                     </TableCell>
@@ -387,7 +391,7 @@ export default function ClientDetailPage() {
               </TableBody>
             </Table>
           ) : (
-            <p className="text-muted-foreground text-center py-8">No invoices found for this client.</p>
+            <p className="text-muted-foreground text-center py-8">{t('clientDetailPage.noInvoicesFound')}</p>
           )}
         </CardContent>
       </Card>

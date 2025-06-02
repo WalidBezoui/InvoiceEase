@@ -158,8 +158,9 @@
     },
     "viewAction": "Voir",
     "noInvoicesFound": "Aucune facture trouvée pour ce client.",
-    "errorLoadingData": "Erreur de Chargement des Données Client",
-    "errorPermission": "Client non trouvé ou vous n'avez pas la permission de voir ce client.",
+    "errorLoadingDataTitle": "Erreur de Chargement des Données Client",
+    "errorPermissionMessage": "Client non trouvé ou vous n'avez pas la permission de voir ce client.",
+    "errorFailedLoadMessage": "Échec du chargement des détails du client et des factures. Veuillez réessayer.",
     "clientNotFoundTitle": "Client Non Trouvé",
     "clientNotFoundMessage": "Les détails du client n'ont pas pu être chargés."
   },
@@ -292,7 +293,16 @@
       "invoiceSavedDesc": "La facture {{invoiceNumber}} a été enregistrée.",
       "errorSavingTitle": "Erreur d'Enregistrement Facture",
       "errorSavingDesc": "Une erreur inattendue s'est produite.",
-      "errorFetchingPrefs": "Impossible de charger les préférences utilisateur ou les clients."
+      "errorFetchingPrefs": "Impossible de charger les préférences utilisateur ou les clients.",
+      "clientNameRequired": "Le nom du client est requis (sélectionner ou remplir)",
+      "invalidEmail": "Adresse e-mail invalide.",
+      "invoiceNumberRequired": "Le numéro de facture est requis",
+      "issueDateRequired": "La date d'émission est requise",
+      "dueDateRequired": "La date d'échéance est requise",
+      "itemDescRequired": "La description est requise",
+      "itemQtyMin": "La quantité doit être d'au moins 0.01",
+      "itemPriceMin": "Le prix unitaire doit être positif",
+      "oneItemRequired": "Au moins un article est requis"
     }
   },
   "invoiceDetailPage": {
@@ -522,5 +532,3 @@
     "copyright": "&copy; {{year}} InvoiceEase. Tous droits réservés."
   }
 }
-
-      
