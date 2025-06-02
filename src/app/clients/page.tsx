@@ -70,7 +70,7 @@ export default function ClientsPage() {
 
   const exportToCsv = () => {
     if (filteredClients.length === 0) {
-      alert(t('invoicesPage.exportNoData')); // Re-use from invoicesPage or add specific key
+      alert(t('invoicesPage.exportNoData')); 
       return;
     }
     const filename = `clients_export_${new Date().toISOString().slice(0,10)}.csv`;
@@ -78,7 +78,7 @@ export default function ClientsPage() {
         t('clientsPage.table.name'), 
         t('clientsPage.table.company'), 
         t('clientsPage.table.email'), 
-        t('clientForm.labels.phone'), // Using existing keys for simplicity
+        t('clientForm.labels.phone'), 
         t('clientForm.labels.address'),
         t('clientsPage.table.clientICE')
     ];
@@ -90,18 +90,20 @@ export default function ClientsPage() {
         client.name,
         client.clientCompany || "",
         client.email || "",
-        phoneValue ? `="${phoneValue}"` : "", // Format phone as text formula for Excel
+        phoneValue ? `="${phoneValue}"` : "", 
         (client.address || "").replace(/\n/g, " "), 
-        iceValue ? `="${iceValue}"` : "",     // Format ICE as text formula for Excel
+        iceValue ? `="${iceValue}"` : "",     
       ];
     });
 
-    let csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n"
+    const csvData = headers.join(",") + "\n"
       + rows.map(e => e.map(val => `"${(val || '').toString().replace(/"/g, '""')}"`).join(",")).join("\n");
     
-    const encodedUri = encodeURI(csvContent);
+    const bom = "\uFEFF"; // UTF-8 Byte Order Mark
+    const csvContent = "data:text/csv;charset=utf-8," + bom + encodeURIComponent(csvData);
+    
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
+    link.setAttribute("href", csvContent);
     link.setAttribute("download", filename);
     document.body.appendChild(link);
     link.click();
@@ -155,7 +157,7 @@ export default function ClientsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          {isLoadingData && !allClients.length && ( // Show main loader only if no data yet
+          {isLoadingData && !allClients.length && ( 
             <div className="flex justify-center items-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
               <p className="ml-2 text-muted-foreground">{t('clientsPage.loading')}</p>
