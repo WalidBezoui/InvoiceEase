@@ -26,8 +26,9 @@ export default function ClientsPage() {
 
   useEffect(() => {
     async function fetchClients() {
-      if (!user) {
+      if (!user) { // Should already be handled by the conditional call below, but good for safety
         setIsLoadingData(false);
+        setAllClients([]); // Clear data if no user
         return;
       }
       setIsLoadingData(true);
@@ -48,12 +49,17 @@ export default function ClientsPage() {
         setIsLoadingData(false);
       }
     }
-    if (user && !isLoadingLocale) { // Ensure translations are ready or user exists
-        fetchClients();
-    } else if (!user && !authLoading) { // If no user and auth is done, stop loading data
-        setIsLoadingData(false);
+
+    if (user) { // Fetch data if user is available
+      fetchClients();
+    } else if (!authLoading && !user) { // Auth is done, and there's no user
+      setIsLoadingData(false); // Ensure loading stops
+      setAllClients([]); // Clear any stale client data
+      setError(null); // Clear any previous errors
     }
-  }, [user, authLoading, t, isLoadingLocale]);
+    // The dependencies are user and authLoading.
+    // isLoadingLocale and t are handled by the main isLoading guard for the component's render.
+  }, [user, authLoading, t]); // Keep t here for error message translation if fetchClients fails
 
   const filteredClients = useMemo(() => {
     if (!searchTerm) {
@@ -96,10 +102,10 @@ export default function ClientsPage() {
       ];
     });
 
+    const bom = "\uFEFF"; // UTF-8 Byte Order Mark
     const csvData = headers.join(",") + "\n"
       + rows.map(e => e.map(val => `"${(val || '').toString().replace(/"/g, '""')}"`).join(",")).join("\n");
     
-    const bom = "\uFEFF"; // UTF-8 Byte Order Mark
     const csvContent = "data:text/csv;charset=utf-8," + bom + encodeURIComponent(csvData);
     
     const link = document.createElement("a");
@@ -157,7 +163,7 @@ export default function ClientsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          {isLoadingData && !allClients.length && ( 
+          {isLoadingData && !allClients.length && !error && ( 
             <div className="flex justify-center items-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
               <p className="ml-2 text-muted-foreground">{t('clientsPage.loading')}</p>
