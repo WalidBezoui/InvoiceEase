@@ -5,13 +5,14 @@ import { useState, useEffect, type ChangeEvent } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import NextImage from "next/image"; // Renamed to avoid conflict with Lucide icon
+import NextImage from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { db } from "@/lib/firebase";
 import { doc, updateDoc, getDoc, setDoc } from "firebase/firestore";
-import { UploadCloud, Trash2, Loader2, Image as ImageIcon } from "lucide-react"; // Added ImageIcon
+import { UploadCloud, Trash2, Loader2, Image as ImageIcon } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
+import { useLanguage } from "@/hooks/use-language"; // Import useLanguage
 
 const MAX_FILE_SIZE_KB = 200; 
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_KB * 1024;
@@ -19,6 +20,7 @@ const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_KB * 1024;
 export default function WatermarkUploader() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t, isLoadingLocale } = useLanguage(); // Use language hook
   const [file, setFile] = useState<File | null>(null);
   const [previewDataUrl, setPreviewDataUrl] = useState<string | null>(null);
   const [currentWatermarkDataUrl, setCurrentWatermarkDataUrl] = useState<string | null>(null);
@@ -40,8 +42,8 @@ export default function WatermarkUploader() {
         } catch (error) {
           console.error("Error fetching current watermark:", error);
           toast({
-            title: "Error fetching watermark",
-            description: "Could not load your current watermark logo.",
+            title: t('preferencesPage.watermarkUploader.toast.errorFetchingWatermark'),
+            description: t('preferencesPage.watermarkUploader.toast.errorFetchingWatermarkDesc'),
             variant: "destructive",
           });
           setCurrentWatermarkDataUrl(null);
@@ -54,17 +56,17 @@ export default function WatermarkUploader() {
       }
     }
     fetchCurrentWatermark();
-  }, [user, toast]);
+  }, [user, toast, t]);
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
     if (selectedFile) {
       if (selectedFile.size > MAX_FILE_SIZE_BYTES) {
-        toast({ title: "File too large", description: `Please select an image smaller than ${MAX_FILE_SIZE_KB}KB.`, variant: "destructive" });
+        toast({ title: t('preferencesPage.watermarkUploader.toast.fileTooLarge'), description: t('preferencesPage.watermarkUploader.toast.fileTooLargeDesc', {maxSize: MAX_FILE_SIZE_KB}), variant: "destructive" });
         return;
       }
       if (!['image/jpeg', 'image/png', 'image/gif', 'image/svg+xml'].includes(selectedFile.type)) {
-        toast({ title: "Invalid file type", description: "Please select a JPG, PNG, GIF or SVG image.", variant: "destructive" });
+        toast({ title: t('preferencesPage.watermarkUploader.toast.invalidFileType'), description: t('preferencesPage.watermarkUploader.toast.invalidFileTypeDesc'), variant: "destructive" });
         return;
       }
       setFile(selectedFile);
@@ -87,10 +89,10 @@ export default function WatermarkUploader() {
       setCurrentWatermarkDataUrl(previewDataUrl);
       setFile(null);
       setPreviewDataUrl(null); 
-      toast({ title: "Watermark Saved", description: "Your invoice watermark logo has been updated." });
+      toast({ title: t('preferencesPage.watermarkUploader.toast.watermarkSaved'), description: t('preferencesPage.watermarkUploader.toast.watermarkSavedDesc') });
     } catch (error) {
       console.error("Error saving watermark:", error);
-      toast({ title: "Save Failed", description: "Could not save your watermark. Please try again.", variant: "destructive" });
+      toast({ title: t('preferencesPage.watermarkUploader.toast.saveFailed'), description: t('preferencesPage.watermarkUploader.toast.saveFailedDesc'), variant: "destructive" });
     } finally {
       setIsProcessing(false);
     }
@@ -106,26 +108,30 @@ export default function WatermarkUploader() {
       setCurrentWatermarkDataUrl(null);
       setFile(null); 
       setPreviewDataUrl(null);
-      toast({ title: "Watermark Removed", description: "Your invoice watermark logo has been removed." });
+      toast({ title: t('preferencesPage.watermarkUploader.toast.watermarkRemoved'), description: t('preferencesPage.watermarkUploader.toast.watermarkRemovedDesc') });
     } catch (error) {
       console.error("Error deleting watermark:", error);
-      toast({ title: "Deletion Failed", description: "Could not remove your watermark. Please try again.", variant: "destructive" });
+      toast({ title: t('preferencesPage.watermarkUploader.toast.deletionFailed'), description: t('preferencesPage.watermarkUploader.toast.deletionFailedDesc'), variant: "destructive" });
     } finally {
       setIsProcessing(false);
     }
   };
   
+  if (isLoadingLocale) {
+    return <Card className="bg-secondary/30"><CardHeader><CardTitle>Loading...</CardTitle></CardHeader></Card>; // Basic loader
+  }
+
   return (
     <Card className="bg-secondary/30">
       <CardHeader>
         <CardTitle className="font-headline text-lg text-primary flex items-center">
-          <ImageIcon className="mr-2 h-5 w-5 text-accent" /> Invoice Watermark Logo
+          <ImageIcon className="mr-2 h-5 w-5 text-accent" /> {t('preferencesPage.watermarkUploader.cardTitle')}
         </CardTitle>
-        <CardDescription>Upload a logo to be used as a subtle background watermark on your invoices. Max {MAX_FILE_SIZE_KB}KB. For best results, use a square or wide (e.g., 4:3 or 16:9) logo. It will be scaled down significantly and displayed with low opacity.</CardDescription>
+        <CardDescription>{t('preferencesPage.watermarkUploader.cardDescription', {maxSize: MAX_FILE_SIZE_KB})}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="watermark-upload" className="font-medium">Choose Watermark File</Label>
+          <Label htmlFor="watermark-upload" className="font-medium">{t('preferencesPage.watermarkUploader.chooseFile')}</Label>
           <Input id="watermark-upload" type="file" accept="image/png, image/jpeg, image/gif, image/svg+xml" onChange={handleFileChange} className="file:text-primary file:font-medium"/>
         </div>
 
@@ -137,7 +143,7 @@ export default function WatermarkUploader() {
 
         {!isLoadingWatermark && (previewDataUrl || currentWatermarkDataUrl) && (
           <div className="mt-4 p-4 border rounded-md bg-card flex flex-col items-center space-y-4">
-            <p className="text-sm font-medium text-foreground">{previewDataUrl ? "New Watermark Preview:" : "Current Watermark:"}</p>
+            <p className="text-sm font-medium text-foreground">{previewDataUrl ? t('preferencesPage.watermarkUploader.newWatermarkPreview') : t('preferencesPage.watermarkUploader.currentWatermark')}</p>
             <NextImage 
                 src={previewDataUrl || currentWatermarkDataUrl || "https://placehold.co/150x150.png?text=Watermark"} 
                 alt="Invoice Watermark" 
@@ -149,7 +155,7 @@ export default function WatermarkUploader() {
             {currentWatermarkDataUrl && !previewDataUrl && (
                <Button variant="destructive" onClick={handleDeleteWatermark} disabled={isProcessing} size="sm">
                 {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                Remove Current Watermark
+                {t('preferencesPage.watermarkUploader.removeCurrentWatermark')}
               </Button>
             )}
           </div>
@@ -158,10 +164,12 @@ export default function WatermarkUploader() {
         {file && previewDataUrl && (
           <Button onClick={handleSaveWatermark} disabled={isProcessing || !file} className="w-full md:w-auto">
             {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UploadCloud className="mr-2 h-4 w-4" />}
-            Save New Watermark
+            {t('preferencesPage.watermarkUploader.saveNewWatermark')}
           </Button>
         )}
       </CardContent>
     </Card>
   );
 }
+
+      

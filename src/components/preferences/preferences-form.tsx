@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription as UiCardDescription } from "@/components/ui/card"; // Renamed CardDescription
 import { Form, FormControl, FormDescription as UiFormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,9 +14,10 @@ import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { db } from "@/lib/firebase";
-import { doc, getDoc, setDoc } from "firebase/firestore"; // Removed updateDoc as setDoc with merge handles it
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import type { UserPreferences } from "@/lib/types";
 import { Loader2, Save } from "lucide-react";
+import { useLanguage } from "@/hooks/use-language"; // Import useLanguage
 
 const preferencesSchema = z.object({
   invoiceHeader: z.string().optional(),
@@ -52,6 +53,7 @@ const languages = [
 export default function PreferencesForm() {
   const { toast } = useToast();
   const { user } = useAuth();
+  const { t, isLoadingLocale } = useLanguage(); // Use language hook
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
 
@@ -88,7 +90,7 @@ export default function PreferencesForm() {
             defaultTaxRate: data.defaultTaxRate || 0,
           });
         } else {
-          form.reset({ // Set default values including the new tax rate if no prefs exist
+          form.reset({
             invoiceHeader: "",
             invoiceFooter: "",
             invoiceWatermark: "",
@@ -109,7 +111,7 @@ export default function PreferencesForm() {
 
   async function onSubmit(values: PreferencesFormValues) {
     if (!user) {
-      toast({ title: "Error", description: "You must be logged in.", variant: "destructive" });
+      toast({ title: t('preferencesPage.generalForm.toast.errorTitle'), description: t('preferencesPage.generalForm.toast.authError'), variant: "destructive" });
       return;
     }
     setIsLoading(true);
@@ -117,14 +119,14 @@ export default function PreferencesForm() {
       const prefDocRef = doc(db, "userPreferences", user.uid);
       await setDoc(prefDocRef, values, { merge: true }); 
       toast({
-        title: "Preferences Saved",
-        description: "Your invoice preferences have been updated.",
+        title: t('preferencesPage.generalForm.toast.successTitle'),
+        description: t('preferencesPage.generalForm.toast.successDesc'),
       });
     } catch (error) {
       console.error("Error saving preferences:", error);
       toast({
-        title: "Error",
-        description: "Failed to save preferences. Please try again.",
+        title: t('preferencesPage.generalForm.toast.errorTitle'),
+        description: t('preferencesPage.generalForm.toast.errorDesc'),
         variant: "destructive",
       });
     } finally {
@@ -132,11 +134,11 @@ export default function PreferencesForm() {
     }
   }
   
-  if (isFetching) {
+  if (isFetching || isLoadingLocale) {
      return (
         <Card className="shadow-lg mt-6">
           <CardHeader>
-            <CardTitle className="font-headline text-xl text-primary">Loading Preferences...</CardTitle>
+            <CardTitle className="font-headline text-xl text-primary">{t('preferencesPage.generalForm.loadingMessage')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {[...Array(5)].map((_, i) => ( <div key={i} className="h-10 bg-muted rounded animate-pulse"/> ))}
@@ -150,31 +152,31 @@ export default function PreferencesForm() {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <CardHeader>
-            <CardTitle className="font-headline text-xl text-primary">Invoice Customization</CardTitle>
-            <UiFormDescription>Personalize the default text, regional settings, and elements on your invoices.</UiFormDescription>
+            <CardTitle className="font-headline text-xl text-primary">{t('preferencesPage.generalForm.cardTitle')}</CardTitle>
+            <UiCardDescription>{t('preferencesPage.generalForm.cardDescription')}</UiCardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <FormField control={form.control} name="invoiceHeader" render={({ field }) => (
               <FormItem>
-                <FormLabel>Default Invoice Header</FormLabel>
-                <FormControl><Textarea placeholder="e.g., Your Company Name & Address" {...field} /></FormControl>
-                <UiFormDescription>This will appear at the top of your invoices.</UiFormDescription>
+                <FormLabel>{t('preferencesPage.generalForm.labels.invoiceHeader')}</FormLabel>
+                <FormControl><Textarea placeholder={t('preferencesPage.generalForm.placeholders.invoiceHeader')} {...field} /></FormControl>
+                <UiFormDescription>{t('preferencesPage.generalForm.descriptions.invoiceHeader')}</UiFormDescription>
                 <FormMessage />
               </FormItem>
             )} />
             <FormField control={form.control} name="invoiceFooter" render={({ field }) => (
               <FormItem>
-                <FormLabel>Default Invoice Footer</FormLabel>
-                <FormControl><Textarea placeholder="e.g., Thank you for your business! Payment due in 30 days." {...field} /></FormControl>
-                 <UiFormDescription>This will appear at the bottom of your invoices.</UiFormDescription>
+                <FormLabel>{t('preferencesPage.generalForm.labels.invoiceFooter')}</FormLabel>
+                <FormControl><Textarea placeholder={t('preferencesPage.generalForm.placeholders.invoiceFooter')} {...field} /></FormControl>
+                 <UiFormDescription>{t('preferencesPage.generalForm.descriptions.invoiceFooter')}</UiFormDescription>
                 <FormMessage />
               </FormItem>
             )} />
             <FormField control={form.control} name="invoiceWatermark" render={({ field }) => (
               <FormItem>
-                <FormLabel>Invoice Watermark Text (Optional)</FormLabel>
-                <FormControl><Input placeholder="e.g., DRAFT, PAID" {...field} /></FormControl>
-                <UiFormDescription>Text to display as a watermark (e.g., for draft or paid invoices).</UiFormDescription>
+                <FormLabel>{t('preferencesPage.generalForm.labels.invoiceWatermarkText')}</FormLabel>
+                <FormControl><Input placeholder={t('preferencesPage.generalForm.placeholders.invoiceWatermarkText')} {...field} /></FormControl>
+                <UiFormDescription>{t('preferencesPage.generalForm.descriptions.invoiceWatermarkText')}</UiFormDescription>
                 <FormMessage />
               </FormItem>
             )} />
@@ -182,9 +184,9 @@ export default function PreferencesForm() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t">
               <FormField control={form.control} name="currency" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Default Currency</FormLabel>
+                  <FormLabel>{t('preferencesPage.generalForm.labels.currency')}</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="Select currency" /></SelectTrigger></FormControl>
+                    <FormControl><SelectTrigger><SelectValue placeholder={t('preferencesPage.generalForm.placeholders.selectCurrency')} /></SelectTrigger></FormControl>
                     <SelectContent>
                       {currencies.map(c => <SelectItem key={c.code} value={c.code}>{c.name} ({c.code})</SelectItem>)}
                     </SelectContent>
@@ -194,9 +196,9 @@ export default function PreferencesForm() {
               )} />
               <FormField control={form.control} name="language" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Default Language</FormLabel>
+                  <FormLabel>{t('preferencesPage.generalForm.labels.language')}</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="Select language" /></SelectTrigger></FormControl>
+                    <FormControl><SelectTrigger><SelectValue placeholder={t('preferencesPage.generalForm.placeholders.selectLanguage')} /></SelectTrigger></FormControl>
                     <SelectContent>
                       {languages.map(l => <SelectItem key={l.code} value={l.code}>{l.name}</SelectItem>)}
                     </SelectContent>
@@ -206,9 +208,9 @@ export default function PreferencesForm() {
               )} />
                <FormField control={form.control} name="defaultTaxRate" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Default Tax Rate (%)</FormLabel>
-                  <FormControl><Input type="number" placeholder="0" {...field} min="0" max="100" step="0.01" /></FormControl>
-                  <UiFormDescription>Applied to new invoices (0-100).</UiFormDescription>
+                  <FormLabel>{t('preferencesPage.generalForm.labels.defaultTaxRate')}</FormLabel>
+                  <FormControl><Input type="number" placeholder={t('preferencesPage.generalForm.placeholders.defaultTaxRate')} {...field} min="0" max="100" step="0.01" /></FormControl>
+                  <UiFormDescription>{t('preferencesPage.generalForm.descriptions.defaultTaxRate')}</UiFormDescription>
                   <FormMessage />
                 </FormItem>
               )} />
@@ -216,17 +218,17 @@ export default function PreferencesForm() {
 
              <FormField control={form.control} name="defaultNotes" render={({ field }) => (
               <FormItem>
-                <FormLabel>Default Notes for New Invoices</FormLabel>
-                <FormControl><Textarea placeholder="e.g., Standard terms and conditions" {...field} /></FormControl>
-                 <UiFormDescription>These notes will be pre-filled on new invoices.</UiFormDescription>
+                <FormLabel>{t('preferencesPage.generalForm.labels.defaultNotes')}</FormLabel>
+                <FormControl><Textarea placeholder={t('preferencesPage.generalForm.placeholders.defaultNotes')} {...field} /></FormControl>
+                 <UiFormDescription>{t('preferencesPage.generalForm.descriptions.defaultNotes')}</UiFormDescription>
                 <FormMessage />
               </FormItem>
             )} />
              <FormField control={form.control} name="defaultPaymentTerms" render={({ field }) => (
               <FormItem>
-                <FormLabel>Default Payment Terms</FormLabel>
-                <FormControl><Input placeholder="e.g., Net 30 Days" {...field} /></FormControl>
-                <UiFormDescription>Default payment terms for new invoices.</UiFormDescription>
+                <FormLabel>{t('preferencesPage.generalForm.labels.defaultPaymentTerms')}</FormLabel>
+                <FormControl><Input placeholder={t('preferencesPage.generalForm.placeholders.defaultPaymentTerms')} {...field} /></FormControl>
+                <UiFormDescription>{t('preferencesPage.generalForm.descriptions.defaultPaymentTerms')}</UiFormDescription>
                 <FormMessage />
               </FormItem>
             )} />
@@ -235,7 +237,7 @@ export default function PreferencesForm() {
           <CardFooter className="border-t pt-6">
             <Button type="submit" disabled={isLoading || isFetching}>
               {(isLoading || isFetching) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              <Save className="mr-2 h-4 w-4" /> Save Preferences
+              <Save className="mr-2 h-4 w-4" /> {t('preferencesPage.generalForm.buttonSave')}
             </Button>
           </CardFooter>
         </form>
@@ -243,3 +245,5 @@ export default function PreferencesForm() {
     </Card>
   );
 }
+
+      

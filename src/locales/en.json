@@ -12,55 +12,515 @@
   "dashboardPage": {
     "welcome": "Welcome, {{name}}!",
     "overview": "Here's an overview of your business activity.",
-    "createNewInvoice": "Create New Invoice"
+    "createNewInvoice": "Create New Invoice",
+    "totalRevenue": "Total Revenue",
+    "basedOnPaidInvoices": "(Based on paid invoices)",
+    "outstanding": "Outstanding",
+    "invoices": "invoices",
+    "totaling": "Totaling",
+    "draftInvoices": "Draft Invoices",
+    "invoicesPendingCompletion": "Invoices pending completion",
+    "totalClients": "Total Clients",
+    "managedClients": "Managed clients",
+    "recentInvoices": "Recent Invoices",
+    "recentInvoicesDescription": "A log of your most recent invoices.",
+    "invoiceTable": {
+      "invoiceNo": "Invoice #",
+      "client": "Client",
+      "issueDate": "Issue Date",
+      "amount": "Amount",
+      "status": "Status"
+    },
+    "noRecentInvoiceActivity": "No recent invoice activity to display.",
+    "createInvoiceToStart": "Create an invoice to get started!"
   },
-  "invoiceDetailPage": {
-     "invoiceTitle": "Invoice",
-      "billTo": "Bill To:",
-      "issueDate": "Issue Date:",
-      "dueDate": "Due Date:",
+  "clientsPage": {
+    "title": "Clients",
+    "description": "Manage your customer information here.",
+    "addNewClient": "Add New Client",
+    "yourClientsCard": {
+      "title": "Your Clients",
+      "description": "View and manage your client list.",
+      "searchPlaceholder": "Search clients...",
+      "export": "Export"
+    },
+    "table": {
+      "name": "Name",
+      "company": "Company",
+      "email": "Email",
+      "clientICE": "Client ICE",
+      "actions": "Actions"
+    },
+    "actions": {
+      "view": "View",
+      "edit": "Edit"
+    },
+    "loading": "Loading clients...",
+    "error": "Failed to load clients. Please try again.",
+    "noClientsMatchSearch": "No clients match your search",
+    "noClientsMatchSearchDesc": "Try adjusting your search term.",
+    "noClientsYet": "No clients yet",
+    "noClientsYetDesc": "Add your first client to get started.",
+    "addClient": "Add Client"
+  },
+  "newClientPage": {
+    "title": "Add New Client",
+    "description": "Enter the details for your new client.",
+    "backToClients": "Back to Clients"
+  },
+  "editClientPage": {
+    "title": "Edit Client: {{clientName}}",
+    "description": "Update the details for this client.",
+    "backToClients": "Back to Clients",
+    "loadingTitle": "Loading Client Details...",
+    "loadingDescription": "Please wait while we fetch the client information.",
+    "errorLoadingClient": "Error Loading Client",
+    "errorPermission": "You do not have permission to edit this client.",
+    "errorNotFound": "Client not found.",
+    "errorFailedLoad": "Failed to load client details. Please try again.",
+    "clientNotFoundTitle": "Client Not Found",
+    "clientNotFoundMessage": "The client you are trying to edit does not exist or could not be loaded."
+  },
+  "clientForm": {
+    "editTitle": "Edit Client",
+    "addTitle": "Add New Client",
+    "editDescription": "Update the client's details below.",
+    "addDescription": "Fill in the details for the new client.",
+    "labels": {
+      "clientName": "Client Name / Company Name",
+      "clientCompany": "Legal Company Name (Optional)",
+      "ice": "ICE (Identifiant Commun de l'Entreprise - 15 digits)",
+      "email": "Email (Optional)",
+      "phone": "Phone (Optional)",
+      "address": "Address (Optional)"
+    },
+    "placeholders": {
+      "clientName": "Acme Corp or John Doe",
+      "clientCompany": "Acme Corp SARL",
+      "ice": "001234567000089",
+      "email": "contact@example.com",
+      "phone": "+212 600 000000",
+      "address": "123 Main St, Anytown"
+    },
+    "buttons": {
+      "cancel": "Cancel",
+      "saveChanges": "Save Changes",
+      "addClient": "Add Client"
+    },
+    "toast": {
+      "authErrorTitle": "Authentication Error",
+      "authErrorDesc": "You must be logged in.",
+      "clientUpdatedTitle": "Client Updated",
+      "clientUpdatedDesc": "{{clientName}} has been updated.",
+      "clientAddedTitle": "Client Added",
+      "clientAddedDesc": "{{clientName}} has been added.",
+      "errorSavingTitle": "Error Saving Client",
+      "errorSavingDesc": "Failed to save client. Please try again."
+    }
+  },
+  "clientDetailPage": {
+    "backToClients": "Back to Clients",
+    "editClient": "Edit Client",
+    "clientDetailsTitle": "Client Details",
+    "labels": {
+      "name": "Name:",
+      "company": "Company:",
+      "email": "Email:",
+      "phone": "Phone:",
+      "ice": "ICE:",
+      "address": "Address:"
+    },
+    "stats": {
+      "totalInvoices": "Total Invoices",
+      "totalInvoiced": "Total Invoiced",
+      "totalPaid": "Total Paid",
+      "totalOutstanding": "Total Outstanding"
+    },
+    "charts": {
+      "statusOverviewTitle": "Invoice Status Overview",
+      "statusOverviewDesc": "Distribution of invoice statuses for {{clientName}}.",
+      "noStatusData": "No invoice data to display status distribution.",
+      "monthlyTotalsTitle": "Monthly Invoice Totals",
+      "monthlyTotalsDesc": "Total invoiced amount per month for {{clientName}}.",
+      "noMonthlyData": "No invoice data to display monthly totals."
+    },
+    "invoiceHistory": {
+      "title": "Invoice History",
+      "description": "All invoices associated with {{clientName}}."
+    },
+    "table": {
+      "invoiceNo": "Invoice #",
+      "issueDate": "Issue Date",
+      "dueDate": "Due Date",
+      "amount": "Amount",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "viewAction": "View",
+    "noInvoicesFound": "No invoices found for this client.",
+    "errorLoadingData": "Error Loading Client Data",
+    "errorPermission": "Client not found or you do not have permission to view this client.",
+    "clientNotFoundTitle": "Client Not Found",
+    "clientNotFoundMessage": "The client details could not be loaded."
+  },
+  "invoicesPage": {
+    "title": "Invoices",
+    "description": "Manage all your customer invoices here.",
+    "createNewInvoice": "Create New Invoice",
+    "yourInvoicesCard": {
+      "title": "Your Invoices",
+      "description": "View, edit, and track your invoices.",
+      "searchPlaceholder": "Search # or client...",
+      "filterStatusTrigger": "Filter Status ({{count}})",
+      "filterStatusAll": "Filter Status (All)",
+      "filterStatusLabel": "Filter by Status",
+      "clearAllFilters": "Clear All Filters",
+      "export": "Export"
+    },
+    "table": {
+      "invoiceNo": "Invoice #",
+      "client": "Client",
+      "issueDate": "Issue Date",
+      "dueDate": "Due Date",
+      "amount": "Amount",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "viewAction": "View",
+    "loading": "Loading invoices...",
+    "error": "Failed to load invoices. Please try again.",
+    "noInvoicesMatchCriteria": "No invoices match your criteria",
+    "noInvoicesMatchCriteriaDesc": "Try adjusting your search or filter.",
+    "noInvoicesYet": "No invoices yet",
+    "noInvoicesYetDesc": "Get started by creating your first invoice.",
+    "createInvoice": "Create Invoice",
+    "exportNoData": "No data to export."
+  },
+  "newInvoicePage": {
+    "title": "Create New Invoice",
+    "description": "Fill in the details below to generate a new invoice.",
+    "backToInvoices": "Back to Invoices"
+  },
+  "editInvoicePage": {
+    "title": "Edit Invoice {{invoiceNumber}}",
+    "description": "Update the details for this invoice.",
+    "backToInvoice": "Back to Invoice",
+    "loadingTitle": "Loading Invoice...",
+    "errorTitle": "Error Loading Invoice",
+    "errorMessage": "Failed to load invoice details. Please try again.",
+    "errorPermission": "You do not have permission to edit this invoice.",
+    "errorNotFound": "Invoice not found.",
+    "notFoundTitle": "Invoice Not Found",
+    "notFoundMessage": "The invoice you are trying to edit does not exist or could not be loaded."
+  },
+  "invoiceForm": {
+    "clientInfoCard": {
+      "title": "Client Information",
+      "description": "Select an existing client or fill in the details manually.",
+      "addNewClient": "Add New Client"
+    },
+    "labels": {
+      "selectClient": "Select Client (Optional)",
+      "clientName": "Client Name",
+      "clientCompany": "Client Company Name (Optional)",
+      "clientEmail": "Client Email (Optional)",
+      "clientICE": "Client ICE (Optional)",
+      "clientAddress": "Client Address (Optional)"
+    },
+    "placeholders": {
+      "selectClientLoading": "Loading clients...",
+      "selectClientDefault": "Select a client or fill manually",
+      "selectClientManualEntry": "-- No client selected / Manual Entry --",
+      "clientName": "Client's full name or company",
+      "clientCompany": "Client's legal company name",
+      "clientEmail": "client@example.com",
+      "clientICE": "Client's ICE (15 digits)",
+      "clientAddress": "Client's billing address",
+      "invoiceNumber": "INV-2023-001",
+      "pickDate": "Pick a date",
+      "itemDescription": "Service or Product Name",
+      "itemQuantity": "1",
+      "itemUnitPrice": "100.00",
+      "notes": "Payment terms, thank you note, specific instructions for this invoice...",
+      "taxRate": "0"
+    },
+    "invoiceDetailsCard": {
+      "title": "Invoice Details",
+      "description": "Core details for this invoice."
+    },
+    "invoiceItemsCard": {
+      "title": "Invoice Items",
+      "description": "Add products or services provided."
+    },
+    "summaryNotesCard": {
+      "title": "Summary & Notes"
+    },
+    "formFields": {
+      "invoiceNumber": "Invoice Number",
+      "issueDate": "Issue Date",
+      "dueDate": "Due Date",
       "itemDescription": "Description",
-      "itemQuantity": "Quantity",
+      "itemQuantity": "Qty",
       "itemUnitPrice": "Unit Price",
       "itemTotal": "Total",
-      "notes": "Notes:",
-      "paymentTerms": "Payment Terms:",
+      "notes": "Invoice Notes (Optional)",
+      "notesDescription": "These notes are specific to this invoice. Default notes from preferences will be applied if this is empty and creating a new invoice.",
+      "taxRate": "Tax Rate (%)",
+      "taxRateDescription": "Enter 0 if no tax. Defaults from preferences if set."
+    },
+    "buttons": {
+      "addItem": "Add Item",
+      "removeItem": "Remove item",
+      "cancel": "Cancel",
+      "saveChanges": "Save Changes",
+      "saveInvoice": "Save Invoice",
+      "loadingData": "Loading Data..."
+    },
+    "summary": {
       "subtotal": "Subtotal:",
-      "tax": "Tax",
-      "total": "Total:",
-      "currency": "Currency:",
-      "invoiceStatus": "Invoice Status",
-      "backToInvoices": "Back to Invoices",
-      "printPdf": "Print / PDF",
-      "downloadPdf": "Download PDF",
-      "edit": "Edit",
-      "errorLoadingInvoice": "Error Loading Invoice",
-      "invoiceNotFound": "Invoice Not Found",
-      "invoiceNotFoundMessage": "The invoice you are looking for does not exist or could not be loaded.",
-      "stoppedAtTheSumOf": "This invoice is closed at the sum of:",
-      "thatIs": "i.e.",
-      "changeStatus": "Change Status",
-      "markAsSent": "Mark as Sent",
-      "markAsPaid": "Mark as Paid",
-      "markAsOverdue": "Mark as Overdue",
-      "cancelInvoice": "Cancel Invoice",
-      "revertToSent": "Revert to Sent",
-      "reopenAsDraft": "Re-open as Draft",
-      "confirmPaidTitle": "Confirm Payment",
-      "confirmPaidDescription": "Are you sure you want to mark this invoice as paid? This action cannot be easily undone.",
-      "confirmPaidAction": "Confirm Paid",
-      "confirmPaidCancel": "Cancel",
-      "confirmCancelTitle": "Confirm Cancellation",
-      "confirmCancelDescription": "Are you sure you want to cancel this invoice? This action marks the invoice as void.",
-      "confirmCancelAction": "Confirm Cancel",
-      "confirmCancelCancel": "Keep Invoice",
-      "confirmRevertToSentTitle": "Confirm Revert to Sent",
-      "confirmRevertToSentDescription": "Are you sure you want to mark this invoice as 'Sent' (not paid)? This will clear the payment date.",
-      "confirmRevertToSentAction": "Confirm Revert",
-      "confirmRevertToSentCancel": "Keep as Paid",
-      "confirmReopenAsDraftTitle": "Confirm Re-open",
-      "confirmReopenAsDraftDescription": "Are you sure you want to re-open this cancelled invoice? It will be moved to 'Draft' status.",
-      "confirmReopenAsDraftAction": "Confirm Re-open",
-      "confirmReopenAsDraftCancel": "Keep Cancelled"
+      "tax": "Tax ({{taxRate}}%):",
+      "total": "Total:"
+    },
+    "toast": {
+      "authErrorTitle": "Authentication Error",
+      "authErrorDesc": "You must be logged in.",
+      "pleaseWait": "Please wait",
+      "dataLoading": "Initial data is still loading.",
+      "invoiceUpdatedTitle": "Invoice Updated",
+      "invoiceUpdatedDesc": "Invoice {{invoiceNumber}} has been updated.",
+      "invoiceSavedTitle": "Invoice Saved",
+      "invoiceSavedDesc": "Invoice {{invoiceNumber}} has been saved.",
+      "errorSavingTitle": "Error Saving Invoice",
+      "errorSavingDesc": "An unexpected error occurred.",
+      "errorFetchingPrefs": "Could not load user preferences or clients."
+    }
+  },
+  "invoiceDetailPage": {
+    "invoiceTitle": "Invoice",
+    "billTo": "Bill To:",
+    "issueDate": "Issue Date:",
+    "dueDate": "Due Date:",
+    "itemDescription": "Description",
+    "itemQuantity": "Quantity",
+    "itemUnitPrice": "Unit Price",
+    "itemTotal": "Total",
+    "notes": "Notes:",
+    "paymentTerms": "Payment Terms:",
+    "subtotal": "Subtotal:",
+    "tax": "Tax",
+    "total": "Total:",
+    "currency": "Currency:",
+    "invoiceStatus": "Invoice Status",
+    "backToInvoices": "Back to Invoices",
+    "printPdf": "Print / PDF",
+    "downloadPdf": "Download PDF",
+    "edit": "Edit",
+    "errorLoadingInvoice": "Error Loading Invoice",
+    "invoiceNotFound": "Invoice Not Found",
+    "invoiceNotFoundMessage": "The invoice you are looking for does not exist or could not be loaded.",
+    "stoppedAtTheSumOf": "This invoice is closed at the sum of:",
+    "thatIs": "i.e.",
+    "changeStatus": "Change Status",
+    "markAsSent": "Mark as Sent",
+    "markAsPaid": "Mark as Paid",
+    "markAsOverdue": "Mark as Overdue",
+    "cancelInvoice": "Cancel Invoice",
+    "revertToSent": "Revert to Sent",
+    "reopenAsDraft": "Re-open as Draft",
+    "confirmPaidTitle": "Confirm Payment",
+    "confirmPaidDescription": "Are you sure you want to mark this invoice as paid? This action cannot be easily undone.",
+    "confirmPaidAction": "Confirm Paid",
+    "confirmPaidCancel": "Cancel",
+    "confirmCancelTitle": "Confirm Cancellation",
+    "confirmCancelDescription": "Are you sure you want to cancel this invoice? This action marks the invoice as void.",
+    "confirmCancelAction": "Confirm Cancel",
+    "confirmCancelCancel": "Keep Invoice",
+    "confirmRevertToSentTitle": "Confirm Revert to Sent",
+    "confirmRevertToSentDescription": "Are you sure you want to mark this invoice as 'Sent' (not paid)? This will clear the payment date.",
+    "confirmRevertToSentAction": "Confirm Revert",
+    "confirmRevertToSentCancel": "Keep as Paid",
+    "confirmReopenAsDraftTitle": "Confirm Re-open",
+    "confirmReopenAsDraftDescription": "Are you sure you want to re-open this cancelled invoice? It will be moved to 'Draft' status.",
+    "confirmReopenAsDraftAction": "Confirm Re-open",
+    "confirmReopenAsDraftCancel": "Keep Cancelled",
+    "statusUpdatedToastTitle": "Status Updated",
+    "statusUpdatedToastDesc": "Invoice {{invoiceNumber}} is now {{status}}.",
+    "errorToastTitle": "Error",
+    "statusUpdateErrorToastDesc": "Failed to update invoice status."
+  },
+  "loginPage": {
+    "title": "Welcome Back",
+    "description": "Sign in to access your InvoiceEase account."
+  },
+  "signupPage": {
+    "title": "Create an Account",
+    "description": "Join InvoiceEase to start managing your invoices effortlessly."
+  },
+  "loginForm": {
+    "emailLabel": "Email",
+    "emailPlaceholder": "you@example.com",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "••••••••",
+    "loginButton": "Login",
+    "noAccount": "Don't have an account?",
+    "signupLink": "Sign up",
+    "toast": {
+      "successTitle": "Login Successful",
+      "successDesc": "Welcome back!",
+      "failTitle": "Login Failed",
+      "errorInvalidCredentials": "Invalid email or password. Please try again.",
+      "errorInvalidEmail": "The email address is not valid.",
+      "errorDefault": "Login failed. Please check your credentials and try again.",
+      "errorUnexpected": "An unexpected error occurred. Please try again."
+    }
+  },
+  "signupForm": {
+    "nameLabel": "Full Name",
+    "namePlaceholder": "John Doe",
+    "emailLabel": "Email",
+    "emailPlaceholder": "you@example.com",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "••••••••",
+    "signupButton": "Create Account",
+    "hasAccount": "Already have an account?",
+    "loginLink": "Login",
+    "toast": {
+      "successTitle": "Account Created",
+      "successDesc": "Welcome to InvoiceEase! You are now logged in.",
+      "failTitle": "Signup Failed",
+      "errorEmailInUse": "This email address is already in use.",
+      "errorInvalidEmail": "The email address is not valid.",
+      "errorWeakPassword": "The password is too weak.",
+      "errorDefault": "Signup failed. Please try again.",
+      "errorUnexpected": "An unexpected error occurred. Please try again."
+    }
+  },
+  "homePage": {
+    "heroTitle": "Simplify Your Invoicing with <1>InvoiceEase</1>",
+    "heroSubtitle": "Create professional invoices in minutes, manage your clients, and get paid faster. Focus on your business, let us handle the paperwork.",
+    "getStartedButton": "Get Started for Free",
+    "loginButton": "Login to Your Account",
+    "featuresTitle": "Features Designed for You",
+    "featureEasyCreationTitle": "Easy Invoice Creation",
+    "featureEasyCreationDesc": "Generate beautiful, professional invoices with just a few clicks using our intuitive editor.",
+    "featureCustomizationTitle": "Customization Options",
+    "featureCustomizationDesc": "Add your logo, customize colors, and tailor invoices to match your brand identity.",
+    "featureSecureTitle": "Secure & Reliable",
+    "featureSecureDesc": "Your data is safe with us. Built on robust technology to ensure reliability and security.",
+    "manageEverythingTitle": "Manage Everything in One Place",
+    "manageEverythingSubtitle": "Track invoice statuses, manage client information, and get insights into your billing cycles. InvoiceEase provides a comprehensive dashboard to keep you organized.",
+    "manageEverythingFeature1": "Client Management",
+    "manageEverythingFeature2": "Invoice Tracking",
+    "manageEverythingFeature3": "Customizable Templates",
+    "manageEverythingFeature4": "Secure Cloud Storage"
+  },
+  "preferencesPage": {
+    "title": "Preferences",
+    "description": "Customize your invoicing experience, branding, and defaults.",
+    "tabs": {
+      "general": "General & Defaults",
+      "branding": "Branding & Appearance"
+    },
+    "generalForm": {
+      "cardTitle": "Invoice Customization",
+      "cardDescription": "Personalize the default text, regional settings, and elements on your invoices.",
+      "labels": {
+        "invoiceHeader": "Default Invoice Header",
+        "invoiceFooter": "Default Invoice Footer",
+        "invoiceWatermarkText": "Invoice Watermark Text (Optional)",
+        "currency": "Default Currency",
+        "language": "Default Language",
+        "defaultTaxRate": "Default Tax Rate (%)",
+        "defaultNotes": "Default Notes for New Invoices",
+        "defaultPaymentTerms": "Default Payment Terms"
+      },
+      "placeholders": {
+        "invoiceHeader": "e.g., Your Company Name & Address",
+        "invoiceFooter": "e.g., Thank you for your business! Payment due in 30 days.",
+        "invoiceWatermarkText": "e.g., DRAFT, PAID",
+        "selectCurrency": "Select currency",
+        "selectLanguage": "Select language",
+        "defaultTaxRate": "0",
+        "defaultNotes": "e.g., Standard terms and conditions",
+        "defaultPaymentTerms": "e.g., Net 30 Days"
+      },
+      "descriptions": {
+        "invoiceHeader": "This will appear at the top of your invoices.",
+        "invoiceFooter": "This will appear at the bottom of your invoices.",
+        "invoiceWatermarkText": "Text to display as a watermark (e.g., for draft or paid invoices).",
+        "defaultTaxRate": "Applied to new invoices (0-100).",
+        "defaultNotes": "These notes will be pre-filled on new invoices.",
+        "defaultPaymentTerms": "Default payment terms for new invoices."
+      },
+      "buttonSave": "Save Preferences",
+      "loadingMessage": "Loading Preferences...",
+      "toast": {
+        "successTitle": "Preferences Saved",
+        "successDesc": "Your invoice preferences have been updated.",
+        "errorTitle": "Error",
+        "errorDesc": "Failed to save preferences. Please try again.",
+        "authError": "You must be logged in."
+      }
+    },
+    "logoUploader": {
+      "cardTitle": "Company Logo",
+      "cardDescription": "Upload or change your company logo. Max {{maxSize}}KB. Stored directly in database.",
+      "chooseFile": "Choose Logo File",
+      "newLogoPreview": "New Logo Preview:",
+      "currentLogo": "Current Logo:",
+      "removeCurrentLogo": "Remove Current Logo",
+      "saveNewLogo": "Save New Logo",
+      "toast": {
+        "fileTooLarge": "File too large",
+        "fileTooLargeDesc": "Please select an image smaller than {{maxSize}}KB.",
+        "invalidFileType": "Invalid file type",
+        "invalidFileTypeDesc": "Please select a JPG, PNG, GIF or SVG image.",
+        "errorFetchingLogo": "Error fetching logo",
+        "errorFetchingLogoDesc": "Could not load your current company logo.",
+        "logoSaved": "Logo Saved",
+        "logoSavedDesc": "Your company logo has been updated.",
+        "saveFailed": "Save Failed",
+        "saveFailedDesc": "Could not save your logo. Please try again.",
+        "logoRemoved": "Logo Removed",
+        "logoRemovedDesc": "Your company logo has been removed.",
+        "deletionFailed": "Deletion Failed",
+        "deletionFailedDesc": "Could not remove your logo. Please try again."
+      }
+    },
+    "watermarkUploader": {
+      "cardTitle": "Invoice Watermark Logo",
+      "cardDescription": "Upload a logo to be used as a subtle background watermark on your invoices. Max {{maxSize}}KB. For best results, use a square or wide (e.g., 4:3 or 16:9) logo. It will be scaled down significantly and displayed with low opacity.",
+      "chooseFile": "Choose Watermark File",
+      "newWatermarkPreview": "New Watermark Preview:",
+      "currentWatermark": "Current Watermark:",
+      "removeCurrentWatermark": "Remove Current Watermark",
+      "saveNewWatermark": "Save New Watermark",
+      "toast": {
+        "fileTooLarge": "File too large",
+        "fileTooLargeDesc": "Please select an image smaller than {{maxSize}}KB.",
+        "invalidFileType": "Invalid file type",
+        "invalidFileTypeDesc": "Please select a JPG, PNG, GIF or SVG image.",
+        "errorFetchingWatermark": "Error fetching watermark",
+        "errorFetchingWatermarkDesc": "Could not load your current watermark logo.",
+        "watermarkSaved": "Watermark Saved",
+        "watermarkSavedDesc": "Your invoice watermark logo has been updated.",
+        "saveFailed": "Save Failed",
+        "saveFailedDesc": "Could not save your watermark. Please try again.",
+        "watermarkRemoved": "Watermark Removed",
+        "watermarkRemovedDesc": "Your invoice watermark logo has been removed.",
+        "deletionFailed": "Deletion Failed",
+        "deletionFailedDesc": "Could not remove your watermark. Please try again."
+      }
+    },
+    "brandColors": {
+      "title": "Brand Colors (Coming Soon)",
+      "description": "Customize the primary color of your invoices to match your brand.",
+      "comingSoonMessage": "This feature will allow you to select a primary color that will be reflected on your generated PDF invoices."
+    }
+  },
+  "siteFooter": {
+    "copyright": "&copy; {{year}} InvoiceEase. All rights reserved."
   }
 }
+
+      

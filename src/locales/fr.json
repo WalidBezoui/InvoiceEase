@@ -12,7 +12,288 @@
   "dashboardPage": {
     "welcome": "Bienvenue, {{name}} !",
     "overview": "Voici un aperçu de votre activité commerciale.",
-    "createNewInvoice": "Créer une Nouvelle Facture"
+    "createNewInvoice": "Créer une Nouvelle Facture",
+    "totalRevenue": "Revenu Total",
+    "basedOnPaidInvoices": "(Basé sur les factures payées)",
+    "outstanding": "En Attente",
+    "invoices": "factures",
+    "totaling": "Totalisant",
+    "draftInvoices": "Factures Brouillons",
+    "invoicesPendingCompletion": "Factures en attente de finalisation",
+    "totalClients": "Total Clients",
+    "managedClients": "Clients gérés",
+    "recentInvoices": "Factures Récentes",
+    "recentInvoicesDescription": "Un journal de vos factures les plus récentes.",
+    "invoiceTable": {
+      "invoiceNo": "Facture N°",
+      "client": "Client",
+      "issueDate": "Date d'Émission",
+      "amount": "Montant",
+      "status": "Statut"
+    },
+    "noRecentInvoiceActivity": "Aucune activité de facture récente à afficher.",
+    "createInvoiceToStart": "Créez une facture pour commencer !"
+  },
+  "clientsPage": {
+    "title": "Clients",
+    "description": "Gérez les informations de vos clients ici.",
+    "addNewClient": "Ajouter Nouveau Client",
+    "yourClientsCard": {
+      "title": "Vos Clients",
+      "description": "Consultez et gérez votre liste de clients.",
+      "searchPlaceholder": "Rechercher des clients...",
+      "export": "Exporter"
+    },
+    "table": {
+      "name": "Nom",
+      "company": "Société",
+      "email": "E-mail",
+      "clientICE": "ICE Client",
+      "actions": "Actions"
+    },
+    "actions": {
+      "view": "Voir",
+      "edit": "Modifier"
+    },
+    "loading": "Chargement des clients...",
+    "error": "Échec du chargement des clients. Veuillez réessayer.",
+    "noClientsMatchSearch": "Aucun client ne correspond à votre recherche",
+    "noClientsMatchSearchDesc": "Essayez d'ajuster votre terme de recherche.",
+    "noClientsYet": "Aucun client pour le moment",
+    "noClientsYetDesc": "Ajoutez votre premier client pour commencer.",
+    "addClient": "Ajouter Client"
+  },
+  "newClientPage": {
+    "title": "Ajouter Nouveau Client",
+    "description": "Saisissez les détails de votre nouveau client.",
+    "backToClients": "Retour aux Clients"
+  },
+  "editClientPage": {
+    "title": "Modifier Client : {{clientName}}",
+    "description": "Mettez à jour les détails de ce client.",
+    "backToClients": "Retour aux Clients",
+    "loadingTitle": "Chargement des Détails du Client...",
+    "loadingDescription": "Veuillez patienter pendant que nous récupérons les informations du client.",
+    "errorLoadingClient": "Erreur de Chargement du Client",
+    "errorPermission": "Vous n'avez pas la permission de modifier ce client.",
+    "errorNotFound": "Client non trouvé.",
+    "errorFailedLoad": "Échec du chargement des détails du client. Veuillez réessayer.",
+    "clientNotFoundTitle": "Client Non Trouvé",
+    "clientNotFoundMessage": "Le client que vous essayez de modifier n'existe pas ou n'a pas pu être chargé."
+  },
+  "clientForm": {
+    "editTitle": "Modifier Client",
+    "addTitle": "Ajouter Nouveau Client",
+    "editDescription": "Mettez à jour les informations du client ci-dessous.",
+    "addDescription": "Remplissez les informations pour le nouveau client.",
+    "labels": {
+      "clientName": "Nom du Client / Nom de l'Entreprise",
+      "clientCompany": "Raison Sociale (Optionnel)",
+      "ice": "ICE (Identifiant Commun de l'Entreprise - 15 chiffres)",
+      "email": "E-mail (Optionnel)",
+      "phone": "Téléphone (Optionnel)",
+      "address": "Adresse (Optionnel)"
+    },
+    "placeholders": {
+      "clientName": "Acme Corp ou Jean Dupont",
+      "clientCompany": "Acme Corp SARL",
+      "ice": "001234567000089",
+      "email": "contact@example.com",
+      "phone": "+212 600 000000",
+      "address": "123 Rue Principale, Ville"
+    },
+    "buttons": {
+      "cancel": "Annuler",
+      "saveChanges": "Enregistrer les Modifications",
+      "addClient": "Ajouter Client"
+    },
+    "toast": {
+      "authErrorTitle": "Erreur d'Authentification",
+      "authErrorDesc": "Vous devez être connecté.",
+      "clientUpdatedTitle": "Client Mis à Jour",
+      "clientUpdatedDesc": "{{clientName}} a été mis à jour.",
+      "clientAddedTitle": "Client Ajouté",
+      "clientAddedDesc": "{{clientName}} a été ajouté.",
+      "errorSavingTitle": "Erreur d'Enregistrement du Client",
+      "errorSavingDesc": "Échec de l'enregistrement du client. Veuillez réessayer."
+    }
+  },
+  "clientDetailPage": {
+    "backToClients": "Retour aux Clients",
+    "editClient": "Modifier Client",
+    "clientDetailsTitle": "Détails du Client",
+    "labels": {
+      "name": "Nom :",
+      "company": "Société :",
+      "email": "E-mail :",
+      "phone": "Téléphone :",
+      "ice": "ICE :",
+      "address": "Adresse :"
+    },
+    "stats": {
+      "totalInvoices": "Total Factures",
+      "totalInvoiced": "Total Facturé",
+      "totalPaid": "Total Payé",
+      "totalOutstanding": "Total Impayé"
+    },
+    "charts": {
+      "statusOverviewTitle": "Aperçu Statut Factures",
+      "statusOverviewDesc": "Distribution des statuts des factures pour {{clientName}}.",
+      "noStatusData": "Aucune donnée de facture pour afficher la distribution des statuts.",
+      "monthlyTotalsTitle": "Totaux Mensuels Factures",
+      "monthlyTotalsDesc": "Montant total facturé par mois pour {{clientName}}.",
+      "noMonthlyData": "Aucune donnée de facture pour afficher les totaux mensuels."
+    },
+    "invoiceHistory": {
+      "title": "Historique des Factures",
+      "description": "Toutes les factures associées à {{clientName}}."
+    },
+    "table": {
+      "invoiceNo": "Facture N°",
+      "issueDate": "Date d'Émission",
+      "dueDate": "Date d'Échéance",
+      "amount": "Montant",
+      "status": "Statut",
+      "actions": "Actions"
+    },
+    "viewAction": "Voir",
+    "noInvoicesFound": "Aucune facture trouvée pour ce client.",
+    "errorLoadingData": "Erreur de Chargement des Données Client",
+    "errorPermission": "Client non trouvé ou vous n'avez pas la permission de voir ce client.",
+    "clientNotFoundTitle": "Client Non Trouvé",
+    "clientNotFoundMessage": "Les détails du client n'ont pas pu être chargés."
+  },
+  "invoicesPage": {
+    "title": "Factures",
+    "description": "Gérez toutes vos factures clients ici.",
+    "createNewInvoice": "Créer une Nouvelle Facture",
+    "yourInvoicesCard": {
+      "title": "Vos Factures",
+      "description": "Consultez, modifiez et suivez vos factures.",
+      "searchPlaceholder": "Rechercher N° ou client...",
+      "filterStatusTrigger": "Filtrer Statut ({{count}})",
+      "filterStatusAll": "Filtrer Statut (Tous)",
+      "filterStatusLabel": "Filtrer par Statut",
+      "clearAllFilters": "Effacer Tous les Filtres",
+      "export": "Exporter"
+    },
+    "table": {
+      "invoiceNo": "Facture N°",
+      "client": "Client",
+      "issueDate": "Date d'Émission",
+      "dueDate": "Date d'Échéance",
+      "amount": "Montant",
+      "status": "Statut",
+      "actions": "Actions"
+    },
+    "viewAction": "Voir",
+    "loading": "Chargement des factures...",
+    "error": "Échec du chargement des factures. Veuillez réessayer.",
+    "noInvoicesMatchCriteria": "Aucune facture ne correspond à vos critères",
+    "noInvoicesMatchCriteriaDesc": "Essayez d'ajuster votre recherche ou filtre.",
+    "noInvoicesYet": "Aucune facture pour le moment",
+    "noInvoicesYetDesc": "Commencez par créer votre première facture.",
+    "createInvoice": "Créer Facture",
+    "exportNoData": "Aucune donnée à exporter."
+  },
+  "newInvoicePage": {
+    "title": "Créer une Nouvelle Facture",
+    "description": "Remplissez les détails ci-dessous pour générer une nouvelle facture.",
+    "backToInvoices": "Retour aux Factures"
+  },
+  "editInvoicePage": {
+    "title": "Modifier Facture {{invoiceNumber}}",
+    "description": "Mettez à jour les détails de cette facture.",
+    "backToInvoice": "Retour à la Facture",
+    "loadingTitle": "Chargement de la Facture...",
+    "errorTitle": "Erreur de Chargement de la Facture",
+    "errorMessage": "Échec du chargement des détails de la facture. Veuillez réessayer.",
+    "errorPermission": "Vous n'avez pas la permission de modifier cette facture.",
+    "errorNotFound": "Facture non trouvée.",
+    "notFoundTitle": "Facture Non Trouvée",
+    "notFoundMessage": "La facture que vous essayez de modifier n'existe pas ou n'a pas pu être chargée."
+  },
+  "invoiceForm": {
+    "clientInfoCard": {
+      "title": "Informations Client",
+      "description": "Sélectionnez un client existant ou remplissez les détails manuellement.",
+      "addNewClient": "Ajouter Nouveau Client"
+    },
+    "labels": {
+      "selectClient": "Sélectionner Client (Optionnel)",
+      "clientName": "Nom du Client",
+      "clientCompany": "Raison Sociale Client (Optionnel)",
+      "clientEmail": "E-mail Client (Optionnel)",
+      "clientICE": "ICE Client (Optionnel)",
+      "clientAddress": "Adresse Client (Optionnel)"
+    },
+    "placeholders": {
+      "selectClientLoading": "Chargement des clients...",
+      "selectClientDefault": "Sélectionner un client ou remplir manuellement",
+      "selectClientManualEntry": "-- Aucun client sélectionné / Saisie manuelle --",
+      "clientName": "Nom complet ou société du client",
+      "clientCompany": "Raison sociale légale du client",
+      "clientEmail": "client@example.com",
+      "clientICE": "ICE du client (15 chiffres)",
+      "clientAddress": "Adresse de facturation du client",
+      "invoiceNumber": "FAC-2023-001",
+      "pickDate": "Choisir une date",
+      "itemDescription": "Nom du Service ou Produit",
+      "itemQuantity": "1",
+      "itemUnitPrice": "100.00",
+      "notes": "Conditions de paiement, mot de remerciement, instructions spécifiques pour cette facture...",
+      "taxRate": "0"
+    },
+    "invoiceDetailsCard": {
+      "title": "Détails de la Facture",
+      "description": "Informations principales pour cette facture."
+    },
+    "invoiceItemsCard": {
+      "title": "Lignes de la Facture",
+      "description": "Ajoutez les produits ou services fournis."
+    },
+    "summaryNotesCard": {
+      "title": "Résumé & Notes"
+    },
+    "formFields": {
+      "invoiceNumber": "Numéro de Facture",
+      "issueDate": "Date d'Émission",
+      "dueDate": "Date d'Échéance",
+      "itemDescription": "Description",
+      "itemQuantity": "Qté",
+      "itemUnitPrice": "Prix Unitaire",
+      "itemTotal": "Total",
+      "notes": "Notes de Facture (Optionnel)",
+      "notesDescription": "Ces notes sont spécifiques à cette facture. Les notes par défaut des préférences seront appliquées si ce champ est vide lors de la création d'une nouvelle facture.",
+      "taxRate": "Taux de Taxe (%)",
+      "taxRateDescription": "Entrez 0 si pas de taxe. Provient des préférences si défini."
+    },
+    "buttons": {
+      "addItem": "Ajouter Ligne",
+      "removeItem": "Supprimer la ligne",
+      "cancel": "Annuler",
+      "saveChanges": "Enregistrer les Modifications",
+      "saveInvoice": "Enregistrer la Facture",
+      "loadingData": "Chargement Données..."
+    },
+    "summary": {
+      "subtotal": "Sous-total :",
+      "tax": "Taxe ({{taxRate}}%) :",
+      "total": "Total :"
+    },
+    "toast": {
+      "authErrorTitle": "Erreur d'Authentification",
+      "authErrorDesc": "Vous devez être connecté.",
+      "pleaseWait": "Veuillez patienter",
+      "dataLoading": "Les données initiales sont toujours en chargement.",
+      "invoiceUpdatedTitle": "Facture Mise à Jour",
+      "invoiceUpdatedDesc": "La facture {{invoiceNumber}} a été mise à jour.",
+      "invoiceSavedTitle": "Facture Enregistrée",
+      "invoiceSavedDesc": "La facture {{invoiceNumber}} a été enregistrée.",
+      "errorSavingTitle": "Erreur d'Enregistrement Facture",
+      "errorSavingDesc": "Une erreur inattendue s'est produite.",
+      "errorFetchingPrefs": "Impossible de charger les préférences utilisateur ou les clients."
+    }
   },
   "invoiceDetailPage": {
     "invoiceTitle": "Facture",
@@ -23,7 +304,7 @@
     "itemQuantity": "Quantité",
     "itemUnitPrice": "Prix Unitaire",
     "itemTotal": "Total",
-    "notes" : "Notes :",
+    "notes": "Notes :",
     "paymentTerms": "Conditions de paiement :",
     "subtotal": "Sous-total :",
     "tax": "Taxe",
@@ -61,6 +342,185 @@
     "confirmReopenAsDraftTitle": "Confirmer Réouverture",
     "confirmReopenAsDraftDescription": "Êtes-vous sûr de vouloir réouvrir cette facture annulée ? Elle passera au statut 'Brouillon'.",
     "confirmReopenAsDraftAction": "Confirmer Réouverture",
-    "confirmReopenAsDraftCancel": "Garder Annulée"
+    "confirmReopenAsDraftCancel": "Garder Annulée",
+    "statusUpdatedToastTitle": "Statut Mis à Jour",
+    "statusUpdatedToastDesc": "La facture {{invoiceNumber}} est maintenant {{status}}.",
+    "errorToastTitle": "Erreur",
+    "statusUpdateErrorToastDesc": "Échec de la mise à jour du statut de la facture."
+  },
+  "loginPage": {
+    "title": "Content de vous revoir",
+    "description": "Connectez-vous pour accéder à votre compte InvoiceEase."
+  },
+  "signupPage": {
+    "title": "Créer un Compte",
+    "description": "Rejoignez InvoiceEase pour commencer à gérer vos factures sans effort."
+  },
+  "loginForm": {
+    "emailLabel": "E-mail",
+    "emailPlaceholder": "vous@example.com",
+    "passwordLabel": "Mot de passe",
+    "passwordPlaceholder": "••••••••",
+    "loginButton": "Connexion",
+    "noAccount": "Pas encore de compte ?",
+    "signupLink": "S'inscrire",
+    "toast": {
+      "successTitle": "Connexion Réussie",
+      "successDesc": "Content de vous revoir !",
+      "failTitle": "Échec de la Connexion",
+      "errorInvalidCredentials": "E-mail ou mot de passe invalide. Veuillez réessayer.",
+      "errorInvalidEmail": "L'adresse e-mail n'est pas valide.",
+      "errorDefault": "Échec de la connexion. Veuillez vérifier vos identifiants et réessayer.",
+      "errorUnexpected": "Une erreur inattendue s'est produite. Veuillez réessayer."
+    }
+  },
+  "signupForm": {
+    "nameLabel": "Nom Complet",
+    "namePlaceholder": "Jean Dupont",
+    "emailLabel": "E-mail",
+    "emailPlaceholder": "vous@example.com",
+    "passwordLabel": "Mot de passe",
+    "passwordPlaceholder": "••••••••",
+    "signupButton": "Créer un Compte",
+    "hasAccount": "Déjà un compte ?",
+    "loginLink": "Se connecter",
+    "toast": {
+      "successTitle": "Compte Créé",
+      "successDesc": "Bienvenue sur InvoiceEase ! Vous êtes maintenant connecté.",
+      "failTitle": "Échec de l'Inscription",
+      "errorEmailInUse": "Cette adresse e-mail est déjà utilisée.",
+      "errorInvalidEmail": "L'adresse e-mail n'est pas valide.",
+      "errorWeakPassword": "Le mot de passe est trop faible.",
+      "errorDefault": "Échec de l'inscription. Veuillez réessayer.",
+      "errorUnexpected": "Une erreur inattendue s'est produite. Veuillez réessayer."
+    }
+  },
+  "homePage": {
+    "heroTitle": "Simplifiez Votre Facturation avec <1>InvoiceEase</1>",
+    "heroSubtitle": "Créez des factures professionnelles en quelques minutes, gérez vos clients et soyez payé plus rapidement. Concentrez-vous sur votre activité, nous nous occupons de la paperasse.",
+    "getStartedButton": "Commencer Gratuitement",
+    "loginButton": "Se Connecter à Votre Compte",
+    "featuresTitle": "Fonctionnalités Conçues pour Vous",
+    "featureEasyCreationTitle": "Création Facile de Factures",
+    "featureEasyCreationDesc": "Générez de belles factures professionnelles en quelques clics grâce à notre éditeur intuitif.",
+    "featureCustomizationTitle": "Options de Personnalisation",
+    "featureCustomizationDesc": "Ajoutez votre logo, personnalisez les couleurs et adaptez les factures à votre identité de marque.",
+    "featureSecureTitle": "Sécurisé & Fiable",
+    "featureSecureDesc": "Vos données sont en sécurité avec nous. Construit sur une technologie robuste pour assurer fiabilité et sécurité.",
+    "manageEverythingTitle": "Gérez Tout en Un Seul Endroit",
+    "manageEverythingSubtitle": "Suivez les statuts des factures, gérez les informations clients et obtenez des informations sur vos cycles de facturation. InvoiceEase fournit un tableau de bord complet pour vous maintenir organisé.",
+    "manageEverythingFeature1": "Gestion des Clients",
+    "manageEverythingFeature2": "Suivi des Factures",
+    "manageEverythingFeature3": "Modèles Personnalisables",
+    "manageEverythingFeature4": "Stockage Cloud Sécurisé"
+  },
+  "preferencesPage": {
+    "title": "Préférences",
+    "description": "Personnalisez votre expérience de facturation, votre image de marque et vos paramètres par défaut.",
+    "tabs": {
+      "general": "Général & Défauts",
+      "branding": "Marque & Apparence"
+    },
+    "generalForm": {
+      "cardTitle": "Personnalisation des Factures",
+      "cardDescription": "Personnalisez le texte par défaut, les paramètres régionaux et les éléments de vos factures.",
+      "labels": {
+        "invoiceHeader": "En-tête de Facture par Défaut",
+        "invoiceFooter": "Pied de Page de Facture par Défaut",
+        "invoiceWatermarkText": "Texte Filigrane Facture (Optionnel)",
+        "currency": "Devise par Défaut",
+        "language": "Langue par Défaut",
+        "defaultTaxRate": "Taux de Taxe par Défaut (%)",
+        "defaultNotes": "Notes par Défaut pour Nouvelles Factures",
+        "defaultPaymentTerms": "Conditions de Paiement par Défaut"
+      },
+      "placeholders": {
+        "invoiceHeader": "ex: Nom & Adresse de Votre Entreprise",
+        "invoiceFooter": "ex: Merci pour votre confiance ! Paiement dû sous 30 jours.",
+        "invoiceWatermarkText": "ex: BROUILLON, PAYÉ",
+        "selectCurrency": "Sélectionner devise",
+        "selectLanguage": "Sélectionner langue",
+        "defaultTaxRate": "0",
+        "defaultNotes": "ex: Termes et conditions standards",
+        "defaultPaymentTerms": "ex: Net 30 Jours"
+      },
+      "descriptions": {
+        "invoiceHeader": "Apparaîtra en haut de vos factures.",
+        "invoiceFooter": "Apparaîtra en bas de vos factures.",
+        "invoiceWatermarkText": "Texte à afficher en filigrane (ex: pour factures brouillon ou payées).",
+        "defaultTaxRate": "Appliqué aux nouvelles factures (0-100).",
+        "defaultNotes": "Ces notes seront pré-remplies sur les nouvelles factures.",
+        "defaultPaymentTerms": "Conditions de paiement par défaut pour les nouvelles factures."
+      },
+      "buttonSave": "Enregistrer Préférences",
+      "loadingMessage": "Chargement des Préférences...",
+      "toast": {
+        "successTitle": "Préférences Enregistrées",
+        "successDesc": "Vos préférences de facturation ont été mises à jour.",
+        "errorTitle": "Erreur",
+        "errorDesc": "Échec de l'enregistrement des préférences. Veuillez réessayer.",
+        "authError": "Vous devez être connecté."
+      }
+    },
+    "logoUploader": {
+      "cardTitle": "Logo de l'Entreprise",
+      "cardDescription": "Téléchargez ou modifiez le logo de votre entreprise. Max {{maxSize}}Ko. Stocké directement dans la base de données.",
+      "chooseFile": "Choisir Fichier Logo",
+      "newLogoPreview": "Aperçu Nouveau Logo :",
+      "currentLogo": "Logo Actuel :",
+      "removeCurrentLogo": "Supprimer Logo Actuel",
+      "saveNewLogo": "Enregistrer Nouveau Logo",
+      "toast": {
+        "fileTooLarge": "Fichier trop volumineux",
+        "fileTooLargeDesc": "Veuillez sélectionner une image de moins de {{maxSize}}Ko.",
+        "invalidFileType": "Type de fichier invalide",
+        "invalidFileTypeDesc": "Veuillez sélectionner une image JPG, PNG, GIF ou SVG.",
+        "errorFetchingLogo": "Erreur chargement logo",
+        "errorFetchingLogoDesc": "Impossible de charger votre logo actuel.",
+        "logoSaved": "Logo Enregistré",
+        "logoSavedDesc": "Le logo de votre entreprise a été mis à jour.",
+        "saveFailed": "Échec Enregistrement",
+        "saveFailedDesc": "Impossible d'enregistrer votre logo. Veuillez réessayer.",
+        "logoRemoved": "Logo Supprimé",
+        "logoRemovedDesc": "Le logo de votre entreprise a été supprimé.",
+        "deletionFailed": "Échec Suppression",
+        "deletionFailedDesc": "Impossible de supprimer votre logo. Veuillez réessayer."
+      }
+    },
+    "watermarkUploader": {
+      "cardTitle": "Logo Filigrane Facture",
+      "cardDescription": "Téléchargez un logo à utiliser comme filigrane discret en arrière-plan sur vos factures. Max {{maxSize}}Ko. Pour de meilleurs résultats, utilisez un logo carré ou large (ex: 4:3 ou 16:9). Il sera considérablement réduit et affiché avec une faible opacité.",
+      "chooseFile": "Choisir Fichier Filigrane",
+      "newWatermarkPreview": "Aperçu Nouveau Filigrane :",
+      "currentWatermark": "Filigrane Actuel :",
+      "removeCurrentWatermark": "Supprimer Filigrane Actuel",
+      "saveNewWatermark": "Enregistrer Nouveau Filigrane",
+      "toast": {
+        "fileTooLarge": "Fichier trop volumineux",
+        "fileTooLargeDesc": "Veuillez sélectionner une image de moins de {{maxSize}}Ko.",
+        "invalidFileType": "Type de fichier invalide",
+        "invalidFileTypeDesc": "Veuillez sélectionner une image JPG, PNG, GIF ou SVG.",
+        "errorFetchingWatermark": "Erreur chargement filigrane",
+        "errorFetchingWatermarkDesc": "Impossible de charger votre logo filigrane actuel.",
+        "watermarkSaved": "Filigrane Enregistré",
+        "watermarkSavedDesc": "Votre logo filigrane de facture a été mis à jour.",
+        "saveFailed": "Échec Enregistrement",
+        "saveFailedDesc": "Impossible d'enregistrer votre filigrane. Veuillez réessayer.",
+        "watermarkRemoved": "Filigrane Supprimé",
+        "watermarkRemovedDesc": "Votre logo filigrane de facture a été supprimé.",
+        "deletionFailed": "Échec Suppression",
+        "deletionFailedDesc": "Impossible de supprimer votre filigrane. Veuillez réessayer."
+      }
+    },
+    "brandColors": {
+      "title": "Couleurs de Marque (Bientôt)",
+      "description": "Personnalisez la couleur principale de vos factures pour qu'elle corresponde à votre marque.",
+      "comingSoonMessage": "Cette fonctionnalité vous permettra de sélectionner une couleur principale qui sera reflétée sur vos factures PDF générées."
+    }
+  },
+  "siteFooter": {
+    "copyright": "&copy; {{year}} InvoiceEase. Tous droits réservés."
   }
 }
+
+      
