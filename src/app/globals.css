@@ -22,6 +22,7 @@ body {
     --muted-foreground: 0 0% 45.1%;
     --accent: 39 37% 43%;      /* Warm Beige #997946 */
     --accent-foreground: 0 0% 98%; /* White text on accent for contrast */
+    --accent-hover-bg: 39 37% 35%; /* Darker Warm Beige for light mode ghost button hover */
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     --border: 188 17% 80%;      /* Border color based on background */
@@ -60,7 +61,8 @@ body {
     --muted: 0 0% 14.9%;
     --muted-foreground: 0 0% 63.9%;
     --accent: 39 37% 50%; /* Adjusted accent for dark mode */
-    --accent-foreground: 0 0% 9%;
+    --accent-foreground: 0 0% 9%; /* Dark text for dark mode accent */
+    --accent-hover-bg: 39 37% 75%; /* Lighter Warm Beige for dark mode ghost button hover */
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
     --border: 0 0% 14.9%;

@@ -53,22 +53,22 @@ export default function SiteHeader() {
             <div className="h-8 w-20 animate-pulse rounded-md bg-muted"></div>
           ) : user ? (
             <>
-              <Button variant="ghost" size="sm" asChild className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary hidden md:inline-flex">
+              <Button variant="ghost" size="sm" asChild className="text-sm font-medium text-muted-foreground transition-colors hidden md:inline-flex">
                 <Link href="/dashboard">
                   <LayoutDashboard className="mr-2 h-4 w-4" /> Dashboard
                 </Link>
               </Button>
-              <Button variant="ghost" size="sm" asChild className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary hidden md:inline-flex">
+              <Button variant="ghost" size="sm" asChild className="text-sm font-medium text-muted-foreground transition-colors hidden md:inline-flex">
                 <Link href="/invoices">
                   <FileText className="mr-2 h-4 w-4" /> Invoices
                 </Link>
               </Button>
-               <Button variant="ghost" size="sm" asChild className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary hidden md:inline-flex">
+               <Button variant="ghost" size="sm" asChild className="text-sm font-medium text-muted-foreground transition-colors hidden md:inline-flex">
                 <Link href="/clients">
                   <Users className="mr-2 h-4 w-4" /> Clients
                 </Link>
               </Button>
-              <Button variant="ghost" size="sm" asChild className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary hidden md:inline-flex">
+              <Button variant="ghost" size="sm" asChild className="text-sm font-medium text-muted-foreground transition-colors hidden md:inline-flex">
                 <Link href="/preferences">
                   <Settings className="mr-2 h-4 w-4" /> Preferences
                 </Link>
