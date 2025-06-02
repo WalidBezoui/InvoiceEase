@@ -1,20 +1,22 @@
 
-"use client"; // Add this directive
+"use client"; 
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import SiteHeader from '@/components/layout/site-header';
 import SiteFooter from '@/components/layout/site-footer';
 import Image from 'next/image';
-import { CheckCircle } from 'lucide-react';
-import { useLanguage } from '@/hooks/use-language'; // Import useLanguage
+import { CheckCircle, Loader2 } from 'lucide-react';
+import { useLanguage } from '@/hooks/use-language';
+import { useAuth } from '@/hooks/use-auth'; // Import useAuth
+import { useRouter } from 'next/navigation'; // Import useRouter
+import { useEffect } from 'react'; // Import useEffect
 
 // A small helper component for rendering translated HTML
 function TranslatedHtml({ translationKey }: { translationKey: string }) {
   const { t } = useLanguage();
   const rawHtml = t(translationKey);
   // Basic replacement for <1>InvoiceEase</1> -> <span className="text-accent">InvoiceEase</span>
-  // This is a simplified approach. For more complex HTML, a proper HTML parser or a different i18n strategy might be needed.
   const processedHtml = rawHtml.replace(
     /<1>(.*?)<\/1>/g,
     '<span class="text-accent">$1</span>'
@@ -25,10 +27,26 @@ function TranslatedHtml({ translationKey }: { translationKey: string }) {
 
 
 export default function HomePage() {
-  // No need to call useLanguage here if children components handle their own translations or if props are passed down.
-  // If HomePage itself has text directly, then useLanguage would be needed here.
-  // For this structure, TranslatedHtml handles its own translation needs.
+  const { user, loading: authLoading } = useAuth();
+  const { isLoadingLocale } = useLanguage();
+  const router = useRouter();
 
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.push('/dashboard');
+    }
+  }, [user, authLoading, router]);
+
+  if (authLoading || isLoadingLocale || (!authLoading && user)) {
+    // Show loading spinner or nothing while auth state is being determined or redirecting
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Only render homepage content if not loading and no user (i.e., logged out)
   return (
     <div className="flex min-h-screen flex-col">
       <SiteHeader />
@@ -117,5 +135,3 @@ export default function HomePage() {
     </div>
   );
 }
-
-      
