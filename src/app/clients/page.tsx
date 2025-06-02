@@ -4,20 +4,21 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
-import { FilePlus, User, Search, Loader2, Users } from "lucide-react";
+import { User, Search, Loader2, Users, Download } from "lucide-react"; // Added Download
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuth } from "@/hooks/use-auth";
 import { db } from "@/lib/firebase";
 import type { Client } from "@/lib/types";
 import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 
 export default function ClientsPage() {
   const { user } = useAuth();
-  const [clients, setClients] = useState<Client[]>([]);
+  const [allClients, setAllClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     async function fetchClients() {
@@ -35,7 +36,7 @@ export default function ClientsPage() {
         querySnapshot.forEach((doc) => {
           fetchedClients.push({ id: doc.id, ...doc.data() } as Client);
         });
-        setClients(fetchedClients);
+        setAllClients(fetchedClients);
       } catch (err) {
         console.error("Error fetching clients:", err);
         setError("Failed to load clients. Please try again.");
@@ -45,6 +46,46 @@ export default function ClientsPage() {
     }
     fetchClients();
   }, [user]);
+
+  const filteredClients = useMemo(() => {
+    if (!searchTerm) {
+      return allClients;
+    }
+    return allClients.filter(client =>
+      client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (client.clientCompany && client.clientCompany.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (client.email && client.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (client.ice && client.ice.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+  }, [allClients, searchTerm]);
+
+  const exportToCsv = () => {
+    if (filteredClients.length === 0) {
+      alert("No data to export.");
+      return;
+    }
+    const filename = `clients_export_${new Date().toISOString().slice(0,10)}.csv`;
+    const headers = ["Name", "Company", "Email", "Phone", "Address", "ICE"];
+    const rows = filteredClients.map(client => [
+      client.name,
+      client.clientCompany || "",
+      client.email || "",
+      client.phone || "",
+      (client.address || "").replace(/\n/g, " "), // Replace newlines for CSV
+      client.ice || "",
+    ]);
+
+    let csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n"
+      + rows.map(e => e.map(val => `"${(val || '').toString().replace(/"/g, '""')}"`).join(",")).join("\n");
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <div className="space-y-8">
@@ -67,9 +108,20 @@ export default function ClientsPage() {
               <CardTitle className="font-headline text-xl text-primary">Your Clients</CardTitle>
               <CardDescription>View and manage your client list.</CardDescription>
             </div>
-            <div className="relative flex-grow md:flex-grow-0">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input type="search" placeholder="Search clients..." className="pl-8 sm:w-[300px]" />
+            <div className="flex items-center gap-2 w-full md:w-auto">
+              <div className="relative flex-grow md:flex-grow-0">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input 
+                  type="search" 
+                  placeholder="Search clients..." 
+                  className="pl-8 sm:w-[250px] md:w-[300px]" 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <Button variant="outline" onClick={exportToCsv}>
+                <Download className="mr-2 h-4 w-4" /> Export
+              </Button>
             </div>
           </div>
         </CardHeader>
@@ -85,7 +137,7 @@ export default function ClientsPage() {
               <p>{error}</p>
             </div>
           )}
-          {!isLoading && !error && clients.length > 0 && (
+          {!isLoading && !error && filteredClients.length > 0 && (
              <Table>
               <TableHeader>
                 <TableRow>
@@ -97,7 +149,7 @@ export default function ClientsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {clients.map((client) => (
+                {filteredClients.map((client) => (
                   <TableRow key={client.id}>
                     <TableCell className="font-medium">{client.name}</TableCell>
                     <TableCell>{client.clientCompany || "N/A"}</TableCell>
@@ -113,16 +165,23 @@ export default function ClientsPage() {
               </TableBody>
             </Table>
           )}
-          {!isLoading && !error && clients.length === 0 && (
+          {!isLoading && !error && filteredClients.length === 0 && (
             <div className="text-center py-12">
               <Users className="mx-auto h-12 w-12 text-muted-foreground" />
-              <h3 className="mt-4 text-xl font-semibold text-primary">No clients yet</h3>
+              <h3 className="mt-4 text-xl font-semibold text-primary">
+                {allClients.length > 0 && searchTerm ? "No clients match your search" : "No clients yet"}
+              </h3>
               <p className="mt-2 text-sm text-muted-foreground">
-                Add your first client to get started.
+                {allClients.length > 0 && searchTerm 
+                  ? "Try adjusting your search term." 
+                  : "Add your first client to get started."
+                }
               </p>
-              <Button className="mt-6" asChild>
-                <Link href="/clients/new">Add Client</Link>
-              </Button>
+              {!(allClients.length > 0 && searchTerm) && (
+                 <Button className="mt-6" asChild>
+                  <Link href="/clients/new">Add Client</Link>
+                </Button>
+              )}
             </div>
           )}
         </CardContent>
@@ -130,3 +189,5 @@ export default function ClientsPage() {
     </div>
   );
 }
+
+    
