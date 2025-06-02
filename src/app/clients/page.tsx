@@ -12,21 +12,25 @@ import { db } from "@/lib/firebase";
 import type { Client } from "@/lib/types";
 import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
 import { useEffect, useState, useMemo } from "react";
+import { useLanguage } from "@/hooks/use-language"; // Import useLanguage
 
 export default function ClientsPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const { t, isLoadingLocale } = useLanguage(); // Use language hook
   const [allClients, setAllClients] = useState<Client[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingData, setIsLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+
+  const isLoading = authLoading || isLoadingLocale || isLoadingData;
 
   useEffect(() => {
     async function fetchClients() {
       if (!user) {
-        setIsLoading(false);
+        setIsLoadingData(false);
         return;
       }
-      setIsLoading(true);
+      setIsLoadingData(true);
       setError(null);
       try {
         const clientsRef = collection(db, "clients");
@@ -39,13 +43,17 @@ export default function ClientsPage() {
         setAllClients(fetchedClients);
       } catch (err) {
         console.error("Error fetching clients:", err);
-        setError("Failed to load clients. Please try again.");
+        setError(t('clientsPage.error'));
       } finally {
-        setIsLoading(false);
+        setIsLoadingData(false);
       }
     }
-    fetchClients();
-  }, [user]);
+    if (user && !isLoadingLocale) { // Ensure translations are ready or user exists
+        fetchClients();
+    } else if (!user && !authLoading) { // If no user and auth is done, stop loading data
+        setIsLoadingData(false);
+    }
+  }, [user, authLoading, t, isLoadingLocale]);
 
   const filteredClients = useMemo(() => {
     if (!searchTerm) {
@@ -62,19 +70,31 @@ export default function ClientsPage() {
 
   const exportToCsv = () => {
     if (filteredClients.length === 0) {
-      alert("No data to export.");
+      alert(t('invoicesPage.exportNoData')); // Re-use from invoicesPage or add specific key
       return;
     }
     const filename = `clients_export_${new Date().toISOString().slice(0,10)}.csv`;
-    const headers = ["Name", "Company", "Email", "Phone", "Address", "Client ICE"];
-    const rows = filteredClients.map(client => [
-      client.name,
-      client.clientCompany || "",
-      client.email || "",
-      client.phone || "",
-      (client.address || "").replace(/\n/g, " "), 
-      client.ice || "",
-    ]);
+    const headers = [
+        t('clientsPage.table.name'), 
+        t('clientsPage.table.company'), 
+        t('clientsPage.table.email'), 
+        t('clientForm.labels.phone'), // Using existing keys for simplicity
+        t('clientForm.labels.address'),
+        t('clientsPage.table.clientICE')
+    ];
+    
+    const rows = filteredClients.map(client => {
+      const phoneValue = client.phone || "";
+      const iceValue = client.ice || "";
+      return [
+        client.name,
+        client.clientCompany || "",
+        client.email || "",
+        phoneValue ? `="${phoneValue}"` : "", // Format phone as text formula for Excel
+        (client.address || "").replace(/\n/g, " "), 
+        iceValue ? `="${iceValue}"` : "",     // Format ICE as text formula for Excel
+      ];
+    });
 
     let csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n"
       + rows.map(e => e.map(val => `"${(val || '').toString().replace(/"/g, '""')}"`).join(",")).join("\n");
@@ -88,16 +108,24 @@ export default function ClientsPage() {
     document.body.removeChild(link);
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-[60vh]">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="font-headline text-3xl md:text-4xl font-bold text-primary">Clients</h1>
-          <p className="text-muted-foreground mt-1">Manage your customer information here.</p>
+          <h1 className="font-headline text-3xl md:text-4xl font-bold text-primary">{t('clientsPage.title')}</h1>
+          <p className="text-muted-foreground mt-1">{t('clientsPage.description')}</p>
         </div>
         <Button asChild size="lg">
           <Link href="/clients/new">
-            <User className="mr-2 h-5 w-5" /> Add New Client
+            <User className="mr-2 h-5 w-5" /> {t('clientsPage.addNewClient')}
           </Link>
         </Button>
       </div>
@@ -106,47 +134,47 @@ export default function ClientsPage() {
         <CardHeader>
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-              <CardTitle className="font-headline text-xl text-primary">Your Clients</CardTitle>
-              <CardDescription>View and manage your client list.</CardDescription>
+              <CardTitle className="font-headline text-xl text-primary">{t('clientsPage.yourClientsCard.title')}</CardTitle>
+              <CardDescription>{t('clientsPage.yourClientsCard.description')}</CardDescription>
             </div>
             <div className="flex items-center gap-2 w-full md:w-auto">
               <div className="relative flex-grow md:flex-grow-0">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input 
                   type="search" 
-                  placeholder="Search clients..." 
+                  placeholder={t('clientsPage.yourClientsCard.searchPlaceholder')} 
                   className="pl-8 sm:w-[250px] md:w-[300px]" 
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
               <Button variant="outline" onClick={exportToCsv}>
-                <Download className="mr-2 h-4 w-4" /> Export
+                <Download className="mr-2 h-4 w-4" /> {t('clientsPage.yourClientsCard.export')}
               </Button>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          {isLoading && (
+          {isLoadingData && !allClients.length && ( // Show main loader only if no data yet
             <div className="flex justify-center items-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <p className="ml-2 text-muted-foreground">Loading clients...</p>
+              <p className="ml-2 text-muted-foreground">{t('clientsPage.loading')}</p>
             </div>
           )}
-          {!isLoading && error && (
+          {!isLoadingData && error && (
             <div className="text-center py-12 text-destructive">
               <p>{error}</p>
             </div>
           )}
-          {!isLoading && !error && filteredClients.length > 0 && (
+          {!isLoadingData && !error && filteredClients.length > 0 && (
              <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Company</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Client ICE</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>{t('clientsPage.table.name')}</TableHead>
+                  <TableHead>{t('clientsPage.table.company')}</TableHead>
+                  <TableHead>{t('clientsPage.table.email')}</TableHead>
+                  <TableHead>{t('clientsPage.table.clientICE')}</TableHead>
+                  <TableHead className="text-right">{t('clientsPage.table.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -160,12 +188,12 @@ export default function ClientsPage() {
                       <div className="flex items-center justify-end gap-1">
                         <Button variant="ghost" size="sm" asChild>
                           <Link href={`/clients/${client.id}`}>
-                             <Eye className="mr-1 h-4 w-4" /> View
+                             <Eye className="mr-1 h-4 w-4" /> {t('clientsPage.actions.view')}
                           </Link> 
                         </Button>
                         <Button variant="ghost" size="sm" asChild>
                           <Link href={`/clients/${client.id}/edit`}>
-                            <Edit className="mr-1 h-4 w-4" /> Edit
+                            <Edit className="mr-1 h-4 w-4" /> {t('clientsPage.actions.edit')}
                           </Link> 
                         </Button>
                       </div>
@@ -175,21 +203,21 @@ export default function ClientsPage() {
               </TableBody>
             </Table>
           )}
-          {!isLoading && !error && filteredClients.length === 0 && (
+          {!isLoadingData && !error && filteredClients.length === 0 && (
             <div className="text-center py-12">
               <Users className="mx-auto h-12 w-12 text-muted-foreground" />
               <h3 className="mt-4 text-xl font-semibold text-primary">
-                {allClients.length > 0 && searchTerm ? "No clients match your search" : "No clients yet"}
+                {allClients.length > 0 && searchTerm ? t('clientsPage.noClientsMatchSearch') : t('clientsPage.noClientsYet')}
               </h3>
               <p className="mt-2 text-sm text-muted-foreground">
                 {allClients.length > 0 && searchTerm 
-                  ? "Try adjusting your search term." 
-                  : "Add your first client to get started."
+                  ? t('clientsPage.noClientsMatchSearchDesc') 
+                  : t('clientsPage.noClientsYetDesc')
                 }
               </p>
               {!(allClients.length > 0 && searchTerm) && (
                  <Button className="mt-6" asChild>
-                  <Link href="/clients/new">Add Client</Link>
+                  <Link href="/clients/new">{t('clientsPage.addClient')}</Link>
                 </Button>
               )}
             </div>
@@ -199,4 +227,3 @@ export default function ClientsPage() {
     </div>
   );
 }
-
