@@ -186,6 +186,7 @@
       "issueDate": "Date d'Émission",
       "dueDate": "Date d'Échéance",
       "amount": "Montant",
+      "currency": "Devise",
       "status": "Statut",
       "actions": "Actions"
     },
@@ -541,3 +542,5 @@
     "copyright": "&copy; {{year}} InvoiceEase. Tous droits réservés."
   }
 }
+
+    
