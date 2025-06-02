@@ -13,14 +13,14 @@ import { collection, query, where, getDocs, orderBy, limit as firestoreLimit } f
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { Skeleton } from "@/components/ui/skeleton"; // Added import
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface DashboardStats {
   totalRevenue: number;
   outstandingInvoicesCount: number;
   outstandingInvoicesAmount: number;
   draftInvoicesCount: number;
-  totalClients: number; // Added for client count
+  totalClients: number;
 }
 
 export default function DashboardPage() {
@@ -62,11 +62,9 @@ export default function DashboardPage() {
           fetchedRecentInvoices.push(invoice);
         });
         
-        // Sort for recent invoices (desc by issueDate) and take top 5
         fetchedRecentInvoices.sort((a, b) => new Date(b.issueDate).getTime() - new Date(a.issueDate).getTime());
         setRecentInvoices(fetchedRecentInvoices.slice(0, 5));
 
-        // Fetch client count
         const clientsRef = collection(db, "clients");
         const clientsQuery = query(clientsRef, where("userId", "==", user.uid));
         const clientsSnapshot = await getDocs(clientsQuery);
@@ -76,7 +74,6 @@ export default function DashboardPage() {
 
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
-        // Set stats to zero or show error
         setStats({ totalRevenue: 0, outstandingInvoicesCount: 0, outstandingInvoicesAmount: 0, draftInvoicesCount: 0, totalClients: 0 });
       } finally {
         setIsLoading(false);
@@ -91,6 +88,7 @@ export default function DashboardPage() {
       case "sent": return "secondary";
       case "overdue": return "destructive";
       case "draft": return "outline";
+      case "cancelled": return "destructive";
       default: return "outline";
     }
   };
@@ -183,13 +181,30 @@ export default function DashboardPage() {
           <CardDescription>A log of your most recent invoices.</CardDescription>
         </CardHeader>
         <CardContent>
-          {isLoading && (
-             <div className="flex justify-center items-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
-              <p className="ml-2 text-muted-foreground">Loading recent activity...</p>
-            </div>
-          )}
-          {!isLoading && recentInvoices.length > 0 ? (
+          {isLoading ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead><Skeleton className="h-4 w-20" /></TableHead>
+                  <TableHead><Skeleton className="h-4 w-32" /></TableHead>
+                  <TableHead><Skeleton className="h-4 w-24" /></TableHead>
+                  <TableHead className="text-right"><Skeleton className="h-4 w-20 ml-auto" /></TableHead>
+                  <TableHead><Skeleton className="h-4 w-16" /></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {[...Array(3)].map((_, i) => (
+                  <TableRow key={`skeleton-${i}`}>
+                    <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-4 w-full" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : recentInvoices.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -218,7 +233,7 @@ export default function DashboardPage() {
                 ))}
               </TableBody>
             </Table>
-          ) : !isLoading && (
+          ) : (
             <div className="text-center py-8">
               <p className="text-muted-foreground">No recent invoice activity to display.</p>
               <p className="text-sm text-muted-foreground mt-1">Create an invoice to get started!</p>
@@ -229,4 +244,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-

@@ -54,7 +54,7 @@ export default function InvoicesPage() {
       case "sent": return "secondary";
       case "overdue": return "destructive";
       case "draft": return "outline";
-      case "cancelled": return "destructive"
+      case "cancelled": return "destructive";
       default: return "outline";
     }
   };

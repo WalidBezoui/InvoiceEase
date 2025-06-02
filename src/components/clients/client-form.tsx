@@ -24,7 +24,11 @@ const clientFormSchema = z.object({
   address: z.string().optional(),
   phone: z.string().optional(),
   clientCompany: z.string().optional(),
-  ice: z.string().length(15, "ICE must be 15 digits.").regex(/^\d{15}$/, "ICE must consist of 15 digits.").optional().or(z.literal("")),
+  ice: z.string()
+    .length(15, "ICE must be exactly 15 digits.")
+    .regex(/^\d{15}$/, "ICE must consist only of 15 digits.")
+    .optional()
+    .or(z.literal("")),
 });
 
 interface ClientFormProps {
@@ -83,7 +87,7 @@ export default function ClientForm({ initialData, onSave }: ClientFormProps) {
         toast({ title: "Client Added", description: `${values.name} has been added.` });
         const redirectUrl = searchParams.get('redirect');
         if (onSave) onSave(docRef.id);
-        else if (redirectUrl) router.push(redirectUrl);
+        else if (redirectUrl) router.push(decodeURIComponent(redirectUrl));
         else router.push("/clients");
       }
     } catch (error) {

@@ -156,11 +156,11 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
                 notes: initialData.notes || "",
                 taxRate: initialData.taxRate ?? userPrefs?.defaultTaxRate ?? 0,
             });
-        } else if (userPrefs) { // Apply default tax rate from userPrefs if creating new invoice
+        } else if (userPrefs) {
             form.reset({
-              ...form.getValues(), // keep existing form values
-              notes: form.getValues().notes || userPrefs.defaultNotes || "", // if notes empty, use default
-              taxRate: userPrefs.defaultTaxRate ?? 0, // apply userPrefs tax rate for new invoices
+              ...form.getValues(), 
+              notes: form.getValues().notes || userPrefs.defaultNotes || "",
+              taxRate: userPrefs.defaultTaxRate ?? 0, 
             });
         }
     }
@@ -182,7 +182,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
         form.setValue("clientCompany", selectedClient.clientCompany || "");
         form.setValue("clientICE", selectedClient.ice || "");
       }
-    } else if (watchClientId === MANUAL_ENTRY_CLIENT_ID && !initialData) { // Clear fields if manual entry selected for a new invoice
+    } else if (watchClientId === MANUAL_ENTRY_CLIENT_ID && !initialData) { 
         form.setValue("clientName", "");
         form.setValue("clientEmail", "");
         form.setValue("clientAddress", "");
@@ -218,7 +218,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
 
     const finalClientId = values.clientId === MANUAL_ENTRY_CLIENT_ID ? null : (values.clientId || null);
 
-    const commonInvoiceData: Partial<Invoice> = { // Made partial to accommodate differences
+    const commonInvoiceData: Partial<Omit<Invoice, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'status' | 'currency' | 'language' | 'logoDataUrl' | 'watermarkLogoDataUrl' | 'companyInvoiceHeader' | 'companyInvoiceFooter' | 'appliedDefaultNotes' | 'appliedDefaultPaymentTerms'>> = {
       invoiceNumber: values.invoiceNumber,
       clientId: finalClientId,
       clientName: values.clientName,
@@ -234,44 +234,35 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
       taxAmount,
       totalAmount,
       notes: values.notes || "",
-      updatedAt: serverTimestamp() as Timestamp, // Add updatedAt for both create and update
     };
 
     try {
       if (initialData?.id) {
         const invoiceRef = doc(db, "invoices", initialData.id);
-        // For updates, we preserve most fields from initialData unless explicitly changed by commonInvoiceData
         await updateDoc(invoiceRef, {
-          ...initialData, // Start with existing data
-          ...commonInvoiceData, // Override with form values
-          // Ensure `createdAt` and `userId` are not overwritten if they exist
-          userId: initialData.userId, 
-          createdAt: initialData.createdAt,
-          // Watermark logo is set at creation and should not be changed here
-          watermarkLogoDataUrl: initialData.watermarkLogoDataUrl, 
+          ...commonInvoiceData, 
+          updatedAt: serverTimestamp() as FieldValue,
         });
         toast({ title: "Invoice Updated", description: `Invoice ${values.invoiceNumber} has been updated.` });
         router.push(`/invoices/${initialData.id}`);
       } else {
-        // For new invoices, construct the full object
         const invoiceDataToCreate: Omit<Invoice, 'id' | 'createdAt' | 'updatedAt'> = {
           userId: user.uid,
           status: 'draft',
           currency: userPrefs?.currency || "MAD",
           language: userPrefs?.language || "fr",
           logoDataUrl: userPrefs?.logoDataUrl || null,
-          watermarkLogoDataUrl: userPrefs?.watermarkLogoDataUrl || null, // Add watermark logo from prefs
+          watermarkLogoDataUrl: userPrefs?.watermarkLogoDataUrl || null,
           companyInvoiceHeader: userPrefs?.invoiceHeader || "",
           companyInvoiceFooter: userPrefs?.invoiceFooter || "",
           appliedDefaultNotes: values.notes === (userPrefs?.defaultNotes || "") ? userPrefs?.defaultNotes : "",
           appliedDefaultPaymentTerms: userPrefs?.defaultPaymentTerms || "",
-          // commonInvoiceData needs to be asserted as Omit to fit
-          ...(commonInvoiceData as Omit<Invoice, 'id' | 'userId' | 'status' | 'currency' | 'language' | 'logoDataUrl' | 'watermarkLogoDataUrl' | 'companyInvoiceHeader' | 'companyInvoiceFooter' | 'appliedDefaultNotes' | 'appliedDefaultPaymentTerms' | 'createdAt' | 'updatedAt'>),
+          ...commonInvoiceData,
         };
         const docRef = await addDoc(collection(db, "invoices"), {
           ...invoiceDataToCreate,
-          createdAt: serverTimestamp() as Timestamp,
-          updatedAt: serverTimestamp() as Timestamp, // Also set updatedAt on creation
+          createdAt: serverTimestamp() as FieldValue,
+          updatedAt: serverTimestamp() as FieldValue,
         });
         toast({ title: "Invoice Saved", description: `Invoice ${values.invoiceNumber} has been saved.` });
         router.push(`/invoices/${docRef.id}`);
@@ -297,7 +288,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
                 <CardDescription>Select an existing client or fill in the details manually.</CardDescription>
               </div>
               <Button type="button" variant="outline" size="sm" asChild>
-                <Link href="/clients/new?redirect=/invoices/new">
+                <Link href={`/clients/new?redirect=${encodeURIComponent(router.asPath)}`}>
                   <UserPlus className="mr-2 h-4 w-4" /> Add New Client
                 </Link>
               </Button>
@@ -312,7 +303,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
                   <FormLabel>Select Client (Optional)</FormLabel>
                   <Select 
                     onValueChange={field.onChange} 
-                    value={field.value || MANUAL_ENTRY_CLIENT_ID} // Ensure value is never empty string for Select
+                    value={field.value || MANUAL_ENTRY_CLIENT_ID} 
                     disabled={isClientsLoading}
                   >
                     <FormControl>

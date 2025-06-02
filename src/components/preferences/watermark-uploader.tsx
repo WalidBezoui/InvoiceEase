@@ -121,7 +121,7 @@ export default function WatermarkUploader() {
         <CardTitle className="font-headline text-lg text-primary flex items-center">
           <ImageIcon className="mr-2 h-5 w-5 text-accent" /> Invoice Watermark Logo
         </CardTitle>
-        <CardDescription>Upload a logo to be used as a subtle background watermark on your invoices. Max {MAX_FILE_SIZE_KB}KB.</CardDescription>
+        <CardDescription>Upload a logo to be used as a subtle background watermark on your invoices. Max {MAX_FILE_SIZE_KB}KB. For best results, use a square or wide (e.g., 4:3 or 16:9) logo. It will be scaled down significantly and displayed with low opacity.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">

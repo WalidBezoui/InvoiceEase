@@ -61,14 +61,20 @@ export default function EditClientPage() {
   if (isLoading) {
     return (
       <div className="space-y-8">
-        <div className="flex items-center gap-4">
-          <Skeleton className="h-10 w-10 rounded-full" />
+        <div className="flex items-center gap-4 mb-6">
+          <Skeleton className="h-10 w-10 rounded-md" />
           <div>
             <Skeleton className="h-8 w-64" />
             <Skeleton className="h-4 w-48 mt-1" />
           </div>
         </div>
-        <Skeleton className="h-[400px] w-full rounded-md" />
+        <div className="space-y-4">
+          <Skeleton className="h-10 w-1/2" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-10 w-1/3 ml-auto" />
+        </div>
       </div>
     );
   }
