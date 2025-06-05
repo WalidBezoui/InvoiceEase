@@ -12,7 +12,8 @@ export default function NewInvoicePage() {
   const { t, isLoadingLocale } = useLanguage();
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8"> {/* Main page container with vertical spacing */}
+      {/* Header Section */}
       <div className="flex items-center gap-4">
         <Button variant="outline" size="icon" asChild>
           <Link href="/invoices">
@@ -39,8 +40,10 @@ export default function NewInvoicePage() {
         </div>
       </div>
       
-      {/* InvoiceForm is now the main content block below the header, without an extra Card wrapper */}
-      <InvoiceForm />
+      {/* Form Section - Wrapped for better focus on wider screens */}
+      <div className="max-w-6xl mx-auto">
+        <InvoiceForm />
+      </div>
     </div>
   );
 }
