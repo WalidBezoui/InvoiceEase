@@ -3,6 +3,7 @@ import SiteHeader from "@/components/layout/site-header";
 import SiteFooter from "@/components/layout/site-footer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
+import { Suspense } from 'react';
 export default function LoginPage() {
   return (
     <div className="flex min-h-screen flex-col">
@@ -15,7 +16,9 @@ export default function LoginPage() {
               <CardDescription>Sign in to access your InvoiceEase account.</CardDescription>
             </CardHeader>
             <CardContent>
-              <LoginForm />
+ <Suspense fallback={<div>Loading...</div>}> 
+ <LoginForm />
+ </Suspense>
             </CardContent>
           </Card>
         </div>
