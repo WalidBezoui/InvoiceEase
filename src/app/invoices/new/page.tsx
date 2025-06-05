@@ -5,7 +5,6 @@ import InvoiceForm from "@/components/invoices/invoice-form";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-// Removed Card imports as the outer card is being removed
 import { useLanguage } from "@/hooks/use-language";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -24,8 +23,8 @@ export default function NewInvoicePage() {
         <div>
           {isLoadingLocale ? (
             <>
-              <Skeleton className="h-10 w-72 mb-2" /> {/* Adjusted skeleton size for h1 */}
-              <Skeleton className="h-5 w-96" /> {/* Adjusted skeleton size for p */}
+              <Skeleton className="h-10 w-72 mb-2" />
+              <Skeleton className="h-5 w-96" />
             </>
           ) : (
             <>
