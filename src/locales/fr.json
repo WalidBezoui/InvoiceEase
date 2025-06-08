@@ -25,7 +25,7 @@
     "recentInvoices": "Factures Récentes",
     "recentInvoicesDescription": "Un journal de vos factures les plus récentes.",
     "invoiceTable": {
-      "invoiceNo": "Facture N°",
+      "invoiceNo": "N° Facture",
       "client": "Client",
       "issueDate": "Date d'Émission",
       "amount": "Montant",

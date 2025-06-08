@@ -225,11 +225,11 @@ export default function DashboardPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('dashboardPage.tableHeader.invoiceNumber')}</TableHead>
-                  <TableHead>{t('dashboardPage.tableHeader.client')}</TableHead>
-                  <TableHead>{t('dashboardPage.tableHeader.issueDate')}</TableHead>
-                  <TableHead className="text-right">{t('dashboardPage.tableHeader.amount')}</TableHead>
-                  <TableHead>{t('dashboardPage.tableHeader.status')}</TableHead>
+ <TableHead>{t('dashboardPage.invoiceTable.invoiceNo')}</TableHead>
+ <TableHead>{t('dashboardPage.invoiceTable.client')}</TableHead>
+ <TableHead>{t('dashboardPage.invoiceTable.issueDate')}</TableHead>
+ <TableHead className="text-right">{t('dashboardPage.invoiceTable.amount')}</TableHead>
+ <TableHead>{t('dashboardPage.invoiceTable.status')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
