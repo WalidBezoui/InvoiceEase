@@ -143,49 +143,49 @@ export default function DashboardPage() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card className="shadow-lg hover:shadow-xl transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('dashboardPage.totalRevenue')}</CardTitle>
             <BarChart3 className="h-5 w-5 text-accent" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-primary">MAD {stats?.totalRevenue.toFixed(2) || '0.00'}</div>
             <p className="text-xs text-muted-foreground">
-              (Based on paid invoices)
+              {t('dashboardPage.basedOnPaidInvoices')}
             </p>
           </CardContent>
         </Card>
         <Card className="shadow-lg hover:shadow-xl transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Outstanding</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('dashboardPage.outstanding')}</CardTitle>
             <ListChecks className="h-5 w-5 text-accent" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-primary">{stats?.outstandingInvoicesCount || 0} invoices</div>
             <p className="text-xs text-muted-foreground">
-              Totaling MAD {stats?.outstandingInvoicesAmount.toFixed(2) || '0.00'}
+              {t('dashboardPage.totaling', { amount: stats?.outstandingInvoicesAmount.toFixed(2) || '0.00' })}
             </p>
           </CardContent>
         </Card>
         <Card className="shadow-lg hover:shadow-xl transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Draft Invoices</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('dashboardPage.draftInvoices')}</CardTitle>
             <FilePlus className="h-5 w-5 text-accent" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-primary">{stats?.draftInvoicesCount || 0}</div>
             <p className="text-xs text-muted-foreground">
-              Invoices pending completion
+              {t('dashboardPage.invoicesPendingCompletion')}
             </p>
           </CardContent>
         </Card>
          <Card className="shadow-lg hover:shadow-xl transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Clients</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('dashboardPage.totalClients')}</CardTitle>
             <Users className="h-5 w-5 text-accent" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-primary">{stats?.totalClients || 0}</div>
             <p className="text-xs text-muted-foreground">
-              Managed clients
+              {t('dashboardPage.managedClients')}
             </p>
           </CardContent>
         </Card>
@@ -194,8 +194,8 @@ export default function DashboardPage() {
 
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle className="font-headline text-xl text-primary">Recent Invoices</CardTitle>
-          <CardDescription>A log of your most recent invoices.</CardDescription>
+          <CardTitle className="font-headline text-xl text-primary">{t('dashboardPage.recentInvoices')}</CardTitle>
+          <CardDescription>{t('dashboardPage.recentInvoicesDescription')}</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -225,11 +225,11 @@ export default function DashboardPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Invoice #</TableHead>
-                  <TableHead>Client</TableHead>
-                  <TableHead>Issue Date</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>{t('dashboardPage.tableHeader.invoiceNumber')}</TableHead>
+                  <TableHead>{t('dashboardPage.tableHeader.client')}</TableHead>
+                  <TableHead>{t('dashboardPage.tableHeader.issueDate')}</TableHead>
+                  <TableHead className="text-right">{t('dashboardPage.tableHeader.amount')}</TableHead>
+                  <TableHead>{t('dashboardPage.tableHeader.status')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -252,8 +252,8 @@ export default function DashboardPage() {
             </Table>
           ) : (
             <div className="text-center py-8">
-              <p className="text-muted-foreground">No recent invoice activity to display.</p>
-              <p className="text-sm text-muted-foreground mt-1">Create an invoice to get started!</p>
+              <p className="text-muted-foreground">{t('dashboardPage.noRecentInvoiceActivity')}</p>
+              <p className="text-sm text-muted-foreground mt-1">{t('dashboardPage.createInvoiceToStart')}</p>
             </div>
           )}
         </CardContent>

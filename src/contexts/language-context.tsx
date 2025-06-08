@@ -31,7 +31,16 @@ const defaultLocale: Locale = 'fr';
 
 // Helper function to navigate nested keys like "siteNav.dashboard"
 const getNestedValue = (obj: any, path: string): string | undefined => {
-  return path.split('.').reduce((acc, part) => acc && acc[part], obj);
+  const parts = path.split('.');
+  let current = obj;
+  for (const part of parts) {
+    if (current && typeof current === 'object' && part in current) {
+      current = current[part];
+    } else {
+      return undefined; // Return undefined if any part of the path is invalid
+    }
+  }
+  return current as string | undefined; // Return the value found at the end of the path
 };
 
 export const LanguageContext = createContext<LanguageContextType>({
