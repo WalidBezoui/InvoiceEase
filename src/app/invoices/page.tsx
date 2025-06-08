@@ -140,7 +140,7 @@ export default function InvoicesPage() {
       format(new Date(inv.dueDate), "yyyy-MM-dd"),
       inv.totalAmount.toFixed(2),
       inv.currency,
-      inv.status,
+      t(`invoiceStatus.${inv.status}`, { default: inv.status }), // Translated status
     ]);
 
     const bom = "\uFEFF"; // UTF-8 Byte Order Mark
