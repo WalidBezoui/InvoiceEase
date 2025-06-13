@@ -8,7 +8,9 @@
     "login": "Connexion",
     "signup": "Inscription",
     "logout": "Déconnexion",
-    "pricing": "Tarifs"
+    "pricing": "Tarifs",
+    "currentPlanLabel": "Plan Actuel :",
+    "viewPlans": "Voir les Plans & Mettre à Niveau"
   },
   "dashboardPage": {
     "welcome": "Bienvenue, {{name}} !",
@@ -550,17 +552,17 @@
     "plans": {
       "free": {
         "title": "Gratuit",
-        "price": "Pour les particuliers et petits projets.",
+        "price": "0€ / mois - Pour les particuliers et petits projets.",
         "cta": "Commencer Gratuitement"
       },
       "pro": {
         "title": "Pro",
-        "price": "Pour les freelances et entreprises en croissance.",
+        "price": "10€ / mois - Pour les freelances et entreprises en croissance.",
         "cta": "Choisir Pro"
       },
       "business": {
         "title": "Business",
-        "price": "Pour les entreprises établies et les équipes.",
+        "price": "25€ / mois - Pour les entreprises établies et les équipes.",
         "cta": "Choisir Business"
       }
     },

@@ -2,7 +2,7 @@
 "use client";
 
 import Link from 'next/link';
-import { Building2, LogIn, LogOut, UserPlus, LayoutDashboard, FileText, Settings, Users, DollarSign } from 'lucide-react';
+import { Building2, LogIn, LogOut, UserPlus, LayoutDashboard, FileText, Settings, Users, DollarSign, Award, ShoppingCart } from 'lucide-react'; // Added Award, ShoppingCart
 import { useAuth } from '@/hooks/use-auth';
 import { useLanguage } from '@/hooks/use-language'; 
 import { auth } from '@/lib/firebase';
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from '@/components/ui/skeleton'; 
+import { Badge } from '@/components/ui/badge'; // Import Badge
 
 export default function SiteHeader() {
   const { user, loading: authLoading } = useAuth();
@@ -91,13 +92,18 @@ export default function SiteHeader() {
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuContent className="w-64" align="end" forceMount>
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">{user.displayName || "User"}</p>
-                      <p className="text-xs leading-none text-muted-foreground">
+                      <p className="text-sm font-medium leading-none truncate">{user.displayName || "User"}</p>
+                      <p className="text-xs leading-none text-muted-foreground truncate">
                         {user.email}
                       </p>
+                      {user.planId && (
+                        <p className="text-xs leading-none text-muted-foreground mt-1">
+                          {t('siteNav.currentPlanLabel', { default: "Current Plan:"})} <Badge variant="secondary" className="capitalize text-xs">{user.planId}</Badge>
+                        </p>
+                      )}
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
@@ -114,6 +120,12 @@ export default function SiteHeader() {
                      <Link href="/preferences"><Settings className="mr-2 h-4 w-4" />{t('siteNav.preferences')}</Link>
                    </DropdownMenuItem>
                    <DropdownMenuSeparator className="md:hidden"/>
+                  <DropdownMenuItem asChild className="cursor-pointer">
+                    <Link href="/pricing">
+                      <ShoppingCart className="mr-2 h-4 w-4" />{t('siteNav.viewPlans', {default: "View Plans"})}
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>{t('siteNav.logout')}</span>

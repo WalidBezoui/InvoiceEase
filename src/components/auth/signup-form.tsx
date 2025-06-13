@@ -51,14 +51,17 @@ export default function SignupForm() {
       
       await updateProfile(user, { displayName: values.displayName });
 
+      // Store user profile information in 'users' collection
       await setDoc(doc(db, "users", user.uid), {
         uid: user.uid,
         email: user.email,
         displayName: values.displayName,
         planId: 'free', // Default to free plan
-        createdAt: serverTimestamp(), 
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
       });
       
+      // Store initial user preferences in 'userPreferences' collection
       await setDoc(doc(db, "userPreferences", user.uid), {
         currency: "MAD", 
         language: "fr", 

@@ -8,7 +8,9 @@
     "login": "Login",
     "signup": "Sign Up",
     "logout": "Log out",
-    "pricing": "Pricing"
+    "pricing": "Pricing",
+    "currentPlanLabel": "Current Plan:",
+    "viewPlans": "View Plans & Upgrade"
   },
   "dashboardPage": {
     "welcome": "Welcome, {{name}}!",
@@ -550,17 +552,17 @@
     "plans": {
       "free": {
         "title": "Free",
-        "price": "For individuals and small projects.",
+        "price": "$0 / month - For individuals and small projects.",
         "cta": "Get Started for Free"
       },
       "pro": {
         "title": "Pro",
-        "price": "For freelancers and growing businesses.",
+        "price": "$10 / month - For freelancers and growing businesses.",
         "cta": "Choose Pro"
       },
       "business": {
         "title": "Business",
-        "price": "For established businesses and teams.",
+        "price": "$25 / month - For established businesses and teams.",
         "cta": "Choose Business"
       }
     },
