@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -15,8 +16,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { auth, db } from "@/lib/firebase"; // Import db
-import { doc, setDoc } from "firebase/firestore"; // Import Firestore functions
+import { auth, db } from "@/lib/firebase"; 
+import { doc, setDoc, serverTimestamp } from "firebase/firestore"; 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
@@ -48,21 +49,22 @@ export default function SignupForm() {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const user = userCredential.user;
       
-      // Update Firebase Auth profile
       await updateProfile(user, { displayName: values.displayName });
 
-      // Create user document in Firestore
       await setDoc(doc(db, "users", user.uid), {
         uid: user.uid,
         email: user.email,
         displayName: values.displayName,
-        createdAt: new Date(),
+        planId: 'free', // Default to free plan
+        createdAt: serverTimestamp(), 
       });
       
-      // Create preferences document for the user (optional, can be done on first preference save)
       await setDoc(doc(db, "userPreferences", user.uid), {
-        currency: "USD", // Default currency
-        language: "en", // Default language
+        currency: "MAD", 
+        language: "fr", 
+        defaultTaxRate: 0,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
       });
 
       toast({

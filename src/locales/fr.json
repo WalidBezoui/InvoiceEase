@@ -7,7 +7,8 @@
     "preferences": "Préférences",
     "login": "Connexion",
     "signup": "Inscription",
-    "logout": "Déconnexion"
+    "logout": "Déconnexion",
+    "pricing": "Tarifs"
   },
   "dashboardPage": {
     "welcome": "Bienvenue, {{name}} !",
@@ -540,7 +541,44 @@
   },
   "siteFooter": {
     "copyright": "&copy; {{year}} InvoiceEase. Tous droits réservés."
+  },
+  "pricingPage": {
+    "title": "Choisissez Votre Plan",
+    "subtitle": "Tarification simple et transparente pour les entreprises de toutes tailles. Commencez gratuitement, évoluez selon vos besoins.",
+    "mostPopular": "Le Plus Populaire",
+    "contactSalesText": "Besoin de plus ? Contactez notre service commercial pour des solutions d'entreprise.",
+    "plans": {
+      "free": {
+        "title": "Gratuit",
+        "price": "Pour les particuliers et petits projets.",
+        "cta": "Commencer Gratuitement"
+      },
+      "pro": {
+        "title": "Pro",
+        "price": "Pour les freelances et entreprises en croissance.",
+        "cta": "Choisir Pro"
+      },
+      "business": {
+        "title": "Business",
+        "price": "Pour les entreprises établies et les équipes.",
+        "cta": "Choisir Business"
+      }
+    },
+    "features": {
+      "maxInvoices": "Jusqu'à {{limit}} factures / mois",
+      "maxClients": "Jusqu'à {{limit}} clients",
+      "basicCustomization": "Personnalisation de base des factures",
+      "emailSupport": "Support par e-mail",
+      "removeBranding": "Supprimer la marque InvoiceEase",
+      "paymentReminders": "Rappels de paiement automatisés",
+      "maxInvoicesPro": "Jusqu'à {{limit}} factures / mois",
+      "maxClientsPro": "Jusqu'à {{limit}} clients",
+      "fullCustomization": "Personnalisation complète (logo, couleurs)",
+      "prioritySupport": "Support par e-mail prioritaire",
+      "maxInvoicesBusiness": "Factures illimitées",
+      "maxClientsBusiness": "Clients illimités",
+      "teamCollaboration": "Collaboration d'équipe (bientôt)",
+      "dedicatedSupport": "Support dédié"
+    }
   }
 }
-
-    

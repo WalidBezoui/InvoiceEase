@@ -6,30 +6,31 @@ export interface UserProfile {
   email: string | null;
   displayName?: string | null;
   photoURL?: string | null; 
+  planId?: 'free' | 'pro' | 'business'; // Added planId
 }
 
 export interface UserPreferences {
   logoDataUrl?: string | null;
-  watermarkLogoDataUrl?: string | null; // Added for watermark logo
+  watermarkLogoDataUrl?: string | null; 
   invoiceHeader?: string;
   invoiceFooter?: string;
-  invoiceWatermark?: string; // This is for text watermark, distinct from logo
-  currency?: string; // e.g., "USD", "EUR"
-  language?: string; // e.g., "en", "es"
+  invoiceWatermark?: string; 
+  currency?: string; 
+  language?: string; 
   defaultNotes?: string;
   defaultPaymentTerms?: string;
   defaultTaxRate?: number;
 }
 
 export interface Client {
-  id?: string; // Firestore document ID
+  id?: string; 
   userId: string;
   name: string;
   email?: string;
   address?: string;
   phone?: string;
-  clientCompany?: string; // Optional company name for the client
-  ice: string; // Identifiant Commun de l'Entreprise (Morocco) - 15 digits
+  clientCompany?: string; 
+  ice: string; 
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }
@@ -37,49 +38,62 @@ export interface Client {
 export type ClientFormData = Omit<Client, 'id' | 'userId' | 'createdAt' | 'updatedAt'>;
 
 export interface InvoiceItem {
-  id?: string; // Optional: mainly for client-side keying in forms
+  id?: string; 
   description: string;
   quantity: number;
   unitPrice: number;
-  total: number; // Calculated: quantity * unitPrice
+  total: number; 
 }
 
 export interface Invoice {
-  id?: string; // Firestore document ID, optional for new invoices
+  id?: string; 
   userId: string;
   invoiceNumber: string;
   
-  // Client details snapshot at the time of invoice creation
-  clientId?: string | null; // Optional: ID of the client if selected from a list
+  clientId?: string | null; 
   clientName: string;
   clientEmail: string;
   clientAddress?: string;
-  clientCompany?: string; // Snapshot of client's company name
-  clientICE?: string; // Snapshot of client's ICE
+  clientCompany?: string; 
+  clientICE?: string; 
 
-  issueDate: string; // ISO string date
-  dueDate: string; // ISO string date
+  issueDate: string; 
+  dueDate: string; 
   items: InvoiceItem[];
   subtotal: number;
-  taxRate?: number; // Optional tax rate (e.g., 0.05 for 5%)
+  taxRate?: number; 
   taxAmount?: number;
   totalAmount: number;
   status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
-  notes?: string; // Invoice-specific notes
+  notes?: string; 
 
-  // Fields populated from UserPreferences at the time of invoice creation
   currency: string; 
   language: string; 
   logoDataUrl?: string | null;
-  watermarkLogoDataUrl?: string | null; // Added for watermark logo
+  watermarkLogoDataUrl?: string | null; 
   companyInvoiceHeader?: string;
   companyInvoiceFooter?: string;
   appliedDefaultNotes?: string; 
   appliedDefaultPaymentTerms?: string;
   
-  sentDate?: string | null; // ISO string date, when invoice was marked as sent
-  paidDate?: string | null; // ISO string date, when invoice was marked as paid
+  sentDate?: string | null; 
+  paidDate?: string | null; 
 
   createdAt?: Timestamp; 
   updatedAt?: Timestamp; 
+}
+
+// For Pricing Page
+export interface PlanFeature {
+  textKey: string; // Translation key for the feature text
+  included: boolean;
+}
+
+export interface PricingPlan {
+  id: 'free' | 'pro' | 'business';
+  titleKey: string; // Translation key for plan title
+  priceKey: string; // Translation key for price/description (e.g., "Free Forever" or "For Professionals")
+  features: PlanFeature[];
+  ctaKey: string; // Translation key for Call to Action button
+  isPopular?: boolean;
 }

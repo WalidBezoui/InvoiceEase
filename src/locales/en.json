@@ -7,7 +7,8 @@
     "preferences": "Preferences",
     "login": "Login",
     "signup": "Sign Up",
-    "logout": "Log out"
+    "logout": "Log out",
+    "pricing": "Pricing"
   },
   "dashboardPage": {
     "welcome": "Welcome, {{name}}!",
@@ -540,7 +541,44 @@
   },
   "siteFooter": {
     "copyright": "&copy; {{year}} InvoiceEase. All rights reserved."
+  },
+  "pricingPage": {
+    "title": "Choose Your Plan",
+    "subtitle": "Simple, transparent pricing for businesses of all sizes. Start free, upgrade as you grow.",
+    "mostPopular": "Most Popular",
+    "contactSalesText": "Need more? Contact sales for enterprise solutions.",
+    "plans": {
+      "free": {
+        "title": "Free",
+        "price": "For individuals and small projects.",
+        "cta": "Get Started for Free"
+      },
+      "pro": {
+        "title": "Pro",
+        "price": "For freelancers and growing businesses.",
+        "cta": "Choose Pro"
+      },
+      "business": {
+        "title": "Business",
+        "price": "For established businesses and teams.",
+        "cta": "Choose Business"
+      }
+    },
+    "features": {
+      "maxInvoices": "Up to {{limit}} invoices / month",
+      "maxClients": "Up to {{limit}} clients",
+      "basicCustomization": "Basic invoice customization",
+      "emailSupport": "Email support",
+      "removeBranding": "Remove InvoiceEase branding",
+      "paymentReminders": "Automated payment reminders",
+      "maxInvoicesPro": "Up to {{limit}} invoices / month",
+      "maxClientsPro": "Up to {{limit}} clients",
+      "fullCustomization": "Full invoice customization (logo, colors)",
+      "prioritySupport": "Priority email support",
+      "maxInvoicesBusiness": "Unlimited invoices",
+      "maxClientsBusiness": "Unlimited clients",
+      "teamCollaboration": "Team collaboration (coming soon)",
+      "dedicatedSupport": "Dedicated support"
+    }
   }
 }
-
-    

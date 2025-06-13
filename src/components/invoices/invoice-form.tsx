@@ -394,8 +394,8 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
             <CardTitle className="font-headline text-xl text-primary">{t('invoiceForm.invoiceDetailsCard.title')}</CardTitle>
              <UiCardDescription>{t('invoiceForm.invoiceDetailsCard.description')}</UiCardDescription>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <FormField control={form.control} name="invoiceNumber" render={({ field }) => (
+          <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+ <FormField control={form.control} name="invoiceNumber" render={({ field }) => (
               <FormItem>
                 <FormLabel>{t('invoiceForm.formFields.invoiceNumber')}</FormLabel>
                 <FormControl><Input placeholder={t('invoiceForm.placeholders.invoiceNumber')} {...field} /></FormControl>
@@ -447,7 +447,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
           <CardHeader>
             <CardTitle className="font-headline text-xl text-primary">{t('invoiceForm.invoiceItemsCard.title')}</CardTitle>
             <UiCardDescription>{t('invoiceForm.invoiceItemsCard.description')}</UiCardDescription>
-          </CardHeader>
+          </CardHeader> 
           <CardContent className="space-y-4">
             {fields.map((item, index) => (
               <div key={item.id || `item-${index}`} className="flex flex-col md:flex-row gap-4 items-start p-4 border rounded-md bg-secondary/30">

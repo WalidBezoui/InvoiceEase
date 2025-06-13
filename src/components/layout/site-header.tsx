@@ -2,9 +2,9 @@
 "use client";
 
 import Link from 'next/link';
-import { Building2, LogIn, LogOut, UserPlus, LayoutDashboard, FileText, Settings, Users } from 'lucide-react';
+import { Building2, LogIn, LogOut, UserPlus, LayoutDashboard, FileText, Settings, Users, DollarSign } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
-import { useLanguage } from '@/hooks/use-language'; // Import useLanguage
+import { useLanguage } from '@/hooks/use-language'; 
 import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
@@ -18,11 +18,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Skeleton } from '@/components/ui/skeleton'; // For loading state
+import { Skeleton } from '@/components/ui/skeleton'; 
 
 export default function SiteHeader() {
   const { user, loading: authLoading } = useAuth();
-  const { t, isLoadingLocale } = useLanguage(); // Use language hook
+  const { t, isLoadingLocale } = useLanguage(); 
   const router = useRouter();
 
   const handleSignOut = async () => {
@@ -52,10 +52,10 @@ export default function SiteHeader() {
           <Building2 className="h-6 w-6 text-primary" />
           <span className="font-headline text-xl font-bold text-primary">InvoiceEase</span>
         </Link>
-        <nav className="flex items-center space-x-2 md:space-x-4">
+        <nav className="flex items-center space-x-1 md:space-x-2">
           {isLoading ? (
             <div className="flex items-center space-x-2 md:space-x-4">
-              <Skeleton className="h-8 w-24 hidden md:inline-flex" />
+              <Skeleton className="h-8 w-20 hidden md:inline-flex" />
               <Skeleton className="h-8 w-20 hidden md:inline-flex" />
               <Skeleton className="h-8 w-8 rounded-full" />
             </div>
@@ -123,6 +123,11 @@ export default function SiteHeader() {
             </>
           ) : (
             <>
+              <Button variant="ghost" asChild>
+                <Link href="/pricing">
+                  <DollarSign className="mr-2 h-4 w-4" /> {t('siteNav.pricing', {default: "Pricing"})}
+                </Link>
+              </Button>
               <Button variant="ghost" asChild>
                 <Link href="/login">
                   <LogIn className="mr-2 h-4 w-4" /> {t('siteNav.login')}
