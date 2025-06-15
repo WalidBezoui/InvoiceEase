@@ -69,10 +69,11 @@ export interface Invoice {
 
   currency: string; 
   language: string; 
-  logoDataUrl?: string | null;
-  watermarkLogoDataUrl?: string | null; 
-  companyInvoiceHeader?: string;
-  companyInvoiceFooter?: string;
+  // Branding elements removed from here, will be sourced from UserPreferences dynamically
+  // logoDataUrl?: string | null;
+  // watermarkLogoDataUrl?: string | null; 
+  // companyInvoiceHeader?: string;
+  // companyInvoiceFooter?: string;
   appliedDefaultNotes?: string; 
   appliedDefaultPaymentTerms?: string;
   
@@ -97,3 +98,4 @@ export interface PricingPlan {
   ctaKey: string; // Translation key for Call to Action button
   isPopular?: boolean;
 }
+

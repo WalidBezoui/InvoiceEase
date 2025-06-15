@@ -240,7 +240,8 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
 
     const finalClientId = values.clientId === MANUAL_ENTRY_CLIENT_ID ? null : (values.clientId || null);
 
-    const commonInvoiceData: Partial<Omit<Invoice, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'status' | 'currency' | 'language' | 'logoDataUrl' | 'watermarkLogoDataUrl' | 'companyInvoiceHeader' | 'companyInvoiceFooter' | 'appliedDefaultNotes' | 'appliedDefaultPaymentTerms'>> = {
+    // Fields that are specific to the invoice instance and not global branding
+    const coreInvoiceData = {
       invoiceNumber: values.invoiceNumber,
       clientId: finalClientId,
       clientName: values.clientName,
@@ -256,36 +257,35 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
       taxAmount,
       totalAmount,
       notes: values.notes || "",
+      // Currency and language are set at creation and remain with the invoice
+      currency: initialData?.currency || userPrefs?.currency || "MAD",
+      language: initialData?.language || userPrefs?.language || "fr",
+      appliedDefaultNotes: initialData ? initialData.appliedDefaultNotes : (values.notes === (userPrefs?.defaultNotes || "") ? userPrefs?.defaultNotes : ""),
+      appliedDefaultPaymentTerms: initialData ? initialData.appliedDefaultPaymentTerms : (userPrefs?.defaultPaymentTerms || ""),
     };
 
     try {
       if (initialData?.id) {
         const invoiceRef = doc(db, "invoices", initialData.id);
+        // For updates, only update core data + updatedAt. Status and other specific fields are handled elsewhere.
         await updateDoc(invoiceRef, {
-          ...commonInvoiceData, 
+          ...coreInvoiceData,
+          // Only update status if it was draft, otherwise preserve it, status changes are handled in detail page
+          status: initialData.status === 'draft' ? 'draft' : initialData.status,
           updatedAt: serverTimestamp() as FieldValue,
         });
         toast({ title: t('invoiceForm.toast.invoiceUpdatedTitle'), description: t('invoiceForm.toast.invoiceUpdatedDesc', {invoiceNumber: values.invoiceNumber}) });
         router.push(`/invoices/${initialData.id}`);
       } else {
-        const invoiceDataToCreate: Omit<Invoice, 'id' | 'createdAt' | 'updatedAt'> = {
+        // For new invoices, set initial status and creation/update timestamps
+        const invoiceDataToCreate = {
           userId: user.uid,
-          status: 'draft',
-          currency: userPrefs?.currency || "MAD",
-          language: userPrefs?.language || "fr",
-          logoDataUrl: userPrefs?.logoDataUrl || null,
-          watermarkLogoDataUrl: userPrefs?.watermarkLogoDataUrl || null,
-          companyInvoiceHeader: userPrefs?.invoiceHeader || "",
-          companyInvoiceFooter: userPrefs?.invoiceFooter || "",
-          appliedDefaultNotes: values.notes === (userPrefs?.defaultNotes || "") ? userPrefs?.defaultNotes : "",
-          appliedDefaultPaymentTerms: userPrefs?.defaultPaymentTerms || "",
-          ...(commonInvoiceData as any), // Cast to avoid type conflicts before all fields are there
-        };
-        const docRef = await addDoc(collection(db, "invoices"), {
-          ...invoiceDataToCreate,
+          status: 'draft', // New invoices always start as draft
+          ...coreInvoiceData,
           createdAt: serverTimestamp() as FieldValue,
           updatedAt: serverTimestamp() as FieldValue,
-        });
+        };
+        const docRef = await addDoc(collection(db, "invoices"), invoiceDataToCreate);
         toast({ title: t('invoiceForm.toast.invoiceSavedTitle'), description: t('invoiceForm.toast.invoiceSavedDesc', {invoiceNumber: values.invoiceNumber}) });
         router.push(`/invoices/${docRef.id}`);
       }
@@ -536,5 +536,3 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     </Form>
   );
 }
-
-      

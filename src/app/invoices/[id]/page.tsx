@@ -4,9 +4,9 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
-import { useLanguage, type Locale } from "@/hooks/use-language"; // Import useLanguage
+import { useLanguage, type Locale } from "@/hooks/use-language"; 
 import { db } from "@/lib/firebase";
-import type { Invoice, InvoiceItem } from "@/lib/types";
+import type { Invoice, InvoiceItem, UserPreferences } from "@/lib/types"; // Added UserPreferences
 import { doc, getDoc, updateDoc, serverTimestamp, type FieldValue } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -119,26 +119,30 @@ const dateLocales: Record<Locale, typeof fr | typeof en> = { en, fr };
 
 export default function InvoiceDetailPage() {
   const { user, loading: authLoading } = useAuth();
-  const { t, locale, isLoadingLocale } = useLanguage(); // Use language hook
+  const { t, locale, isLoadingLocale } = useLanguage(); 
   const router = useRouter();
   const params = useParams();
   const { toast } = useToast();
   const invoiceId = params.id as string;
 
   const [invoice, setInvoice] = useState<Invoice | null>(null);
+  const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [isLoadingPreferences, setIsLoadingPreferences] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
-  const isLoading = authLoading || isLoadingLocale || isLoadingData;
+  const isLoading = authLoading || isLoadingLocale || isLoadingData || isLoadingPreferences;
   
   useEffect(() => {
-    async function fetchInvoice() {
+    async function fetchInvoiceAndPreferences() {
       if (!user || !invoiceId) {
         setIsLoadingData(false);
+        setIsLoadingPreferences(false);
         return;
       }
       setIsLoadingData(true);
+      setIsLoadingPreferences(true);
       setError(null);
       try {
         const invoiceRef = doc(db, "invoices", invoiceId);
@@ -148,23 +152,36 @@ export default function InvoiceDetailPage() {
           const fetchedInvoice = { id: docSnap.id, ...docSnap.data() } as Invoice;
           if (fetchedInvoice.userId === user.uid) {
             setInvoice(fetchedInvoice);
+
+            // Fetch user preferences
+            const userPrefDocRef = doc(db, "userPreferences", user.uid);
+            const userPrefDocSnap = await getDoc(userPrefDocRef);
+            if (userPrefDocSnap.exists()) {
+              setUserPreferences(userPrefDocSnap.data() as UserPreferences);
+            } else {
+              // Set default preferences if none exist, or handle as an error/default state
+              setUserPreferences({ currency: "MAD", language: "fr", defaultTaxRate: 0 }); // Fallback
+            }
+
           } else {
-            setError("You do not have permission to view this invoice."); // This should be translated if possible or use a generic error key
+            setError("You do not have permission to view this invoice."); 
           }
         } else {
           setError(t('invoiceDetailPage.invoiceNotFound'));
         }
       } catch (err) {
-        console.error("Error fetching invoice:", err);
+        console.error("Error fetching invoice or preferences:", err);
         setError(t('invoiceDetailPage.errorLoadingInvoice'));
       } finally {
         setIsLoadingData(false);
+        setIsLoadingPreferences(false);
       }
     }
-    fetchInvoice();
+    fetchInvoiceAndPreferences();
   }, [user, invoiceId, t]);
   
   const getDateFnsLocale = () => {
+    // Use invoice's language if available, otherwise fallback to global locale
     return dateLocales[invoice?.language as Locale || locale] || en;
   };
 
@@ -217,14 +234,14 @@ export default function InvoiceDetailPage() {
         return updatedInvoice;
       });
       toast({
-        title: t('invoiceDetailPage.statusUpdatedToastTitle', {status: newStatus}), // Example of a new key needed
-        description: t('invoiceDetailPage.statusUpdatedToastDesc', {invoiceNumber: invoice.invoiceNumber, status: newStatus}), // Example
+        title: t('invoiceDetailPage.statusUpdatedToastTitle', {status: newStatus}), 
+        description: t('invoiceDetailPage.statusUpdatedToastDesc', {invoiceNumber: invoice.invoiceNumber, status: newStatus}), 
       });
     } catch (err) {
       console.error("Error updating invoice status:", err);
       toast({
-        title: t('invoiceDetailPage.errorToastTitle'), // Example
-        description: t('invoiceDetailPage.statusUpdateErrorToastDesc'), // Example
+        title: t('invoiceDetailPage.errorToastTitle'), 
+        description: t('invoiceDetailPage.statusUpdateErrorToastDesc'), 
         variant: "destructive",
       });
     } finally {
@@ -276,6 +293,13 @@ export default function InvoiceDetailPage() {
   const canReopenAsDraft = invoice.status === 'cancelled';
 
   const hasAvailableActions = canMarkAsSent || canMarkAsPaid || canMarkAsOverdue || canCancel || canRevertToSent || canReopenAsDraft;
+
+  // Use values from UserPreferences if available, otherwise fallback to invoice's own or defaults
+  const displayLogoUrl = userPreferences?.logoDataUrl;
+  const displayWatermarkLogoUrl = userPreferences?.watermarkLogoDataUrl;
+  const displayCompanyInvoiceHeader = userPreferences?.invoiceHeader || "";
+  const displayCompanyInvoiceFooter = userPreferences?.invoiceFooter || "";
+
 
   return (
     <div className="invoice-page-wrapper">
@@ -429,28 +453,28 @@ export default function InvoiceDetailPage() {
 
 
       <Card className="invoice-card-for-print shadow-lg print:shadow-none print:border-none relative">
-        {invoice.watermarkLogoDataUrl && (
+        {displayWatermarkLogoUrl && (
           <div 
             className="print-only-watermark-container"
             style={{
-              backgroundImage: `url(${invoice.watermarkLogoDataUrl})`,
+              backgroundImage: `url(${displayWatermarkLogoUrl})`,
             }}
           ></div>
         )}
         <CardHeader className="print-card-header border-b print:pb-2 print:border-b-slate-200">
           <div className="flex flex-col md:flex-row justify-between items-start gap-6">
-            <div className="flex items-center gap-4"> {/* Logo and custom header container */}
-              {invoice.logoDataUrl && (
+            <div className="flex items-center gap-4"> 
+              {displayLogoUrl && (
                 <img 
-                  src={invoice.logoDataUrl} 
+                  src={displayLogoUrl} 
                   alt="Company Logo" 
                   className="h-16 max-w-[150px] object-contain print:h-12" 
                   data-ai-hint="company logo"
                 />
               )}
-              {invoice.companyInvoiceHeader && (
+              {displayCompanyInvoiceHeader && (
                 <h2 className="text-2xl font-bold text-primary print:text-xl">
-                  {invoice.companyInvoiceHeader}
+                  {displayCompanyInvoiceHeader}
                 </h2>
               )}
             </div>
@@ -464,7 +488,7 @@ export default function InvoiceDetailPage() {
         
         <CardContent className={cn(
           "print-card-content pt-6 space-y-6 print:pt-4 print:space-y-4",
-           invoice.companyInvoiceFooter ? "print-content-has-footer" : "print-content-no-footer"
+           displayCompanyInvoiceFooter ? "print-content-has-footer" : "print-content-no-footer"
         )}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
             <div>
@@ -558,12 +582,12 @@ export default function InvoiceDetailPage() {
 
         </CardContent>
 
-        {invoice.companyInvoiceFooter && (
+        {displayCompanyInvoiceFooter && (
           <CardFooter className={cn(
             "print-card-footer border-t print:mt-2 print:pt-2 print:pb-2",
-            invoice.companyInvoiceFooter ? "has-content" : ""
+            displayCompanyInvoiceFooter ? "has-content" : ""
           )}>
-            <p className="text-xs text-muted-foreground text-center w-full print:text-[0.65rem]">{invoice.companyInvoiceFooter}</p>
+            <p className="text-xs text-muted-foreground text-center w-full print:text-[0.65rem]">{displayCompanyInvoiceFooter}</p>
           </CardFooter>
         )}
       </Card>
@@ -687,8 +711,8 @@ export default function InvoiceDetailPage() {
 
           .invoice-card-for-print .text-3xl { font-size: 1.75rem !important; }
           .invoice-card-for-print .print\\:text-2xl { font-size: 1.5rem !important; }
-          .invoice-card-for-print .text-2xl { font-size: 1.5rem !important; } /* Ensure this applies for the new header */
-          .invoice-card-for-print .print\\:text-xl { font-size: 1.25rem !important; } /* Ensure this applies for the new header */
+          .invoice-card-for-print .text-2xl { font-size: 1.5rem !important; } 
+          .invoice-card-for-print .print\\:text-xl { font-size: 1.25rem !important; } 
           .invoice-card-for-print .text-lg { font-size: 1.125rem !important; }
           .invoice-card-for-print .print\\:text-base { font-size: 1rem !important; }
           .invoice-card-for-print .print\\:text-sm { font-size: 0.8rem !important; }
@@ -721,6 +745,3 @@ export default function InvoiceDetailPage() {
     </div>
   );
 }
-
-
-    
