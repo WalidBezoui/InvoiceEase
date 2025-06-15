@@ -439,11 +439,20 @@ export default function InvoiceDetailPage() {
         )}
         <CardHeader className="print-card-header border-b print:pb-2 print:border-b-slate-200">
           <div className="flex flex-col md:flex-row justify-between items-start gap-6">
-            <div className="flex-shrink-0">
+            <div className="flex items-center gap-4"> {/* Logo and custom header container */}
               {invoice.logoDataUrl && (
-                <img src={invoice.logoDataUrl} alt="Company Logo" className="h-16 max-w-[200px] object-contain mb-2 print:h-12" data-ai-hint="company logo"/>
+                <img 
+                  src={invoice.logoDataUrl} 
+                  alt="Company Logo" 
+                  className="h-16 max-w-[150px] object-contain print:h-12" 
+                  data-ai-hint="company logo"
+                />
               )}
-              <h2 className="text-lg font-semibold text-primary print:text-base">{invoice.companyInvoiceHeader || "Your Company Name"}</h2>
+              {invoice.companyInvoiceHeader && (
+                <h2 className="text-2xl font-bold text-primary print:text-xl">
+                  {invoice.companyInvoiceHeader}
+                </h2>
+              )}
             </div>
             <div className="text-left md:text-right flex-grow">
               <h3 className="text-3xl font-bold text-primary uppercase tracking-tight print:text-2xl">{t('invoiceDetailPage.invoiceTitle')}</h3>
@@ -678,6 +687,8 @@ export default function InvoiceDetailPage() {
 
           .invoice-card-for-print .text-3xl { font-size: 1.75rem !important; }
           .invoice-card-for-print .print\\:text-2xl { font-size: 1.5rem !important; }
+          .invoice-card-for-print .text-2xl { font-size: 1.5rem !important; } /* Ensure this applies for the new header */
+          .invoice-card-for-print .print\\:text-xl { font-size: 1.25rem !important; } /* Ensure this applies for the new header */
           .invoice-card-for-print .text-lg { font-size: 1.125rem !important; }
           .invoice-card-for-print .print\\:text-base { font-size: 1rem !important; }
           .invoice-card-for-print .print\\:text-sm { font-size: 0.8rem !important; }
@@ -710,3 +721,6 @@ export default function InvoiceDetailPage() {
     </div>
   );
 }
+
+
+    
