@@ -6,7 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { useLanguage, type Locale } from "@/hooks/use-language"; 
 import { db } from "@/lib/firebase";
-import type { Invoice, InvoiceItem, UserPreferences } from "@/lib/types"; // Added UserPreferences
+import type { Invoice, InvoiceItem, UserPreferences } from "@/lib/types";
 import { doc, getDoc, updateDoc, serverTimestamp, type FieldValue } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -153,18 +153,16 @@ export default function InvoiceDetailPage() {
           if (fetchedInvoice.userId === user.uid) {
             setInvoice(fetchedInvoice);
 
-            // Fetch user preferences
             const userPrefDocRef = doc(db, "userPreferences", user.uid);
             const userPrefDocSnap = await getDoc(userPrefDocRef);
             if (userPrefDocSnap.exists()) {
               setUserPreferences(userPrefDocSnap.data() as UserPreferences);
             } else {
-              // Set default preferences if none exist, or handle as an error/default state
-              setUserPreferences({ currency: "MAD", language: "fr", defaultTaxRate: 0 }); // Fallback
+              setUserPreferences({ currency: "MAD", language: "fr", defaultTaxRate: 0 }); 
             }
 
           } else {
-            setError("You do not have permission to view this invoice."); 
+            setError(t('invoiceDetailPage.errorLoadingInvoice')); 
           }
         } else {
           setError(t('invoiceDetailPage.invoiceNotFound'));
@@ -181,7 +179,6 @@ export default function InvoiceDetailPage() {
   }, [user, invoiceId, t]);
   
   const getDateFnsLocale = () => {
-    // Use invoice's language if available, otherwise fallback to global locale
     return dateLocales[invoice?.language as Locale || locale] || en;
   };
 
@@ -216,8 +213,6 @@ export default function InvoiceDetailPage() {
       }
     } else if (newStatus === 'paid' && (invoice.status === 'sent' || invoice.status === 'overdue')) { 
       updateData.paidDate = new Date().toISOString();
-    } else if (newStatus === 'draft' && invoice.status === 'cancelled') {
-      // No specific date change needed when reopening from cancelled to draft
     }
     
     try {
@@ -294,7 +289,6 @@ export default function InvoiceDetailPage() {
 
   const hasAvailableActions = canMarkAsSent || canMarkAsPaid || canMarkAsOverdue || canCancel || canRevertToSent || canReopenAsDraft;
 
-  // Use values from UserPreferences if available, otherwise fallback to invoice's own or defaults
   const displayLogoUrl = userPreferences?.logoDataUrl;
   const displayWatermarkLogoUrl = userPreferences?.watermarkLogoDataUrl;
   const displayCompanyInvoiceHeader = userPreferences?.invoiceHeader || "";
@@ -316,7 +310,7 @@ export default function InvoiceDetailPage() {
                 {t('invoiceDetailPage.invoiceTitle')} {invoice.invoiceNumber}
             </h1>
             <p className="text-muted-foreground mt-1">
-                {t('invoiceDetailPage.invoiceStatus')} <Badge variant={getStatusBadgeVariant(invoice.status)} className="capitalize ml-1">{invoice.status}</Badge>
+                {t('invoiceDetailPage.invoiceStatus')} <Badge variant={getStatusBadgeVariant(invoice.status)} className="capitalize ml-1">{t(`invoiceStatus.${invoice.status}`, { default: invoice.status})}</Badge>
             </p>
             </div>
         </div>
@@ -437,7 +431,7 @@ export default function InvoiceDetailPage() {
           <Button variant="outline" onClick={printInvoice}>
             <Download className="mr-2 h-4 w-4" /> {t('invoiceDetailPage.downloadPdf')}
           </Button>
-          { invoice.status === 'draft' || invoice.status === 'sent' ? (
+          { (invoice.status === 'draft' || invoice.status === 'sent') && !isUpdatingStatus ? (
             <Button asChild>
               <Link href={`/invoices/${invoice.id}/edit`}>
                 <Edit className="mr-2 h-4 w-4" /> {t('invoiceDetailPage.edit')}
@@ -462,26 +456,38 @@ export default function InvoiceDetailPage() {
           ></div>
         )}
         <CardHeader className="print-card-header border-b print:pb-2 print:border-b-slate-200">
-          <div className="flex flex-col md:flex-row justify-between items-start gap-6">
-            <div className="flex items-center gap-4"> 
-              {displayLogoUrl && (
-                <img 
-                  src={displayLogoUrl} 
-                  alt="Company Logo" 
-                  className="h-16 max-w-[150px] object-contain print:h-12" 
-                  data-ai-hint="company logo"
-                />
-              )}
-              {displayCompanyInvoiceHeader && (
-                <h2 className="text-2xl font-bold text-primary print:text-xl">
-                  {displayCompanyInvoiceHeader}
-                </h2>
-              )}
+          <div className="text-center mb-4 print:mb-3">
+            {displayLogoUrl && (
+              <img 
+                src={displayLogoUrl} 
+                alt="Company Logo" 
+                className="h-20 max-w-[200px] object-contain print:h-16 mx-auto"
+                data-ai-hint="company logo"
+              />
+            )}
+            {displayCompanyInvoiceHeader && (
+              <h2 className="text-2xl font-bold text-primary print:text-xl mt-3 print:mt-2">
+                {displayCompanyInvoiceHeader}
+              </h2>
+            )}
+          </div>
+          
+          <div className="flex flex-col md:flex-row justify-between items-start gap-2 pt-2 print:pt-1 border-t print:border-slate-200">
+            <div>
+              {/* Optional: Add company address/contact from preferences here if not in header text */}
             </div>
-            <div className="text-left md:text-right flex-grow">
-              <h3 className="text-3xl font-bold text-primary uppercase tracking-tight print:text-2xl">{t('invoiceDetailPage.invoiceTitle')}</h3>
-              <p className="text-muted-foreground text-sm print:text-xs"># {invoice.invoiceNumber}</p>
-              {invoice.currency && <p className="text-sm text-muted-foreground mt-1 print:text-xs">{t('invoiceDetailPage.currency')} {invoice.currency}</p>}
+            <div className="text-left md:text-right w-full md:w-auto">
+              <h3 className="text-3xl font-bold text-primary uppercase tracking-tight print:text-2xl">
+                {t('invoiceDetailPage.invoiceTitle')}
+              </h3>
+              <p className="text-muted-foreground text-sm print:text-xs">
+                # {invoice.invoiceNumber}
+              </p>
+              {invoice.currency && (
+                <p className="text-sm text-muted-foreground mt-1 print:text-xs">
+                  {t('invoiceDetailPage.currency')} {invoice.currency}
+                </p>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -639,7 +645,7 @@ export default function InvoiceDetailPage() {
             box-shadow: none !important; 
             border: none !important; 
             width: 100% !important; 
-            min-height: 282mm; 
+            min-height: 282mm; /* A4 height is ~297mm, this provides some margin if footer is short */
             box-sizing: border-box !important;
             page-break-inside: avoid !important;
             background-color: #fff !important; 
@@ -660,7 +666,7 @@ export default function InvoiceDetailPage() {
             padding-top: 0.75cm !important;
             padding-bottom: 0.5cm !important; 
             border-bottom-width: 1px !important;
-            border-color: #e2e8f0 !important; 
+            border-color: #e2e8f0 !important; /* slate-200 */
           }
            
           .invoice-card-for-print > .print-card-content {
@@ -668,7 +674,8 @@ export default function InvoiceDetailPage() {
             flex-grow: 1; 
           }
           .invoice-card-for-print > .print-card-content.print-content-has-footer {
-            padding-bottom: 2.5cm !important;
+             /* Adjust based on typical footer height, e.g. 1.5cm or 2cm */
+            padding-bottom: 2.5cm !important; 
           }
           .invoice-card-for-print > .print-card-content.print-content-no-footer {
             padding-bottom: 0.75cm !important;
@@ -682,7 +689,7 @@ export default function InvoiceDetailPage() {
             padding-top: 0.35cm !important;
             padding-bottom: 0.35cm !important; 
             border-top-width: 1px !important;
-            border-color: #e2e8f0 !important; 
+            border-color: #e2e8f0 !important; /* slate-200 */
             margin-top: 0 !important; 
             text-align: center !important;
             background-color: #fff !important; 
@@ -745,3 +752,4 @@ export default function InvoiceDetailPage() {
     </div>
   );
 }
+
