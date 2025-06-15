@@ -593,7 +593,7 @@ export default function InvoiceDetailPage() {
             "print-card-footer border-t print:mt-2 print:pt-2 print:pb-2",
             displayCompanyInvoiceFooter ? "has-content" : ""
           )}>
-            <p className="text-xs text-muted-foreground text-center w-full print:text-[0.65rem]">{displayCompanyInvoiceFooter}</p>
+            <p className="text-xs text-muted-foreground text-center w-full print:text-xs">{displayCompanyInvoiceFooter}</p>
           </CardFooter>
         )}
       </Card>
@@ -723,8 +723,8 @@ export default function InvoiceDetailPage() {
           .invoice-card-for-print .text-lg { font-size: 1.125rem !important; }
           .invoice-card-for-print .print\\:text-base { font-size: 1rem !important; }
           .invoice-card-for-print .print\\:text-sm { font-size: 0.8rem !important; }
-          .invoice-card-for-print .print\\:text-xs { font-size: 0.7rem !important; }
-          .invoice-card-for-print .print\\:text-\\[0\\.65rem\\] { font-size: 0.65rem !important; }
+          .invoice-card-for-print .print\\:text-xs { font-size: 0.7rem !important; } /* Adjusted from 0.65rem */
+          
 
           .invoice-card-for-print .bg-secondary\\/30 { background-color: transparent !important; } 
           .invoice-card-for-print .print\\:bg-slate-50 { background-color: #f8fafc !important; }
