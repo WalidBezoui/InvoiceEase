@@ -456,35 +456,38 @@ export default function InvoiceDetailPage() {
           ></div>
         )}
         <CardHeader className="print-card-header border-b print:pb-2 print:border-b-slate-200">
-          <div className="text-center mb-4 print:mb-3">
-            {displayLogoUrl && (
-              <img 
-                src={displayLogoUrl} 
-                alt="Company Logo" 
-                className="h-20 max-w-[200px] object-contain print:h-16 mx-auto"
-                data-ai-hint="company logo"
-              />
-            )}
-            {displayCompanyInvoiceHeader && (
-              <h2 className="text-2xl font-bold text-primary print:text-xl mt-3 print:mt-2">
-                {displayCompanyInvoiceHeader}
-              </h2>
-            )}
-          </div>
-          
-          <div className="flex flex-col md:flex-row justify-between items-start gap-2 pt-2 print:pt-1 border-t print:border-slate-200">
-            <div>
-              {/* Optional: Add company address/contact from preferences here if not in header text */}
+          <div className="flex justify-between items-center"> {/* Main flex row for header items */}
+            {/* Left: Logo */}
+            <div className="flex-none w-1/4"> 
+              {displayLogoUrl && (
+                <img
+                  src={displayLogoUrl}
+                  alt="Company Logo"
+                  className="h-16 max-w-full object-contain print:h-14" 
+                  data-ai-hint="company logo"
+                />
+              )}
             </div>
-            <div className="text-left md:text-right w-full md:w-auto">
-              <h3 className="text-3xl font-bold text-primary uppercase tracking-tight print:text-2xl">
+
+            {/* Center: Company Invoice Header (En-tête) */}
+            <div className="flex-grow text-center px-2"> 
+              {displayCompanyInvoiceHeader && (
+                <h2 className="text-xl font-semibold text-primary print:text-lg leading-tight">
+                  {displayCompanyInvoiceHeader}
+                </h2>
+              )}
+            </div>
+
+            {/* Right: Invoice Title & Number */}
+            <div className="flex-none w-1/3 text-right"> 
+              <h3 className="text-2xl font-bold text-primary uppercase tracking-tight print:text-xl leading-tight">
                 {t('invoiceDetailPage.invoiceTitle')}
               </h3>
               <p className="text-muted-foreground text-sm print:text-xs">
                 # {invoice.invoiceNumber}
               </p>
               {invoice.currency && (
-                <p className="text-sm text-muted-foreground mt-1 print:text-xs">
+                <p className="text-sm text-muted-foreground mt-0.5 print:text-xs">
                   {t('invoiceDetailPage.currency')} {invoice.currency}
                 </p>
               )}
@@ -723,7 +726,7 @@ export default function InvoiceDetailPage() {
           .invoice-card-for-print .text-lg { font-size: 1.125rem !important; }
           .invoice-card-for-print .print\\:text-base { font-size: 1rem !important; }
           .invoice-card-for-print .print\\:text-sm { font-size: 0.8rem !important; }
-          .invoice-card-for-print .print\\:text-xs { font-size: 0.7rem !important; } /* Adjusted from 0.65rem */
+          .invoice-card-for-print .print\\:text-xs { font-size: 0.75rem !important; } /* Adjusted from 0.7rem for footer */
           
 
           .invoice-card-for-print .bg-secondary\\/30 { background-color: transparent !important; } 
