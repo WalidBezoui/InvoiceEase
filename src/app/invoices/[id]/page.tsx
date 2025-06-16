@@ -456,21 +456,22 @@ export default function InvoiceDetailPage() {
           ></div>
         )}
         <CardHeader className="print-card-header border-b print:pb-2 print:border-b-slate-200">
-          <div className="flex justify-between items-center"> {/* Main flex row for header items */}
+          {/* Header Structure: Logo Left, En-tete Center, Invoice Details Right */}
+          <div className="flex items-center"> {/* Main flex row for header items */}
             {/* Left: Logo */}
-            <div className="flex-none w-1/4"> 
+            <div className="flex-1">
               {displayLogoUrl && (
                 <img
                   src={displayLogoUrl}
                   alt="Company Logo"
-                  className="h-16 max-w-full object-contain print:h-14" 
+                  className="h-16 max-w-[180px] object-contain print:h-14" 
                   data-ai-hint="company logo"
                 />
               )}
             </div>
 
             {/* Center: Company Invoice Header (En-tête) */}
-            <div className="flex-grow text-center px-2"> 
+            <div className="flex-shrink-0 text-center px-4"> 
               {displayCompanyInvoiceHeader && (
                 <h2 className="text-xl font-semibold text-primary print:text-lg leading-tight">
                   {displayCompanyInvoiceHeader}
@@ -479,7 +480,7 @@ export default function InvoiceDetailPage() {
             </div>
 
             {/* Right: Invoice Title & Number */}
-            <div className="flex-none w-1/3 text-right"> 
+            <div className="flex-1 text-right"> 
               <h3 className="text-2xl font-bold text-primary uppercase tracking-tight print:text-xl leading-tight">
                 {t('invoiceDetailPage.invoiceTitle')}
               </h3>
