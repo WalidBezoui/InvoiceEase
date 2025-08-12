@@ -741,6 +741,18 @@ export default function InvoiceDetailPage() {
           .invoice-card-for-print .print\\:border-slate-300 { border-color: #cbd5e1 !important; }
           .invoice-card-for-print .print\\:bg-slate-100 { background-color: #f1f5f9 !important; }
 
+          thead {
+            display: table-header-group !important;
+          }
+          
+          tbody {
+            display: table-row-group !important;
+          }
+          
+          tr {
+            page-break-inside: avoid !important;
+          }
+
 
           @page {
             size: A4 portrait; 
@@ -757,3 +769,6 @@ export default function InvoiceDetailPage() {
   );
 }
 
+
+
+    
