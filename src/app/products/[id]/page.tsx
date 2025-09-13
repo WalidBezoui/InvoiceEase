@@ -44,7 +44,7 @@ export default function ProductDetailPage() {
   const [userPrefs, setUserPrefs] = useState<UserPreferences | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [adjustment, setAdjustment] = useState({ quantity: 0, notes: '' });
+  const [adjustment, setAdjustment] = useState({ quantity: 0, notes: '', price: 0 });
 
   const isLoading = authLoading || isLoadingLocale || isLoadingData;
 
@@ -63,7 +63,10 @@ export default function ProductDetailPage() {
         const productSnap = await getDoc(productRef);
 
         if (productSnap.exists() && productSnap.data().userId === user.uid) {
-          setProduct({ id: productSnap.id, ...productSnap.data() } as Product);
+          const fetchedProduct = { id: productSnap.id, ...productSnap.data() } as Product;
+          setProduct(fetchedProduct);
+          // Set initial price for adjustment
+          setAdjustment(prev => ({ ...prev, price: fetchedProduct.sellingPrice }));
         } else {
           setError("Product not found or you don't have permission.");
           setIsLoadingData(false);
@@ -118,19 +121,26 @@ export default function ProductDetailPage() {
     const transactionRef = doc(collection(db, "productTransactions"));
 
     const newStock = (product.stock || 0) + adjustment.quantity;
+    const isSale = adjustment.quantity < 0;
+    const type = isSale ? 'adjustment' : 'purchase';
+    
+    const newTransactionData: Omit<ProductTransaction, 'id' | 'transactionDate'> = {
+        userId: user.uid,
+        productId: product.id!,
+        type: type,
+        quantityChange: adjustment.quantity,
+        newStock: newStock,
+        notes: adjustment.notes || (isSale ? 'Manual sale' : 'Stock purchase'),
+        transactionPrice: isSale ? adjustment.price : undefined,
+    }
 
     // Update product stock
     batch.update(productRef, { stock: newStock });
 
     // Create transaction record
     batch.set(transactionRef, {
-      userId: user.uid,
-      productId: product.id,
-      type: adjustment.quantity > 0 ? 'purchase' : 'adjustment',
-      quantityChange: adjustment.quantity,
-      newStock: newStock,
-      notes: adjustment.notes || (adjustment.quantity > 0 ? 'Stock purchase' : 'Manual adjustment'),
-      transactionDate: serverTimestamp(),
+        ...newTransactionData,
+        transactionDate: serverTimestamp(),
     });
 
     try {
@@ -139,15 +149,10 @@ export default function ProductDetailPage() {
       setProduct(prev => prev ? { ...prev, stock: newStock } : null);
       setTransactions(prev => [{
           id: transactionRef.id,
-          userId: user.uid,
-          productId: product.id!,
-          type: adjustment.quantity > 0 ? 'purchase' : 'adjustment',
-          quantityChange: adjustment.quantity,
-          newStock: newStock,
-          notes: adjustment.notes || (adjustment.quantity > 0 ? 'Stock purchase' : 'Manual adjustment'),
+          ...newTransactionData,
           transactionDate: { toDate: () => new Date() } as any,
       }, ...prev]);
-      setAdjustment({ quantity: 0, notes: '' });
+      setAdjustment({ quantity: 0, notes: '', price: product.sellingPrice }); // Reset form
       toast({ title: "Stock Adjusted", description: `Stock for ${product.name} updated to ${newStock}.`});
     } catch (error) {
       console.error("Error adjusting stock:", error);
@@ -284,16 +289,23 @@ export default function ProductDetailPage() {
                 <CardDescription>Manually add or remove stock (e.g., for new purchases, returns, or corrections).</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                    <div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="md:col-span-1">
                         <Label htmlFor="quantity-adjustment">Quantity</Label>
-                        <Input id="quantity-adjustment" type="number" placeholder="e.g., 50 or -5" value={adjustment.quantity} onChange={e => setAdjustment(prev => ({ ...prev, quantity: parseInt(e.target.value) || 0 }))} />
+                        <Input id="quantity-adjustment" type="number" placeholder="e.g., 50 or -5" value={adjustment.quantity || ''} onChange={e => setAdjustment(prev => ({ ...prev, quantity: parseInt(e.target.value) || 0 }))} />
                         <p className="text-xs text-muted-foreground mt-1">Use a negative number to remove stock.</p>
                     </div>
-                     <div>
+                     <div className="md:col-span-2">
                         <Label htmlFor="adjustment-notes">Notes (Optional)</Label>
-                        <Input id="adjustment-notes" type="text" placeholder="e.g., New shipment" value={adjustment.notes} onChange={e => setAdjustment(prev => ({ ...prev, notes: e.target.value }))} />
+                        <Input id="adjustment-notes" type="text" placeholder="e.g., New shipment, Direct sale" value={adjustment.notes} onChange={e => setAdjustment(prev => ({ ...prev, notes: e.target.value }))} />
                     </div>
+                    {adjustment.quantity < 0 && (
+                        <div className="md:col-span-1">
+                            <Label htmlFor="selling-price">Selling Price</Label>
+                            <Input id="selling-price" type="number" step="0.01" value={adjustment.price} onChange={e => setAdjustment(prev => ({...prev, price: parseFloat(e.target.value) || 0}))} />
+                            <p className="text-xs text-muted-foreground mt-1">Price per unit for this sale.</p>
+                        </div>
+                    )}
                 </div>
                  <Button onClick={handleStockAdjustment} disabled={adjustment.quantity === 0}>
                     {adjustment.quantity > 0 ? <PlusCircle className="mr-2"/> : <MinusCircle className="mr-2"/>}
@@ -316,6 +328,7 @@ export default function ProductDetailPage() {
                                 <TableHead>Type</TableHead>
                                 <TableHead>Change</TableHead>
                                 <TableHead>New Stock</TableHead>
+                                <TableHead>Price</TableHead>
                                 <TableHead>Notes</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
@@ -327,6 +340,9 @@ export default function ProductDetailPage() {
                                     <TableCell><div className="flex items-center gap-2 capitalize">{getTransactionTypeIcon(tx.type)} {tx.type}</div></TableCell>
                                     <TableCell className={`font-bold ${tx.quantityChange > 0 ? 'text-green-600' : 'text-red-600'}`}>{tx.quantityChange > 0 ? `+${tx.quantityChange}` : tx.quantityChange}</TableCell>
                                     <TableCell className="font-medium">{tx.newStock}</TableCell>
+                                    <TableCell>
+                                        {tx.transactionPrice !== undefined ? `${tx.transactionPrice.toFixed(2)}` : 'N/A'}
+                                    </TableCell>
                                     <TableCell>{tx.invoiceId ? <Link href={`/invoices/${tx.invoiceId}`} className="text-primary hover:underline">Invoice #{tx.notes}</Link> : tx.notes}</TableCell>
                                     <TableCell className="text-right">
                                         <AlertDialog>
@@ -365,3 +381,6 @@ export default function ProductDetailPage() {
     </div>
   );
 }
+
+
+    
