@@ -88,6 +88,7 @@ export default function ProductsPage() {
                     type: data.type,
                     quantityChange: data.quantityChange,
                     transactionDate: data.transactionDate.toDate().toISOString(),
+                    transactionPrice: data.transactionPrice
                 }
             }).slice(0, 50); // Limit to recent transactions
 
@@ -154,7 +155,7 @@ export default function ProductsPage() {
         productsToDisplay = productsToDisplay.filter(product =>
             product.name.toLowerCase().includes(lowerSearchTerm) ||
             (product.reference && product.reference.toLowerCase().includes(lowerSearchTerm)) ||
-            product.description.toLowerCase().includes(lowerSearchTerm)
+            (product.description && product.description.toLowerCase().includes(lowerSearchTerm))
         );
     }
 
@@ -397,5 +398,7 @@ export default function ProductsPage() {
     </div>
   );
 }
+
+    
 
     
