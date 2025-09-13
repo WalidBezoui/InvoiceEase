@@ -110,7 +110,7 @@ function numberToFrenchWords(num: number, currencyCode: string): string {
 
   if (decimalPart > 0) {
     words += " et " + numToWords(decimalPart);
-    words += " " + (decimalPart !== 1 ? currentCurrency.centimePlural : currentCurrency.centimeSingular);
+    words += " " + (decimalPart !== 1 ? currentCurrency.centimePlural : currentCurrency.singular);
   }
   return words.replace(/\s+/g, ' ').trim();
 }
@@ -455,33 +455,26 @@ export default function InvoiceDetailPage() {
             }}
           ></div>
         )}
-        <CardHeader className="print-card-header border-b print:pb-2 print:border-b-slate-200">
-          {/* Header Structure: Logo Left, En-tete Center, Invoice Details Right */}
-          <div className="flex items-center"> {/* Main flex row for header items */}
-            {/* Left: Logo */}
-            <div className="flex-1">
-              {displayLogoUrl && (
-                <img
-                  src={displayLogoUrl}
-                  alt="Company Logo"
-                  className="h-16 max-w-[180px] object-contain print:h-14" 
-                  data-ai-hint="company logo"
-                />
-              )}
-            </div>
-
-            {/* Center: Company Invoice Header (En-tête) */}
-            <div className="flex-shrink-0 text-center px-4"> 
-              {displayCompanyInvoiceHeader && (
-                <h2 className="text-xl font-semibold text-primary print:text-lg leading-tight">
-                  {displayCompanyInvoiceHeader}
-                </h2>
-              )}
-            </div>
-
-            {/* Right: Invoice Title & Number */}
-            <div className="flex-1 text-right"> 
-              <h3 className="text-2xl font-bold text-primary uppercase tracking-tight print:text-xl leading-tight">
+        <CardHeader className="print-card-header border-b pb-4 print:pb-2 print:border-b-slate-200">
+          <div className="flex flex-col items-center text-center">
+            {displayLogoUrl && (
+              <img
+                src={displayLogoUrl}
+                alt="Company Logo"
+                className="h-20 max-w-[200px] object-contain print:h-16" 
+                data-ai-hint="company logo"
+              />
+            )}
+            {displayCompanyInvoiceHeader && (
+              <h2 className="text-2xl font-bold text-primary print:text-xl mt-3 print:mt-2">
+                {displayCompanyInvoiceHeader}
+              </h2>
+            )}
+          </div>
+          <div className="border-t w-full my-4 print:my-2"></div>
+          <div className="flex justify-end text-right">
+            <div>
+              <h3 className="text-3xl font-bold text-primary uppercase tracking-tight print:text-2xl leading-tight">
                 {t('invoiceDetailPage.invoiceTitle')}
               </h3>
               <p className="text-muted-foreground text-sm print:text-xs">
@@ -497,8 +490,7 @@ export default function InvoiceDetailPage() {
         </CardHeader>
         
         <CardContent className={cn(
-          "print-card-content pt-6 space-y-6 print:pt-4 print:space-y-4",
-           displayCompanyInvoiceFooter ? "print-content-has-footer" : "print-content-no-footer"
+          "print-card-content pt-6 space-y-6 print:pt-4 print:space-y-4"
         )}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
             <div>
@@ -594,181 +586,14 @@ export default function InvoiceDetailPage() {
 
         {displayCompanyInvoiceFooter && (
           <CardFooter className={cn(
-            "print-card-footer border-t print:mt-2 print:pt-2 print:pb-2",
+            "print-card-footer border-t print:mt-4 print:pt-2 print:pb-2",
             displayCompanyInvoiceFooter ? "has-content" : ""
           )}>
-            <p className="text-xs text-muted-foreground text-center w-full print:text-xs">{displayCompanyInvoiceFooter}</p>
+            <p className="text-xs text-muted-foreground text-center w-full print:text-[0.7rem]">{displayCompanyInvoiceFooter}</p>
           </CardFooter>
         )}
       </Card>
 
-       <style jsx global>{`
-        @media print {
-          body {
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-            background-color: #fff !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            width: 100% !important;
-            height: auto !important;
-            overflow: visible !important;
-            font-size: 9pt !important; 
-          }
-          html {
-            background-color: #fff !important;
-            margin: 0 !important;
-            padding: 0 !important;
-          }
-
-          header, 
-          footer { 
-            display: none !important;
-          }
-
-          main.container { 
-            padding: 0 !important;
-            margin: 0 !important;
-            width: 100% !important;
-            max-width: 100% !important;
-            flex-grow: 0 !important; 
-            overflow: visible !important;
-            display: block !important; 
-          }
-          
-          .invoice-page-wrapper {
-              margin: 0 !important;
-              padding: 0 !important; 
-              width: 100% !important;
-              min-height: 0 !important; 
-          }
-
-          .invoice-card-for-print {
-            padding: 0 !important; 
-            margin: 0 !important; 
-            box-shadow: none !important; 
-            border: none !important; 
-            width: 100% !important; 
-            min-height: 282mm; /* A4 height is ~297mm, this provides some margin if footer is short */
-            box-sizing: border-box !important;
-            page-break-inside: avoid !important;
-            background-color: #fff !important; 
-            position: relative; 
-            display: flex;
-            flex-direction: column;
-          }
-          
-          .invoice-card-for-print > .print-card-header,
-          .invoice-card-for-print > .print-card-content,
-          .invoice-card-for-print > .print-card-footer.has-content {
-            padding-left: 0.75cm !important;
-            padding-right: 0.75cm !important;
-            box-sizing: border-box !important;
-          }
-
-          .invoice-card-for-print > .print-card-header {
-            padding-top: 0.75cm !important;
-            padding-bottom: 0.5cm !important; 
-            border-bottom-width: 1px !important;
-            border-color: #e2e8f0 !important; /* slate-200 */
-          }
-           
-          .invoice-card-for-print > .print-card-content {
-            padding-top: 0.5cm !important;
-            flex-grow: 1; 
-          }
-          .invoice-card-for-print > .print-card-content.print-content-has-footer {
-             /* Adjust based on typical footer height, e.g. 1.5cm or 2cm */
-            padding-bottom: 2.5cm !important; 
-          }
-          .invoice-card-for-print > .print-card-content.print-content-no-footer {
-            padding-bottom: 0.75cm !important;
-          }
-
-          .invoice-card-for-print > .print-card-footer.has-content {
-            position: absolute !important;
-            bottom: 0 !important;
-            left: 0 !important;
-            width: 100% !important;
-            padding-top: 0.35cm !important;
-            padding-bottom: 0.35cm !important; 
-            border-top-width: 1px !important;
-            border-color: #e2e8f0 !important; /* slate-200 */
-            margin-top: 0 !important; 
-            text-align: center !important;
-            background-color: #fff !important; 
-            page-break-inside: avoid !important;
-          }
-           .invoice-card-for-print > .print-card-footer:not(.has-content) {
-             display: none !important;
-           }
-          
-          .print-only-watermark-container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0; 
-            background-repeat: no-repeat;
-            background-position: center center;
-            background-size: 60% auto; 
-            opacity: 0.07; 
-            pointer-events: none;
-            display: block !important; 
-          }
-          .screen-only-watermark-text { display: none !important; }
-
-
-          .invoice-card-for-print .text-3xl { font-size: 1.75rem !important; }
-          .invoice-card-for-print .print\\:text-2xl { font-size: 1.5rem !important; }
-          .invoice-card-for-print .text-2xl { font-size: 1.5rem !important; } 
-          .invoice-card-for-print .print\\:text-xl { font-size: 1.25rem !important; } 
-          .invoice-card-for-print .text-lg { font-size: 1.125rem !important; }
-          .invoice-card-for-print .print\\:text-base { font-size: 1rem !important; }
-          .invoice-card-for-print .print\\:text-sm { font-size: 0.8rem !important; }
-          .invoice-card-for-print .print\\:text-xs { font-size: 0.75rem !important; } /* Adjusted from 0.7rem for footer */
-          
-
-          .invoice-card-for-print .bg-secondary\\/30 { background-color: transparent !important; } 
-          .invoice-card-for-print .print\\:bg-slate-50 { background-color: #f8fafc !important; }
-          
-          .invoice-card-for-print table th, .invoice-card-for-print table td { padding: 0.35rem 0.5rem !important; }
-          .invoice-card-for-print .print\\:py-2 { padding-top: 0.35rem !important; padding-bottom: 0.35rem !important; }
-          .invoice-card-for-print .print\\:py-1\\.5 { padding-top: 0.25rem !important; padding-bottom: 0.25rem !important; }
-
-          .invoice-card-for-print .print\\:border-slate-200 { border-color: #e2e8f0 !important; }
-          .invoice-card-for-print .print\\:border-slate-300 { border-color: #cbd5e1 !important; }
-          .invoice-card-for-print .print\\:bg-slate-100 { background-color: #f1f5f9 !important; }
-
-          thead {
-            display: table-header-group !important;
-          }
-          
-          tbody {
-            display: table-row-group !important;
-          }
-          
-          tr {
-            page-break-inside: avoid !important;
-          }
-
-
-          @page {
-            size: A4 portrait; 
-            margin: 0; 
-          }
-
-          .print\\:hidden { display: none !important; }
-        }
-        @media screen {
-           .print-only-watermark-container { display: none !important; }
-        }
-      `}</style>
     </div>
   );
 }
-
-
-
-    

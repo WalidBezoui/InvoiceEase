@@ -1,0 +1,101 @@
+/* /src/app/print-invoice.css */
+
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  body {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    background-color: #fff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 9pt !important;
+  }
+
+  /* Hide everything by default for print */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Make only the invoice and its children visible */
+  .invoice-card-for-print, .invoice-card-for-print * {
+    visibility: visible;
+  }
+
+  /* Position the invoice at the top left of the page */
+  .invoice-card-for-print {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background-color: #fff !important;
+    min-height: 297mm; /* Ensure it can span the full A4 height */
+    display: flex;
+    flex-direction: column;
+  }
+
+  .print-card-header, .print-card-content, .print-card-footer {
+    padding-left: 1cm !important;
+    padding-right: 1cm !important;
+  }
+
+  .print-card-header {
+    padding-top: 1cm !important;
+    padding-bottom: 0.5cm !important;
+    page-break-after: avoid;
+  }
+
+  .print-card-content {
+    flex-grow: 1; /* Allow content to grow and push footer down */
+    padding-top: 0.5cm !important;
+    padding-bottom: 0.5cm !important;
+  }
+
+  .print-card-footer {
+    padding-top: 0.5cm !important;
+    padding-bottom: 1cm !important;
+    page-break-before: avoid;
+  }
+  .print-card-footer:not(.has-content) {
+      display: none !important;
+  }
+
+  .print-only-watermark-container {
+    display: block !important;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0; 
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: 60% auto; 
+    opacity: 0.07; 
+    pointer-events: none;
+  }
+
+  /* Table specific rules for multi-page printing */
+  thead {
+    display: table-header-group !important; /* This is key for repeating headers */
+  }
+
+  tbody {
+    display: table-row-group !important;
+  }
+
+  tr {
+    page-break-inside: avoid !important; /* Prevent rows from splitting */
+  }
+
+  .print\:hidden {
+    display: none !important;
+  }
+}
