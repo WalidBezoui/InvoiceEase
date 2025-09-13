@@ -187,12 +187,12 @@ export default function ProductsPage() {
               <CardTitle className="font-headline text-xl text-primary">{t('productsPage.yourProductsCard.title')}</CardTitle>
               <CardDescription>{t('productsPage.yourProductsCard.description')}</CardDescription>
             </div>
-            <div className="relative flex-grow md:flex-grow-0">
+            <div className="relative w-full md:w-auto md:min-w-[300px]">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input 
                 type="search" 
                 placeholder={t('productsPage.yourProductsCard.searchPlaceholder')} 
-                className="pl-8 sm:w-[250px] md:w-[300px]" 
+                className="pl-8 w-full"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -213,9 +213,17 @@ export default function ProductsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t('productsPage.table.name')}</TableHead>
-                    <TableHead>{t('productsPage.table.reference')}</TableHead>
-                    <TableHead>{t('productsPage.table.healthTip')}</TableHead>
-                    <TableHead className="text-right">{t('productsPage.table.sellingPrice')}</TableHead>
+                    <TableHead className="hidden md:table-cell">{t('productsPage.table.reference')}</TableHead>
+                    <TableHead>
+                        <div className="flex items-center gap-1">
+                            {t('productsPage.table.healthTip')}
+                            <Tooltip>
+                                <TooltipTrigger><Info className="h-3 w-3 text-muted-foreground"/></TooltipTrigger>
+                                <TooltipContent><p>{t('productsPage.table.aiGeneratedTip')}</p></TooltipContent>
+                            </Tooltip>
+                        </div>
+                    </TableHead>
+                    <TableHead className="text-right hidden sm:table-cell">{t('productsPage.table.sellingPrice')}</TableHead>
                     <TableHead className="text-right">{t('productsPage.table.stock')}</TableHead>
                     <TableHead className="text-right">{t('productsPage.table.actions')}</TableHead>
                   </TableRow>
@@ -224,44 +232,46 @@ export default function ProductsPage() {
                   {filteredProducts.map((product) => (
                     <TableRow key={product.id}>
                       <TableCell className="font-medium">{product.name}</TableCell>
-                      <TableCell>{product.reference || 'N/A'}</TableCell>
+                      <TableCell className="hidden md:table-cell">{product.reference || 'N/A'}</TableCell>
                       <TableCell>
                         {tips[product.id!] ? (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <span className="flex items-center gap-1 cursor-pointer">
+                            <div className="flex items-center gap-1.5">
                                 {getTipIcon(tips[product.id!].type)}
-                                <span className="text-muted-foreground text-xs italic">{tips[product.id!].tip}</span>
-                              </span>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>{t('productsPage.table.aiGeneratedTip')}</p>
-                            </TooltipContent>
-                          </Tooltip>
+                                <span className="text-muted-foreground text-xs italic hidden sm:inline">{tips[product.id!].tip}</span>
+                            </div>
                         ) : (
                           <span className="text-muted-foreground text-xs italic">{t('productsPage.loading')}</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-right">{product.sellingPrice.toFixed(2)}</TableCell>
-                      <TableCell className="text-right">{product.stock !== undefined ? product.stock : 'N/A'}</TableCell>
+                      <TableCell className="text-right hidden sm:table-cell">{product.sellingPrice.toFixed(2)}</TableCell>
+                      <TableCell className="text-right font-medium">{product.stock !== undefined ? product.stock : 'N/A'}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <Button variant="ghost" size="sm" asChild>
+                          <Tooltip><TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" asChild className="h-8 w-8">
                             <Link href={`/products/${product.id}`}>
-                              <Eye className="mr-1 h-4 w-4" /> {t('productsPage.actions.view')}
+                              <Eye className="h-4 w-4" />
+                              <span className="sr-only">{t('productsPage.actions.view')}</span>
                             </Link> 
                           </Button>
-                          <Button variant="ghost" size="sm" asChild>
+                          </TooltipTrigger><TooltipContent><p>{t('productsPage.actions.view')}</p></TooltipContent></Tooltip>
+                          
+                          <Tooltip><TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" asChild className="h-8 w-8">
                             <Link href={`/products/${product.id}/edit`}>
-                              <Edit className="mr-1 h-4 w-4" /> {t('productsPage.actions.edit')}
+                              <Edit className="h-4 w-4" />
+                               <span className="sr-only">{t('productsPage.actions.edit')}</span>
                             </Link> 
                           </Button>
+                          </TooltipTrigger><TooltipContent><p>{t('productsPage.actions.edit')}</p></TooltipContent></Tooltip>
+
                           <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
-                                <Trash2 className="mr-1 h-4 w-4" /> {t('productsPage.actions.delete')}
-                              </Button>
-                            </AlertDialogTrigger>
+                            <Tooltip><TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
+                                  <Trash2 className="h-4 w-4" />
+                                  <span className="sr-only">{t('productsPage.actions.delete')}</span>
+                                </Button>
+                            </TooltipTrigger><TooltipContent><p>{t('productsPage.actions.delete')}</p></TooltipContent></Tooltip>
                             <AlertDialogContent>
                               <AlertDialogHeader>
                                 <AlertDialogTitle>{t('productsPage.dialog.deleteTitle')}</AlertDialogTitle>
@@ -308,3 +318,5 @@ export default function ProductsPage() {
     </div>
   );
 }
+
+    

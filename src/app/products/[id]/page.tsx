@@ -6,12 +6,12 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
 import { db } from "@/lib/firebase";
-import type { Product, ProductTransaction, UserPreferences } from "@/lib/types";
+import type { Product, ProductTransaction, UserPreferences, ProductTipOutput } from "@/lib/types";
 import { doc, getDoc, collection, query, where, orderBy, getDocs, writeBatch, serverTimestamp, deleteDoc } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Edit, AlertTriangle, Package, DollarSign, History, PlusCircle, MinusCircle, Wrench, ShoppingCart, Trash2, Lightbulb, BarChart } from "lucide-react";
+import { ArrowLeft, Edit, AlertTriangle, Package, DollarSign, History, PlusCircle, MinusCircle, Wrench, ShoppingCart, Trash2, Lightbulb, BarChart, Info } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLanguage } from "@/hooks/use-language";
 import { format } from "date-fns";
@@ -31,6 +31,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProductAnalysis from "@/components/products/product-analysis";
+import { getProductTip } from "@/ai/flows/product-analysis-flow";
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 
 export default function ProductDetailPage() {
@@ -42,6 +44,7 @@ export default function ProductDetailPage() {
   const productId = params.id as string;
 
   const [product, setProduct] = useState<Product | null>(null);
+  const [tip, setTip] = useState<ProductTipOutput | null>(null);
   const [transactions, setTransactions] = useState<ProductTransaction[]>([]);
   const [userPrefs, setUserPrefs] = useState<UserPreferences | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
@@ -72,11 +75,11 @@ export default function ProductDetailPage() {
         // Fetch product details
         const productRef = doc(db, "products", productId);
         const productSnap = await getDoc(productRef);
+        let fetchedProduct: Product;
 
         if (productSnap.exists() && productSnap.data().userId === user.uid) {
-          const fetchedProduct = { id: productSnap.id, ...productSnap.data() } as Product;
+          fetchedProduct = { id: productSnap.id, ...productSnap.data() } as Product;
           setProduct(fetchedProduct);
-          // Set initial price for adjustment based on default selling price
           setAdjustment(prev => ({ ...prev, price: fetchedProduct.sellingPrice }));
         } else {
           setError(t('productsPage.noProductsMatchSearch'));
@@ -106,6 +109,19 @@ export default function ProductDetailPage() {
         });
         setTransactions(fetchedTransactions);
 
+        // Fetch AI tip
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        const salesLast30Days = fetchedTransactions.filter(tx => tx.type === 'sale' && tx.transactionDate.toDate() > thirtyDaysAgo).length;
+        
+        const tipResult = await getProductTip({
+          stockLevel: fetchedProduct.stock ?? 0,
+          salesLast30Days: salesLast30Days,
+          language: locale
+        });
+        setTip(tipResult);
+
+
       } catch (err) {
         console.error("Error fetching product data:", err);
         setError(t('productsPage.error'));
@@ -114,12 +130,12 @@ export default function ProductDetailPage() {
       }
     }
 
-    if (user && productId) {
+    if (user && productId && !isLoadingLocale) {
         fetchProductData();
-    } else if (!authLoading) {
+    } else if (!authLoading && !user) {
         setIsLoadingData(false);
     }
-  }, [user, productId, authLoading, t]);
+  }, [user, productId, authLoading, t, locale, isLoadingLocale]);
 
   const handleStockAdjustment = async () => {
     if (!product || !user || adjustment.quantity === 0) {
@@ -145,25 +161,18 @@ export default function ProductDetailPage() {
         transactionPrice: adjustment.price,
     };
     
-    // Update product stock
     batch.update(productRef, { stock: newStock });
-
-    // Create transaction record
-    batch.set(transactionRef, {
-        ...newTransactionData,
-        transactionDate: serverTimestamp(),
-    });
+    batch.set(transactionRef, { ...newTransactionData, transactionDate: serverTimestamp() });
 
     try {
       await batch.commit();
-      // Optimistically update UI
       setProduct(prev => prev ? { ...prev, stock: newStock } : null);
       setTransactions(prev => [{
           id: transactionRef.id,
           ...newTransactionData,
           transactionDate: { toDate: () => new Date() } as any,
       } as ProductTransaction, ...prev]);
-      setAdjustment({ quantity: 0, notes: '', price: product.sellingPrice }); // Reset form
+      setAdjustment({ quantity: 0, notes: '', price: product.sellingPrice });
       toast({ title: t('productDetailPage.stockAdjusted'), description: t('productDetailPage.stockAdjustedDesc', {productName: product.name, newStock: newStock})});
     } catch (error) {
       console.error("Error adjusting stock:", error);
@@ -180,15 +189,11 @@ export default function ProductDetailPage() {
 
         const newStock = (product.stock ?? 0) - transaction.quantityChange;
 
-        // Revert stock on product
         batch.update(productRef, { stock: newStock });
-        
-        // Delete the transaction
         batch.delete(transactionRef);
 
         try {
             await batch.commit();
-            // Optimistically update UI
             setProduct(prev => prev ? { ...prev, stock: newStock } : null);
             setTransactions(prev => prev.filter(tx => tx.id !== transaction.id));
             toast({ title: t('productDetailPage.transactionDeleted'), description: t('productDetailPage.transactionDeletedDesc')});
@@ -208,13 +213,25 @@ export default function ProductDetailPage() {
     }
   }
 
+  const getTipIcon = (type: ProductTipOutput['type']) => {
+    switch (type) {
+      case 'warning': return <AlertTriangle className="h-4 w-4 text-orange-500" />;
+      case 'suggestion': return <Lightbulb className="h-4 w-4 text-blue-500" />;
+      case 'info': return <Info className="h-4 w-4 text-gray-500" />;
+      default: return null;
+    }
+  };
 
   if (isLoading) {
     return (
       <div className="space-y-8">
         <Skeleton className="h-10 w-64" />
-        <Skeleton className="h-40 w-full" />
-        <Skeleton className="h-64 w-full" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Skeleton className="h-28 w-full" />
+            <Skeleton className="h-28 w-full" />
+            <Skeleton className="h-28 w-full" />
+        </div>
+        <Skeleton className="h-96 w-full" />
       </div>
     );
   }
@@ -246,6 +263,7 @@ export default function ProductDetailPage() {
   }
 
   return (
+    <TooltipProvider>
     <div className="space-y-8">
        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-4">
@@ -255,9 +273,22 @@ export default function ProductDetailPage() {
               <span className="sr-only">{t('siteNav.products')}</span>
             </Link>
           </Button>
-          <div>
+          <div className="space-y-1">
             <h1 className="font-headline text-3xl md:text-4xl font-bold text-primary">{product.name}</h1>
-            <p className="text-muted-foreground mt-1">{t('productsPage.table.reference')}: {product.reference || 'N/A'}</p>
+            <p className="text-muted-foreground">{t('productsPage.table.reference')}: {product.reference || 'N/A'}</p>
+             {tip && (
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                    <div className="flex items-center gap-1.5 cursor-default pt-1">
+                        {getTipIcon(tip.type)}
+                        <span className="text-sm font-medium text-muted-foreground">{tip.tip}</span>
+                    </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>{t('productsPage.table.aiGeneratedTip')}</p>
+                    </TooltipContent>
+                </Tooltip>
+             )}
           </div>
         </div>
         <Button asChild>
@@ -300,31 +331,33 @@ export default function ProductDetailPage() {
         </Card>
       </div>
 
-      <Card className="shadow-lg">
-        <CardHeader>
-          <CardTitle className="font-headline text-xl text-primary">{t('productDetailPage.productDetails')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-            <p className="text-sm text-muted-foreground">{product.description}</p>
-        </CardContent>
-      </Card>
+      {product.description && (
+        <Card className="shadow-lg">
+            <CardHeader>
+            <CardTitle className="font-headline text-xl text-primary">{t('productDetailPage.productDetails')}</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <p className="text-sm text-muted-foreground">{product.description}</p>
+            </CardContent>
+        </Card>
+      )}
       
-       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
         <div className="lg:col-span-2">
-            <Card className="shadow-lg">
+            <Card className="shadow-lg h-full">
                 <CardHeader>
-                    <CardTitle className="font-headline text-xl text-primary flex items-center"><Wrench className="mr-2"/> {t('productDetailPage.stockAdjustment.title')}</CardTitle>
+                    <CardTitle className="font-headline text-xl text-primary flex items-center"><Wrench className="mr-2 h-5 w-5"/> {t('productDetailPage.stockAdjustment.title')}</CardTitle>
                     <CardDescription>{t('productDetailPage.stockAdjustment.description')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="col-span-2">
+                    <div className="space-y-4">
+                        <div>
                             <Label htmlFor="quantity-adjustment">{t('productDetailPage.stockAdjustment.quantityLabel')}</Label>
                             <Input id="quantity-adjustment" type="number" placeholder={t('productDetailPage.stockAdjustment.quantityPlaceholder')} value={adjustment.quantity || ''} onChange={e => handleQuantityChange(parseInt(e.target.value) || 0)} />
                             <p className="text-xs text-muted-foreground mt-1">{t('productDetailPage.stockAdjustment.quantityDesc')}</p>
                         </div>
                         {adjustment.quantity !== 0 && (
-                            <div className="col-span-2">
+                            <div>
                                 <Label htmlFor="adjustment-price">
                                 {adjustment.quantity > 0 ? t('productForm.labels.purchasePrice') : t('productForm.labels.sellingPrice')}
                                 </Label>
@@ -332,16 +365,18 @@ export default function ProductDetailPage() {
                                 <p className="text-xs text-muted-foreground mt-1">{t('productDetailPage.stockAdjustment.priceDesc')}</p>
                             </div>
                         )}
-                        <div className="col-span-2">
+                        <div>
                             <Label htmlFor="adjustment-notes">{t('productDetailPage.stockAdjustment.notesLabel')}</Label>
                             <Input id="adjustment-notes" type="text" placeholder={adjustment.quantity > 0 ? t('productDetailPage.stockAdjustment.notesPlaceholderPurchase') : t('productDetailPage.stockAdjustment.notesPlaceholderSale')} value={adjustment.notes} onChange={e => setAdjustment(prev => ({ ...prev, notes: e.target.value }))} />
                         </div>
                     </div>
+                </CardContent>
+                <CardFooter>
                     <Button onClick={handleStockAdjustment} disabled={adjustment.quantity === 0}>
                         {adjustment.quantity > 0 ? <PlusCircle className="mr-2"/> : <MinusCircle className="mr-2"/>}
                         {t('productDetailPage.stockAdjustment.confirmButton')}
                     </Button>
-                </CardContent>
+                </CardFooter>
             </Card>
         </div>
 
@@ -358,7 +393,7 @@ export default function ProductDetailPage() {
                 <TabsContent value="history">
                     <Card className="shadow-lg h-full">
                         <CardHeader>
-                            <CardTitle className="font-headline text-xl text-primary flex items-center"><History className="mr-2"/> {t('productDetailPage.transactionHistory.title')}</CardTitle>
+                            <CardTitle className="font-headline text-xl text-primary flex items-center"><History className="mr-2 h-5 w-5"/> {t('productDetailPage.transactionHistory.title')}</CardTitle>
                             <CardDescription>{t('productDetailPage.transactionHistory.description')}</CardDescription>
                         </CardHeader>
                         <CardContent className="max-h-[400px] overflow-y-auto">
@@ -366,11 +401,10 @@ export default function ProductDetailPage() {
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead>{t('productDetailPage.transactionHistory.date')}</TableHead>
+                                            <TableHead className="hidden md:table-cell">{t('productDetailPage.transactionHistory.date')}</TableHead>
                                             <TableHead>{t('productDetailPage.transactionHistory.type')}</TableHead>
                                             <TableHead>{t('productDetailPage.transactionHistory.change')}</TableHead>
                                             <TableHead>{t('productDetailPage.transactionHistory.newStock')}</TableHead>
-                                            <TableHead>{t('productDetailPage.transactionHistory.price')}</TableHead>
                                             <TableHead>{t('productDetailPage.transactionHistory.notes')}</TableHead>
                                             <TableHead className="text-right">{t('productsPage.table.actions')}</TableHead>
                                         </TableRow>
@@ -378,18 +412,20 @@ export default function ProductDetailPage() {
                                     <TableBody>
                                         {transactions.map(tx => (
                                             <TableRow key={tx.id}>
-                                                <TableCell className="text-xs">{format(tx.transactionDate.toDate(), "MMM dd, yyyy HH:mm")}</TableCell>
-                                                <TableCell><div className="flex items-center gap-2 capitalize">{getTransactionTypeIcon(tx.type)} {t(`productTransactionType.${tx.type}`)}</div></TableCell>
+                                                <TableCell className="hidden md:table-cell text-xs">{format(tx.transactionDate.toDate(), "dd/MM/yy HH:mm")}</TableCell>
+                                                <TableCell><Tooltip><TooltipTrigger><div className="flex items-center gap-2 capitalize">{getTransactionTypeIcon(tx.type)} <span className="hidden md:inline">{t(`productTransactionType.${tx.type}`)}</span></div></TooltipTrigger><TooltipContent>{t(`productTransactionType.${tx.type}`)}</TooltipContent></Tooltip></TableCell>
                                                 <TableCell className={`font-bold ${tx.quantityChange > 0 ? 'text-green-600' : 'text-red-600'}`}>{tx.quantityChange > 0 ? `+${tx.quantityChange}` : tx.quantityChange}</TableCell>
                                                 <TableCell className="font-medium">{tx.newStock}</TableCell>
-                                                <TableCell>
-                                                    {tx.transactionPrice !== undefined ? `${tx.transactionPrice.toFixed(2)}` : 'N/A'}
+                                                <TableCell className="text-xs max-w-[150px] truncate">
+                                                    <Tooltip><TooltipTrigger>
+                                                    {tx.invoiceId ? <Link href={`/invoices/${tx.invoiceId}`} className="text-primary hover:underline">{t('productDetailPage.transactionHistory.invoiceLink')} #{tx.notes}</Link> : tx.notes}
+                                                    </TooltipTrigger><TooltipContent>{tx.notes}</TooltipContent></Tooltip>
                                                 </TableCell>
-                                                <TableCell className="text-xs">{tx.invoiceId ? <Link href={`/invoices/${tx.invoiceId}`} className="text-primary hover:underline">{t('productDetailPage.transactionHistory.invoiceLink')} #{tx.notes}</Link> : tx.notes}</TableCell>
                                                 <TableCell className="text-right">
                                                     <AlertDialog>
                                                         <AlertDialogTrigger asChild>
                                                             <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10">
+                                                                <span className="sr-only">Delete Transaction</span>
                                                                 <Trash2 className="h-4 w-4" />
                                                             </Button>
                                                         </AlertDialogTrigger>
@@ -425,7 +461,9 @@ export default function ProductDetailPage() {
             </Tabs>
         </div>
       </div>
-
     </div>
+    </TooltipProvider>
   );
 }
+
+    
