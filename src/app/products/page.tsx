@@ -73,20 +73,27 @@ export default function ProductsPage() {
           const product = { id: doc.id, ...doc.data() } as Product;
           fetchedProducts.push(product);
 
+          // Get the last 15 transactions for trend analysis
           const transactionsQuery = query(
             collection(db, "productTransactions"),
             where("productId", "==", product.id),
-            where("type", "==", "sale")
+            orderBy("transactionDate", "desc"),
+            where("userId", "==", user.uid)
           );
 
           const promise = getDocs(transactionsQuery).then(transSnap => {
-            const thirtyDaysAgo = new Date();
-            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-            const salesLast30Days = transSnap.docs.filter(d => d.data().transactionDate.toDate() > thirtyDaysAgo).length;
+             const transactionSummary = transSnap.docs.map(d => {
+                const data = d.data();
+                return {
+                    type: data.type,
+                    quantityChange: data.quantityChange,
+                    transactionDate: data.transactionDate.toDate().toISOString(),
+                }
+            }).slice(0, 50); // Limit to recent transactions
 
             return getProductTip({
               stockLevel: product.stock ?? 0,
-              salesLast30Days: salesLast30Days,
+              transactions: transactionSummary,
               language: locale
             }).then(tip => ({ id: product.id!, tip }));
           }).catch(err => {
@@ -390,3 +397,5 @@ export default function ProductsPage() {
     </div>
   );
 }
+
+    

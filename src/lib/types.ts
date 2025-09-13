@@ -136,6 +136,8 @@ const TransactionSummarySchema = z.object({
   transactionDate: z.string().describe("The ISO 8601 date of the transaction."),
   transactionPrice: z.number().optional().describe("The price per unit for this specific transaction."),
 });
+export type TransactionSummary = z.infer<typeof TransactionSummarySchema>;
+
 
 export const ProductAnalysisInputSchema = z.object({
   productName: z.string().describe("The name of the product."),
@@ -157,7 +159,7 @@ export type ProductAnalysisOutput = z.infer<typeof ProductAnalysisOutputSchema>;
 // For AI Product Tip
 export const ProductTipInputSchema = z.object({
     stockLevel: z.number().describe("The current stock quantity."),
-    salesLast30Days: z.number().describe("The number of sales transactions in the last 30 days."),
+    transactions: z.array(TransactionSummarySchema).describe("A list of recent transactions for trend analysis."),
     language: z.string().describe("The language for the output tip (e.g., 'en', 'fr')."),
 });
 export type ProductTipInput = z.infer<typeof ProductTipInputSchema>;
@@ -167,3 +169,5 @@ export const ProductTipOutputSchema = z.object({
     type: z.enum(['suggestion', 'warning', 'info']).describe("The classification of the tip."),
 });
 export type ProductTipOutput = z.infer<typeof ProductTipOutputSchema>;
+
+    
