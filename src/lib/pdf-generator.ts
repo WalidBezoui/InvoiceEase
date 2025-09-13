@@ -41,93 +41,120 @@ export const generateInvoicePdf = async (
 
   const addPageHeader = (isFirstPage: boolean) => {
     let cursorY = margin;
-    // Company Logo & Header Text
+    
+    // Left side: Logo and Company Info
     if (prefs.logoDataUrl) {
       try {
         const img = new Image();
         img.src = prefs.logoDataUrl;
-        doc.addImage(img, 'PNG', margin, cursorY, 40, 20);
-      } catch (e) { console.error("Could not add company logo to PDF.", e); }
+        doc.addImage(img, 'PNG', margin, cursorY, 40, 20); // Logo
+        cursorY += 25; // Move cursor down after logo
+      } catch (e) { 
+        console.error("Could not add company logo to PDF.", e); 
+        cursorY += 25;
+      }
     }
+    
     if (prefs.invoiceHeader) {
-      doc.setFontSize(9);
-      doc.setTextColor(100);
-      doc.text(prefs.invoiceHeader, margin + 45, cursorY + 5, { maxWidth: pageWidth - margin * 2 - 45 });
+      doc.setFontSize(11);
+      doc.setFont(FONT_NAME, 'bold');
+      doc.setTextColor(33, 33, 33); // Dark Grey for company name/header
+      doc.text(prefs.invoiceHeader.split('\n'), margin, cursorY);
     }
-
-    // Invoice Title
-    doc.setFontSize(22);
+    
+    // Right side: Invoice Title Block
+    const titleX = pageWidth - margin - 70;
+    const titleY = margin;
+    doc.setFillColor(230, 230, 230); // Light grey background for title
+    doc.rect(titleX, titleY, 70, 15, 'F');
+    
+    doc.setFontSize(20);
     doc.setFont(FONT_NAME, 'bold');
-    doc.setTextColor(0,0,0);
-    doc.text(t('invoiceDetailPage.invoiceTitle').toUpperCase(), pageWidth - margin, cursorY, { align: 'right' });
-    cursorY += 8;
+    doc.setTextColor(0, 0, 0);
+    doc.text(
+      t('invoiceDetailPage.invoiceTitle').toUpperCase(), 
+      titleX + 35, // Center text in the box
+      titleY + 10, 
+      { align: 'center' }
+    );
 
     doc.setFontSize(10);
     doc.setFont(FONT_NAME, 'normal');
-    doc.text(`# ${invoice.invoiceNumber}`, pageWidth - margin, cursorY, { align: 'right' });
-    cursorY += 15;
+    doc.setTextColor(80, 80, 80);
+    doc.text(`# ${invoice.invoiceNumber}`, titleX + 68, titleY + 20, { align: 'right' });
+
+
+    // Separator line
+    let separatorY = Math.max(cursorY + 10, titleY + 30);
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.5);
+    doc.line(margin, separatorY, pageWidth - margin, separatorY);
+    
 
     // Client Info and Dates only on the first page
     if (isFirstPage) {
-        doc.setLineWidth(0.5);
-        doc.line(margin, cursorY, pageWidth - margin, cursorY);
-        cursorY += 10;
-
-        const billToY = cursorY;
+        let infoY = separatorY + 10;
+        const billToY = infoY;
         doc.setFontSize(11);
         doc.setFont(FONT_NAME, 'bold');
-        doc.text(t('invoiceDetailPage.billTo'), margin, cursorY);
-        cursorY += 5;
+        doc.setTextColor(80, 80, 80);
+        doc.text(t('invoiceDetailPage.billTo'), margin, infoY);
+        infoY += 6;
 
         doc.setFontSize(10);
         doc.setFont(FONT_NAME, 'normal');
-        doc.setTextColor(50);
+        doc.setTextColor(50, 50, 50);
         let clientAddress = `${invoice.clientName}\n`;
         if(invoice.clientCompany) clientAddress += `${invoice.clientCompany}\n`;
         if(invoice.clientAddress) clientAddress += `${invoice.clientAddress.replace(/\\n/g, '\n')}\n`;
         if(invoice.clientEmail) clientAddress += `${invoice.clientEmail}\n`;
         if(invoice.clientICE) clientAddress += `ICE: ${invoice.clientICE}`;
 
-        doc.text(clientAddress, margin, cursorY);
+        doc.text(clientAddress, margin, infoY);
 
         const dateX = pageWidth - margin;
         doc.setFontSize(11);
         doc.setFont(FONT_NAME, 'bold');
-        doc.setTextColor(0,0,0);
+        doc.setTextColor(80, 80, 80);
         doc.text(t('invoiceDetailPage.issueDate'), dateX, billToY, { align: 'right' });
+        
         doc.setFont(FONT_NAME, 'normal');
-        doc.setTextColor(50);
-        doc.text(format(new Date(invoice.issueDate), "PPP", { locale: dateLocale }), dateX, billToY + 5, { align: 'right' });
+        doc.setTextColor(50, 50, 50);
+        doc.text(format(new Date(invoice.issueDate), "PPP", { locale: dateLocale }), dateX, billToY + 6, { align: 'right' });
 
         doc.setFontSize(11);
         doc.setFont(FONT_NAME, 'bold');
-        doc.setTextColor(0,0,0);
-        doc.text(t('invoiceDetailPage.dueDate'), dateX, billToY + 12, { align: 'right' });
+        doc.setTextColor(80, 80, 80);
+        doc.text(t('invoiceDetailPage.dueDate'), dateX, billToY + 14, { align: 'right' });
+        
         doc.setFont(FONT_NAME, 'normal');
-        doc.setTextColor(50);
-        doc.text(format(new Date(invoice.dueDate), "PPP", { locale: dateLocale }), dateX, billToY + 17, { align: 'right' });
+        doc.setTextColor(50, 50, 50);
+        doc.text(format(new Date(invoice.dueDate), "PPP", { locale: dateLocale }), dateX, billToY + 20, { align: 'right' });
     }
   };
 
   const addPageFooter = (pageNumber: number, totalPages: number) => {
+    const footerY = pageHeight - 15;
+    doc.setLineWidth(0.5);
+    doc.setDrawColor(200, 200, 200);
+    doc.line(margin, footerY - 5, pageWidth - margin, footerY - 5);
+
     doc.setFontSize(8);
     doc.setTextColor(150);
     const footerText = prefs.invoiceFooter || "";
     const pageStr = `Page ${pageNumber} of ${totalPages}`;
 
-    doc.text(footerText, pageWidth / 2, pageHeight - 10, { align: 'center' });
-    doc.text(pageStr, pageWidth - margin, pageHeight - 10, { align: 'right' });
+    doc.text(footerText, pageWidth / 2, footerY, { align: 'center' });
+    doc.text(pageStr, pageWidth - margin, footerY, { align: 'right' });
   };
   
-  const addSummaryAndNotes = () => {
-    let finalY = (doc as any).lastAutoTable.finalY || pageHeight / 2;
-    const availableSpace = pageHeight - finalY - 20; // Space left at bottom
+  const addSummaryAndNotes = (startY: number) => {
+    let finalY = startY + 10;
     
-    // If not enough space for summary, push it down, it will be on the same page still
-    if(availableSpace < 50) {
-        finalY = pageHeight - 70;
-    } else {
-        finalY += 10;
+    // Check if there is enough space, if not, add a new page
+    // 80mm is a safe estimate for the summary, notes, and footer
+    if (pageHeight - finalY < 80) {
+      return false; // Signal to create a new page
     }
     
     const summaryX = pageWidth - margin - 80;
@@ -137,13 +164,13 @@ export const generateInvoicePdf = async (
         if (invoice.notes) {
             doc.setFontSize(10).setFont(FONT_NAME, 'bold').text(t('invoiceDetailPage.notes'), margin, notesY);
             notesY += 5;
-            doc.setFontSize(9).setFont(FONT_NAME, 'normal').setTextColor(80).text(invoice.notes, margin, notesY, { maxWidth: pageWidth - margin * 2 - 90 });
-            notesY += 15;
+            doc.setFontSize(9).setFont(FONT_NAME, 'normal').setTextColor(80).text(invoice.notes, margin, notesY, { maxWidth: pageWidth - margin * 2 - 95 });
         }
         if (invoice.appliedDefaultPaymentTerms) {
-            doc.setFontSize(10).setFont(FONT_NAME, 'bold').text(t('invoiceDetailPage.paymentTerms'), margin, notesY);
-            notesY += 5;
-            doc.setFontSize(9).setFont(FONT_NAME, 'normal').setTextColor(80).text(invoice.appliedDefaultPaymentTerms, margin, notesY, { maxWidth: pageWidth - margin * 2 - 90 });
+            const paymentTermsY = notesY + (invoice.notes ? 15 : 0); // Adjust space based on if notes exist
+            doc.setFontSize(10).setFont(FONT_NAME, 'bold').text(t('invoiceDetailPage.paymentTerms'), margin, paymentTermsY);
+            notesY = paymentTermsY + 5;
+            doc.setFontSize(9).setFont(FONT_NAME, 'normal').setTextColor(80).text(invoice.appliedDefaultPaymentTerms, margin, notesY, { maxWidth: pageWidth - margin * 2 - 95 });
         }
     }
 
@@ -172,12 +199,15 @@ export const generateInvoicePdf = async (
     doc.setFont(FONT_NAME, 'bold');
     doc.text(`${t('invoiceDetailPage.total')}`, summaryX, finalY);
     doc.text(`${invoice.currency} ${invoice.totalAmount.toFixed(2)}`, summaryX + 75, finalY, { align: 'right'});
+    
+    return true; // Signal that summary was added
   }
 
   // --- PDF CONTENT STARTS HERE ---
 
   const itemChunks = chunkArray(invoice.items, ROWS_PER_PAGE);
   const totalPages = itemChunks.length;
+  let summaryAdded = false;
 
   itemChunks.forEach((chunk, index) => {
     const isFirstPage = index === 0;
@@ -193,7 +223,7 @@ export const generateInvoicePdf = async (
     ]);
     
     autoTable(doc, {
-      startY: isFirstPage ? 90 : margin + 40,
+      startY: isFirstPage ? 110 : 80, // More space on first page for client details
       head: [[
           t('invoiceDetailPage.itemDescription'),
           t('invoiceDetailPage.itemQuantity'),
@@ -217,15 +247,24 @@ export const generateInvoicePdf = async (
     });
 
     if (isLastPage) {
-        addSummaryAndNotes();
+        summaryAdded = addSummaryAndNotes((doc as any).lastAutoTable.finalY);
     }
     
-    addPageFooter(index + 1, totalPages);
+    addPageFooter(index + 1, totalPages + (isLastPage && !summaryAdded ? 1 : 0));
     
     if (!isLastPage) {
       doc.addPage();
     }
   });
+
+  // If summary didn't fit on the last page, add a new page for it
+  if (!summaryAdded) {
+    doc.addPage();
+    addPageHeader(false); // Not the first page
+    addSummaryAndNotes(80);
+    addPageFooter(totalPages + 1, totalPages + 1);
+  }
+
 
   doc.save(`invoice-${invoice.invoiceNumber}.pdf`);
 };
