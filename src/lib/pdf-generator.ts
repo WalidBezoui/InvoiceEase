@@ -216,7 +216,7 @@ export const generateInvoicePdf = async (
   if (itemChunks.length === 0) {
     // Handle case with no items
     addPageHeader(true);
-    addSummaryAndNotes(110);
+    addSummaryAndNotes(120);
     addPageFooter(1, 1);
   } else {
     itemChunks.forEach((chunk, index) => {
@@ -233,7 +233,7 @@ export const generateInvoicePdf = async (
       ]);
       
       autoTable(doc, {
-        startY: isFirstPage ? 110 : 80, // More space on first page for client details
+        startY: isFirstPage ? 120 : 90, // More space on first page for client details
         head: [[
             t('invoiceDetailPage.itemDescription'),
             t('invoiceDetailPage.itemQuantity'),
@@ -273,7 +273,7 @@ export const generateInvoicePdf = async (
   if (!summaryAdded && itemChunks.length > 0) {
     doc.addPage();
     addPageHeader(false); // Not the first page
-    addSummaryAndNotes(80);
+    addSummaryAndNotes(90);
     addPageFooter(totalPages + 1, totalPages + 1);
   }
 
