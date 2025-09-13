@@ -42,12 +42,14 @@ export const generateInvoicePdf = async (
   const addPageHeader = (isFirstPage: boolean) => {
     let cursorY = margin;
     
-    // Left side: Logo and Company Info
+    // Centered Logo
     if (prefs.logoDataUrl) {
       try {
         const img = new Image();
         img.src = prefs.logoDataUrl;
-        doc.addImage(img, 'PNG', margin, cursorY, 40, 20, undefined, 'FAST');
+        const logoWidth = 40;
+        const logoX = (pageWidth - logoWidth) / 2;
+        doc.addImage(img, 'PNG', logoX, cursorY, logoWidth, 20, undefined, 'FAST');
         cursorY += 25; // Move cursor down after logo
       } catch (e) { 
         console.error("Could not add company logo to PDF.", e); 
@@ -57,41 +59,39 @@ export const generateInvoicePdf = async (
         cursorY += 22; // Reserve space even if no logo
     }
     
+    // Centered Company Header Text
     if (prefs.invoiceHeader) {
-      doc.setFontSize(12);
+      doc.setFontSize(14); // Made bigger
       doc.setFont(FONT_NAME, 'bold');
-      doc.setTextColor(40, 40, 40);
-      const headerLines = doc.splitTextToSize(prefs.invoiceHeader, 80);
-      doc.text(headerLines, margin, cursorY);
-      cursorY += headerLines.length * 5;
+      doc.setTextColor(30, 30, 30); // Darker text for prominence
+      doc.text(prefs.invoiceHeader, pageWidth / 2, cursorY, { align: 'center' });
+      cursorY += 15;
     }
     
-    // Right side: Invoice Title Block
-    const titleX = pageWidth - margin - 70;
-    const titleY = margin;
-    doc.setFillColor(230, 230, 230); // Light grey background for title
-    doc.rect(titleX, titleY, 70, 15, 'F');
+    // Invoice Title Block
+    doc.setFillColor(230, 230, 230); // Light grey background
+    doc.rect(margin, cursorY, pageWidth - (margin * 2), 15, 'F');
     
     doc.setFontSize(20);
     doc.setFont(FONT_NAME, 'bold');
     doc.setTextColor(0, 0, 0);
     doc.text(
       t('invoiceDetailPage.invoiceTitle').toUpperCase(), 
-      titleX + 35, // Center text in the box
-      titleY + 10, 
+      pageWidth / 2, // Center text in the box
+      cursorY + 10, 
       { align: 'center' }
     );
 
     doc.setFontSize(10);
     doc.setFont(FONT_NAME, 'normal');
     doc.setTextColor(80, 80, 80);
-    doc.text(`# ${invoice.invoiceNumber}`, titleX + 68, titleY + 20, { align: 'right' });
+    doc.text(`# ${invoice.invoiceNumber}`, pageWidth - margin, cursorY + 20, { align: 'right' });
 
 
     // Separator line
-    let separatorY = Math.max(cursorY + 5, titleY + 30);
+    let separatorY = cursorY + 25;
     doc.setDrawColor(180, 180, 180);
-    doc.setLineWidth(0.5);
+    doc.setLineWidth(0.7); // Thicker line
     doc.line(margin, separatorY, pageWidth - margin, separatorY);
     
 
