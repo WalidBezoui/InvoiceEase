@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 
+const ITEMS_PER_PAGE = 10;
 
 const currencyWordForms: { [key: string]: { singular: string, plural: string, centimeSingular: string, centimePlural: string } } = {
   MAD: { singular: "Dirham Marocain", plural: "Dirhams Marocains", centimeSingular: "centime", centimePlural: "centimes" },
@@ -116,6 +117,12 @@ function numberToFrenchWords(num: number, currencyCode: string): string {
 }
 
 const dateLocales: Record<Locale, typeof fr | typeof en> = { en, fr };
+
+// Helper function to chunk items for pagination
+const chunk = <T,>(arr: T[], size: number): T[][] =>
+  Array.from({ length: Math.ceil(arr.length / size) }, (v, i) =>
+    arr.slice(i * size, i * size + size)
+  );
 
 export default function InvoiceDetailPage() {
   const { user, loading: authLoading } = useAuth();
@@ -293,6 +300,8 @@ export default function InvoiceDetailPage() {
   const displayWatermarkLogoUrl = userPreferences?.watermarkLogoDataUrl;
   const displayCompanyInvoiceHeader = userPreferences?.invoiceHeader || "";
   const displayCompanyInvoiceFooter = userPreferences?.invoiceFooter || "";
+  
+  const itemChunks = chunk(invoice.items, ITEMS_PER_PAGE);
 
 
   return (
@@ -445,8 +454,148 @@ export default function InvoiceDetailPage() {
         </div>
       </div>
 
+      <div className="hidden print:block">
+        {itemChunks.map((items, pageIndex) => (
+          <div key={`page-${pageIndex}`} className="invoice-print-page">
+            <Card className="invoice-card-for-print shadow-none border-none relative">
+              {displayWatermarkLogoUrl && (
+                <div 
+                  className="print-only-watermark-container"
+                  style={{ backgroundImage: `url(${displayWatermarkLogoUrl})` }}
+                ></div>
+              )}
+              
+              <CardHeader className="print-card-header border-b pb-4 print:pb-2 print:border-b-slate-200">
+                <div className="flex flex-col items-center text-center">
+                  {displayLogoUrl && (
+                    <img
+                      src={displayLogoUrl}
+                      alt="Company Logo"
+                      className="h-20 max-w-[200px] object-contain print:h-16" 
+                      data-ai-hint="company logo"
+                    />
+                  )}
+                  {displayCompanyInvoiceHeader && (
+                    <h2 className="text-2xl font-bold text-primary print:text-xl mt-3 print:mt-2">
+                      {displayCompanyInvoiceHeader}
+                    </h2>
+                  )}
+                </div>
+                <div className="border-t w-full my-4 print:my-2"></div>
+                <div className="flex justify-between items-start">
+                    <div className="w-1/2">
+                        <h4 className="font-semibold text-primary mb-1.5 print:text-sm">{t('invoiceDetailPage.billTo')}</h4>
+                        <div className="space-y-0.5 text-sm text-muted-foreground print:text-xs">
+                            <p className="font-medium text-foreground">{invoice.clientName}</p>
+                            {invoice.clientCompany && <p>{invoice.clientCompany}</p>}
+                            {invoice.clientAddress && <p>{invoice.clientAddress.split('\\n').map((line, i) => (<span key={i}>{line}<br/></span>))}</p>}
+                            {invoice.clientEmail && <p>{invoice.clientEmail}</p>}
+                            {invoice.clientICE && <p>ICE: {invoice.clientICE}</p>}
+                        </div>
+                    </div>
+                    <div className="text-right w-1/2">
+                        <div>
+                            <h3 className="text-3xl font-bold text-primary uppercase tracking-tight print:text-2xl leading-tight">
+                                {t('invoiceDetailPage.invoiceTitle')}
+                            </h3>
+                            <p className="text-muted-foreground text-sm print:text-xs"># {invoice.invoiceNumber}</p>
+                        </div>
+                        <div className="mt-2">
+                            <h4 className="font-semibold text-primary mb-0.5 print:text-sm">{t('invoiceDetailPage.issueDate')}</h4>
+                            <span className="text-muted-foreground print:text-xs">{format(new Date(invoice.issueDate), "PPP", { locale: getDateFnsLocale() })}</span>
+                        </div>
+                        <div className="mt-2">
+                            <h4 className="font-semibold text-primary mb-0.5 print:text-sm">{t('invoiceDetailPage.dueDate')}</h4>
+                            <span className="text-muted-foreground print:text-xs">{format(new Date(invoice.dueDate), "PPP", { locale: getDateFnsLocale() })}</span>
+                        </div>
+                    </div>
+                </div>
+              </CardHeader>
+        
+              <CardContent className="print-card-content flex-grow">
+                <div className="overflow-x-auto">
+                  <Table className="print:text-xs">
+                    <TableHeader>
+                      <TableRow className="bg-muted/30 print:bg-slate-100">
+                        <TableHead className="w-[50%] print:py-2">{t('invoiceDetailPage.itemDescription')}</TableHead>
+                        <TableHead className="text-center print:py-2">{t('invoiceDetailPage.itemQuantity')}</TableHead>
+                        <TableHead className="text-right print:py-2">{t('invoiceDetailPage.itemUnitPrice')}</TableHead>
+                        <TableHead className="text-right print:py-2">{t('invoiceDetailPage.itemTotal')}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {items.map((item, index) => (
+                        <TableRow key={index} className="print:border-b-slate-200">
+                          <TableCell className="font-medium print:py-1.5">{item.description}</TableCell>
+                          <TableCell className="text-center print:py-1.5">{item.quantity}</TableCell>
+                          <TableCell className="text-right print:py-1.5">{item.unitPrice.toFixed(2)}</TableCell>
+                          <TableCell className="text-right print:py-1.5">{item.total.toFixed(2)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
 
-      <Card className="invoice-card-for-print shadow-lg print:shadow-none print:border-none relative">
+              <CardFooter className="print-card-footer flex flex-col items-stretch border-t">
+                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 print:pt-2">
+                    <div className="md:col-span-2 space-y-3 print:space-y-2">
+                      {invoice.notes && (
+                        <div>
+                          <h4 className="font-semibold text-primary mb-1.5 print:text-sm">{t('invoiceDetailPage.notes')}</h4>
+                          <p className="text-sm text-muted-foreground whitespace-pre-wrap print:text-xs">{invoice.notes}</p>
+                        </div>
+                      )}
+                      {invoice.appliedDefaultPaymentTerms && (
+                         <div>
+                            <h4 className="font-semibold text-primary mb-1.5 print:text-sm">{t('invoiceDetailPage.paymentTerms')}</h4>
+                            <p className="text-sm text-muted-foreground print:text-xs">{invoice.appliedDefaultPaymentTerms}</p>
+                         </div>
+                      )}
+                    </div>
+                    <div className="space-y-2 p-4 bg-secondary/20 rounded-lg shadow-sm print:bg-transparent print:shadow-none print:p-3 print:border print:border-slate-200 print:rounded-md">
+                      <div className="flex justify-between text-sm print:text-xs">
+                        <span className="text-muted-foreground">{t('invoiceDetailPage.subtotal')}</span>
+                        <span className="font-medium">{invoice.currency} {invoice.subtotal.toFixed(2)}</span>
+                      </div>
+                      {invoice.taxAmount !== undefined && invoice.taxAmount !== 0 && (
+                        <div className="flex justify-between text-sm print:text-xs">
+                          <span className="text-muted-foreground">{t('invoiceDetailPage.tax')} ({invoice.taxRate || 0}%):</span>
+                          <span className="font-medium">{invoice.currency} {invoice.taxAmount.toFixed(2)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-xl font-bold text-primary border-t border-border pt-2 mt-2 print:text-lg print:pt-1 print:mt-1 print:border-slate-300">
+                        <span>{t('invoiceDetailPage.total')}</span>
+                        <span>{invoice.currency} {invoice.totalAmount.toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </div>
+          
+                  {(invoice.language?.toLowerCase().startsWith("fr") || (!invoice.language && locale === 'fr')) && (
+                    <div className="pt-4 mt-4 border-t print:pt-2 print:mt-2 print:border-slate-200">
+                      <p className="text-sm text-muted-foreground print:text-xs">
+                        {t('invoiceDetailPage.stoppedAtTheSumOf')} <strong className="text-foreground">{numberToFrenchWords(invoice.totalAmount, invoice.currency)}</strong>.
+                      </p>
+                    </div>
+                  )}
+
+                {displayCompanyInvoiceFooter && (
+                  <div className="border-t w-full my-4 print:my-2"></div>
+                )}
+                
+                <div className="flex justify-between items-center text-xs text-muted-foreground text-center w-full print:text-[0.7rem]">
+                   {displayCompanyInvoiceFooter && <p>{displayCompanyInvoiceFooter}</p>}
+                   <p>Page {pageIndex + 1} of {itemChunks.length}</p>
+                </div>
+              </CardFooter>
+            </Card>
+          </div>
+        ))}
+      </div>
+
+
+      {/* On-screen view */}
+      <Card className="invoice-card-for-print shadow-lg print:hidden relative">
         {displayWatermarkLogoUrl && (
           <div 
             className="print-only-watermark-container"
@@ -576,9 +725,6 @@ export default function InvoiceDetailPage() {
               <p className="text-sm text-muted-foreground print:text-xs">
                 {t('invoiceDetailPage.stoppedAtTheSumOf')} <strong className="text-foreground">{numberToFrenchWords(invoice.totalAmount, invoice.currency)}</strong>.
               </p>
-              <p className="text-sm text-muted-foreground mt-1 print:text-xs">
-                ({t('invoiceDetailPage.thatIs')} {invoice.currency} {invoice.totalAmount.toFixed(2)})
-              </p>
             </div>
           )}
 
@@ -593,7 +739,6 @@ export default function InvoiceDetailPage() {
           </CardFooter>
         )}
       </Card>
-
     </div>
   );
 }
