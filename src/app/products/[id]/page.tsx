@@ -110,13 +110,16 @@ export default function ProductDetailPage() {
         setTransactions(fetchedTransactions);
 
         // Fetch AI tip
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        const salesLast30Days = fetchedTransactions.filter(tx => tx.type === 'sale' && tx.transactionDate.toDate() > thirtyDaysAgo).length;
-        
+        const transactionSummary = fetchedTransactions.map(tx => ({
+            type: tx.type,
+            quantityChange: tx.quantityChange,
+            transactionDate: tx.transactionDate.toDate().toISOString(),
+            transactionPrice: tx.transactionPrice,
+        })).slice(0, 50);
+
         const tipResult = await getProductTip({
           stockLevel: fetchedProduct.stock ?? 0,
-          salesLast30Days: salesLast30Days,
+          transactions: transactionSummary,
           language: locale
         });
         setTip(tipResult);
@@ -465,5 +468,3 @@ export default function ProductDetailPage() {
     </TooltipProvider>
   );
 }
-
-    
