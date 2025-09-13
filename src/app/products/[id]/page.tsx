@@ -47,6 +47,15 @@ export default function ProductDetailPage() {
   const [adjustment, setAdjustment] = useState({ quantity: 0, notes: '', price: 0 });
 
   const isLoading = authLoading || isLoadingLocale || isLoadingData;
+  
+  const handleQuantityChange = (newQuantity: number) => {
+    if (!product) return;
+    const price = newQuantity > 0 
+      ? product.purchasePrice || 0 
+      : product.sellingPrice;
+    setAdjustment({ ...adjustment, quantity: newQuantity, price });
+  };
+
 
   useEffect(() => {
     async function fetchProductData() {
@@ -65,7 +74,7 @@ export default function ProductDetailPage() {
         if (productSnap.exists() && productSnap.data().userId === user.uid) {
           const fetchedProduct = { id: productSnap.id, ...productSnap.data() } as Product;
           setProduct(fetchedProduct);
-          // Set initial price for adjustment
+          // Set initial price for adjustment based on default selling price
           setAdjustment(prev => ({ ...prev, price: fetchedProduct.sellingPrice }));
         } else {
           setError("Product not found or you don't have permission.");
@@ -121,8 +130,8 @@ export default function ProductDetailPage() {
     const transactionRef = doc(collection(db, "productTransactions"));
 
     const newStock = (product.stock || 0) + adjustment.quantity;
-    const isSale = adjustment.quantity < 0;
-    const type = isSale ? 'adjustment' : 'purchase';
+    const isPurchase = adjustment.quantity > 0;
+    const type = isPurchase ? 'purchase' : 'adjustment';
     
     const newTransactionData: Omit<ProductTransaction, 'id' | 'transactionDate'> = {
         userId: user.uid,
@@ -130,12 +139,9 @@ export default function ProductDetailPage() {
         type: type,
         quantityChange: adjustment.quantity,
         newStock: newStock,
-        notes: adjustment.notes || (isSale ? 'Manual sale' : 'Stock purchase'),
+        notes: adjustment.notes || (isPurchase ? 'Stock purchase' : 'Manual sale/adjustment'),
+        transactionPrice: adjustment.price,
     };
-
-    if (isSale) {
-        newTransactionData.transactionPrice = adjustment.price;
-    }
 
     // Update product stock
     batch.update(productRef, { stock: newStock });
@@ -295,18 +301,20 @@ export default function ProductDetailPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="md:col-span-1">
                         <Label htmlFor="quantity-adjustment">Quantity</Label>
-                        <Input id="quantity-adjustment" type="number" placeholder="e.g., 50 or -5" value={adjustment.quantity || ''} onChange={e => setAdjustment(prev => ({ ...prev, quantity: parseInt(e.target.value) || 0 }))} />
+                        <Input id="quantity-adjustment" type="number" placeholder="e.g., 50 or -5" value={adjustment.quantity || ''} onChange={e => handleQuantityChange(parseInt(e.target.value) || 0)} />
                         <p className="text-xs text-muted-foreground mt-1">Use a negative number to remove stock.</p>
                     </div>
                      <div className="md:col-span-2">
                         <Label htmlFor="adjustment-notes">Notes (Optional)</Label>
                         <Input id="adjustment-notes" type="text" placeholder="e.g., New shipment, Direct sale" value={adjustment.notes} onChange={e => setAdjustment(prev => ({ ...prev, notes: e.target.value }))} />
                     </div>
-                    {adjustment.quantity < 0 && (
+                    {adjustment.quantity !== 0 && (
                         <div className="md:col-span-1">
-                            <Label htmlFor="selling-price">Selling Price</Label>
-                            <Input id="selling-price" type="number" step="0.01" value={adjustment.price} onChange={e => setAdjustment(prev => ({...prev, price: parseFloat(e.target.value) || 0}))} />
-                            <p className="text-xs text-muted-foreground mt-1">Price per unit for this sale.</p>
+                            <Label htmlFor="adjustment-price">
+                              {adjustment.quantity > 0 ? "Purchase Price" : "Selling Price"}
+                            </Label>
+                            <Input id="adjustment-price" type="number" step="0.01" value={adjustment.price} onChange={e => setAdjustment(prev => ({...prev, price: parseFloat(e.target.value) || 0}))} />
+                            <p className="text-xs text-muted-foreground mt-1">Price per unit for this transaction.</p>
                         </div>
                     )}
                 </div>
@@ -384,8 +392,5 @@ export default function ProductDetailPage() {
     </div>
   );
 }
-
-
-    
 
     
