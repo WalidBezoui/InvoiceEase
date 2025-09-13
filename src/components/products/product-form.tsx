@@ -142,8 +142,8 @@ export default function ProductForm({ initialData, onSave }: ProductFormProps) {
               )} />
               <FormField control={form.control} name="reference" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('productForm.labels.reference', { default: "Reference / SKU"})}</FormLabel>
-                  <FormControl><Input placeholder={t('productForm.placeholders.reference', { default: "e.g., SKU-12345"})} {...field} /></FormControl>
+                  <FormLabel>{t('productForm.labels.reference')}</FormLabel>
+                  <FormControl><Input placeholder={t('productForm.placeholders.reference')} {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )} />
@@ -158,22 +158,22 @@ export default function ProductForm({ initialData, onSave }: ProductFormProps) {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <FormField control={form.control} name="sellingPrice" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('productForm.labels.sellingPrice', { default: "Selling Price" })}</FormLabel>
-                  <FormControl><Input type="number" step="0.01" placeholder={t('productForm.placeholders.sellingPrice', { default: "199.99"})} {...field} /></FormControl>
+                  <FormLabel>{t('productForm.labels.sellingPrice')}</FormLabel>
+                  <FormControl><Input type="number" step="0.01" placeholder={t('productForm.placeholders.sellingPrice')} {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )} />
               <FormField control={form.control} name="purchasePrice" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('productForm.labels.purchasePrice', { default: "Purchase Price (Optional)"})}</FormLabel>
-                  <FormControl><Input type="number" step="0.01" placeholder={t('productForm.placeholders.purchasePrice', { default: "120.00"})} {...field} /></FormControl>
+                  <FormLabel>{t('productForm.labels.purchasePrice')}</FormLabel>
+                  <FormControl><Input type="number" step="0.01" placeholder={t('productForm.placeholders.purchasePrice')} {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )} />
               <FormField control={form.control} name="stock" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('productForm.labels.stock', { default: "Stock Quantity (Optional)"})}</FormLabel>
-                  <FormControl><Input type="number" step="1" placeholder={t('productForm.placeholders.stock', { default: "100" })} {...field} /></FormControl>
+                  <FormLabel>{t('productForm.labels.stock')}</FormLabel>
+                  <FormControl><Input type="number" step="1" placeholder={t('productForm.placeholders.stock')} {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )} />

@@ -163,9 +163,9 @@ export default function ProductsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t('productsPage.table.name')}</TableHead>
-                  <TableHead>{t('productsPage.table.reference', { default: "Reference" })}</TableHead>
-                  <TableHead className="text-right">{t('productsPage.table.sellingPrice', { default: "Selling Price" })}</TableHead>
-                  <TableHead className="text-right">{t('productsPage.table.stock', { default: "Stock" })}</TableHead>
+                  <TableHead>{t('productsPage.table.reference')}</TableHead>
+                  <TableHead className="text-right">{t('productsPage.table.sellingPrice')}</TableHead>
+                  <TableHead className="text-right">{t('productsPage.table.stock')}</TableHead>
                   <TableHead className="text-right">{t('productsPage.table.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -180,7 +180,7 @@ export default function ProductsPage() {
                       <div className="flex items-center justify-end gap-1">
                         <Button variant="ghost" size="sm" asChild>
                           <Link href={`/products/${product.id}`}>
-                            <Eye className="mr-1 h-4 w-4" /> {t('productsPage.actions.view', { default: 'View' })}
+                            <Eye className="mr-1 h-4 w-4" /> {t('productsPage.actions.view')}
                           </Link> 
                         </Button>
                         <Button variant="ghost" size="sm" asChild>

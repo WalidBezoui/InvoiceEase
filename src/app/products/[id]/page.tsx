@@ -77,7 +77,7 @@ export default function ProductDetailPage() {
           // Set initial price for adjustment based on default selling price
           setAdjustment(prev => ({ ...prev, price: fetchedProduct.sellingPrice }));
         } else {
-          setError("Product not found or you don't have permission.");
+          setError(t('productsPage.noProductsMatchSearch'));
           setIsLoadingData(false);
           return;
         }
@@ -106,7 +106,7 @@ export default function ProductDetailPage() {
 
       } catch (err) {
         console.error("Error fetching product data:", err);
-        setError("Failed to load product data. Please try again.");
+        setError(t('productsPage.error'));
       } finally {
         setIsLoadingData(false);
       }
@@ -117,11 +117,11 @@ export default function ProductDetailPage() {
     } else if (!authLoading) {
         setIsLoadingData(false);
     }
-  }, [user, productId, authLoading]);
+  }, [user, productId, authLoading, t]);
 
   const handleStockAdjustment = async () => {
     if (!product || !user || adjustment.quantity === 0) {
-      toast({ title: "Invalid adjustment", description: "Please enter a valid quantity.", variant: "destructive"});
+      toast({ title: t('productForm.toast.errorSaving'), description: "Please enter a valid quantity.", variant: "destructive"});
       return;
     }
 
@@ -139,7 +139,7 @@ export default function ProductDetailPage() {
         type: type,
         quantityChange: adjustment.quantity,
         newStock: newStock,
-        notes: adjustment.notes || (isPurchase ? 'Stock purchase' : 'Direct Sale'),
+        notes: adjustment.notes || (isPurchase ? t('productDetailPage.stockAdjustment.purchaseNote') : t('productDetailPage.stockAdjustment.saleNote')),
     };
     
     if (adjustment.price !== undefined && adjustment.price !== null) {
@@ -165,10 +165,10 @@ export default function ProductDetailPage() {
           transactionDate: { toDate: () => new Date() } as any,
       } as ProductTransaction, ...prev]);
       setAdjustment({ quantity: 0, notes: '', price: product.sellingPrice }); // Reset form
-      toast({ title: "Stock Adjusted", description: `Stock for ${product.name} updated to ${newStock}.`});
+      toast({ title: t('productDetailPage.stockAdjusted'), description: t('productDetailPage.stockAdjustedDesc', {productName: product.name, newStock: newStock})});
     } catch (error) {
       console.error("Error adjusting stock:", error);
-      toast({ title: "Error", description: "Failed to adjust stock. Please try again.", variant: "destructive" });
+      toast({ title: "Error", description: t('productDetailPage.stockAdjustedError'), variant: "destructive" });
     }
   };
   
@@ -192,10 +192,10 @@ export default function ProductDetailPage() {
             // Optimistically update UI
             setProduct(prev => prev ? { ...prev, stock: newStock } : null);
             setTransactions(prev => prev.filter(tx => tx.id !== transaction.id));
-            toast({ title: "Transaction Deleted", description: "The transaction has been deleted and stock has been reversed."});
+            toast({ title: t('productDetailPage.transactionDeleted'), description: t('productDetailPage.transactionDeletedDesc')});
         } catch (error) {
             console.error("Error deleting transaction:", error);
-            toast({ title: "Error", description: "Failed to delete transaction.", variant: "destructive" });
+            toast({ title: "Error", description: t('productDetailPage.transactionDeletedError'), variant: "destructive" });
         }
     };
 
@@ -224,10 +224,10 @@ export default function ProductDetailPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
         <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
-        <h2 className="text-xl font-semibold text-destructive mb-2">Error Loading Product</h2>
+        <h2 className="text-xl font-semibold text-destructive mb-2">{t('productForm.toast.errorSaving')}</h2>
         <p className="text-muted-foreground mb-6">{error}</p>
         <Button onClick={() => router.push("/products")}>
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Products
+          <ArrowLeft className="mr-2 h-4 w-4" /> {t('siteNav.products')}
         </Button>
       </div>
     );
@@ -237,10 +237,10 @@ export default function ProductDetailPage() {
      return (
        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
         <AlertTriangle className="h-12 w-12 text-muted-foreground mb-4" />
-        <h2 className="text-xl font-semibold text-primary mb-2">Product Not Found</h2>
-        <p className="text-muted-foreground mb-6">The product you are trying to view does not exist or could not be loaded.</p>
+        <h2 className="text-xl font-semibold text-primary mb-2">{t('productsPage.noProductsMatchSearch')}</h2>
+        <p className="text-muted-foreground mb-6">{t('productsPage.noProductsMatchSearchDesc')}</p>
         <Button onClick={() => router.push("/products")}>
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Products
+          <ArrowLeft className="mr-2 h-4 w-4" /> {t('siteNav.products')}
         </Button>
       </div>
     );
@@ -253,17 +253,17 @@ export default function ProductDetailPage() {
           <Button variant="outline" size="icon" asChild>
             <Link href="/products">
               <ArrowLeft className="h-4 w-4" />
-              <span className="sr-only">Back to Products</span>
+              <span className="sr-only">{t('siteNav.products')}</span>
             </Link>
           </Button>
           <div>
             <h1 className="font-headline text-3xl md:text-4xl font-bold text-primary">{product.name}</h1>
-            <p className="text-muted-foreground mt-1">Reference: {product.reference || 'N/A'}</p>
+            <p className="text-muted-foreground mt-1">{t('productsPage.table.reference')}: {product.reference || 'N/A'}</p>
           </div>
         </div>
         <Button asChild>
           <Link href={`/products/${product.id}/edit`}>
-            <Edit className="mr-2 h-4 w-4" /> Edit Product
+            <Edit className="mr-2 h-4 w-4" /> {t('productForm.editTitle')}
           </Link>
         </Button>
       </div>
@@ -271,17 +271,17 @@ export default function ProductDetailPage() {
        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <Card className="shadow-md">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Current Stock</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('productDetailPage.currentStock')}</CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{product.stock ?? 'N/A'}</div>
-            <p className="text-xs text-muted-foreground">units available</p>
+            <p className="text-xs text-muted-foreground">{t('productDetailPage.unitsAvailable')}</p>
           </CardContent>
         </Card>
         <Card className="shadow-md">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Selling Price</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('productForm.labels.sellingPrice')}</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -291,7 +291,7 @@ export default function ProductDetailPage() {
         </Card>
         <Card className="shadow-md">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Purchase Price</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('productForm.labels.purchasePrice')}</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -303,7 +303,7 @@ export default function ProductDetailPage() {
 
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle className="font-headline text-xl text-primary">Product Details</CardTitle>
+          <CardTitle className="font-headline text-xl text-primary">{t('productDetailPage.productDetails')}</CardTitle>
         </CardHeader>
         <CardContent>
             <p className="text-sm text-muted-foreground">{product.description}</p>
@@ -314,33 +314,33 @@ export default function ProductDetailPage() {
         <div className="lg:col-span-2">
             <Card className="shadow-lg">
                 <CardHeader>
-                    <CardTitle className="font-headline text-xl text-primary flex items-center"><Wrench className="mr-2"/> Adjust Stock</CardTitle>
-                    <CardDescription>Manually add or remove stock for purchases, returns, or corrections.</CardDescription>
+                    <CardTitle className="font-headline text-xl text-primary flex items-center"><Wrench className="mr-2"/> {t('productDetailPage.stockAdjustment.title')}</CardTitle>
+                    <CardDescription>{t('productDetailPage.stockAdjustment.description')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                         <div className="col-span-2">
-                            <Label htmlFor="quantity-adjustment">Quantity</Label>
-                            <Input id="quantity-adjustment" type="number" placeholder="e.g., 50 or -5" value={adjustment.quantity || ''} onChange={e => handleQuantityChange(parseInt(e.target.value) || 0)} />
-                            <p className="text-xs text-muted-foreground mt-1">Use a negative number to remove stock.</p>
+                            <Label htmlFor="quantity-adjustment">{t('productDetailPage.stockAdjustment.quantityLabel')}</Label>
+                            <Input id="quantity-adjustment" type="number" placeholder={t('productDetailPage.stockAdjustment.quantityPlaceholder')} value={adjustment.quantity || ''} onChange={e => handleQuantityChange(parseInt(e.target.value) || 0)} />
+                            <p className="text-xs text-muted-foreground mt-1">{t('productDetailPage.stockAdjustment.quantityDesc')}</p>
                         </div>
                         {adjustment.quantity !== 0 && (
                             <div className="col-span-2">
                                 <Label htmlFor="adjustment-price">
-                                {adjustment.quantity > 0 ? "Purchase Price" : "Selling Price"}
+                                {adjustment.quantity > 0 ? t('productForm.labels.purchasePrice') : t('productForm.labels.sellingPrice')}
                                 </Label>
                                 <Input id="adjustment-price" type="number" step="0.01" value={adjustment.price} onChange={e => setAdjustment(prev => ({...prev, price: parseFloat(e.target.value) || 0}))} />
-                                <p className="text-xs text-muted-foreground mt-1">Price per unit for this transaction.</p>
+                                <p className="text-xs text-muted-foreground mt-1">{t('productDetailPage.stockAdjustment.priceDesc')}</p>
                             </div>
                         )}
                         <div className="col-span-2">
-                            <Label htmlFor="adjustment-notes">Notes (Optional)</Label>
-                            <Input id="adjustment-notes" type="text" placeholder={adjustment.quantity > 0 ? 'e.g., New shipment' : 'e.g., Direct sale'} value={adjustment.notes} onChange={e => setAdjustment(prev => ({ ...prev, notes: e.target.value }))} />
+                            <Label htmlFor="adjustment-notes">{t('productDetailPage.stockAdjustment.notesLabel')}</Label>
+                            <Input id="adjustment-notes" type="text" placeholder={adjustment.quantity > 0 ? t('productDetailPage.stockAdjustment.notesPlaceholderPurchase') : t('productDetailPage.stockAdjustment.notesPlaceholderSale')} value={adjustment.notes} onChange={e => setAdjustment(prev => ({ ...prev, notes: e.target.value }))} />
                         </div>
                     </div>
                     <Button onClick={handleStockAdjustment} disabled={adjustment.quantity === 0}>
                         {adjustment.quantity > 0 ? <PlusCircle className="mr-2"/> : <MinusCircle className="mr-2"/>}
-                        Confirm Adjustment
+                        {t('productDetailPage.stockAdjustment.confirmButton')}
                     </Button>
                 </CardContent>
             </Card>
@@ -349,34 +349,34 @@ export default function ProductDetailPage() {
         <div className="lg:col-span-3">
             <Card className="shadow-lg h-full">
                 <CardHeader>
-                    <CardTitle className="font-headline text-xl text-primary flex items-center"><History className="mr-2"/> Transaction History</CardTitle>
-                    <CardDescription>A complete log of all stock movements for this product.</CardDescription>
+                    <CardTitle className="font-headline text-xl text-primary flex items-center"><History className="mr-2"/> {t('productDetailPage.transactionHistory.title')}</CardTitle>
+                    <CardDescription>{t('productDetailPage.transactionHistory.description')}</CardDescription>
                 </CardHeader>
                 <CardContent className="max-h-[400px] overflow-y-auto">
                     {transactions.length > 0 ? (
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Date</TableHead>
-                                    <TableHead>Type</TableHead>
-                                    <TableHead>Change</TableHead>
-                                    <TableHead>New Stock</TableHead>
-                                    <TableHead>Price</TableHead>
-                                    <TableHead>Notes</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
+                                    <TableHead>{t('productDetailPage.transactionHistory.date')}</TableHead>
+                                    <TableHead>{t('productDetailPage.transactionHistory.type')}</TableHead>
+                                    <TableHead>{t('productDetailPage.transactionHistory.change')}</TableHead>
+                                    <TableHead>{t('productDetailPage.transactionHistory.newStock')}</TableHead>
+                                    <TableHead>{t('productDetailPage.transactionHistory.price')}</TableHead>
+                                    <TableHead>{t('productDetailPage.transactionHistory.notes')}</TableHead>
+                                    <TableHead className="text-right">{t('productsPage.table.actions')}</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {transactions.map(tx => (
                                     <TableRow key={tx.id}>
                                         <TableCell className="text-xs">{format(tx.transactionDate.toDate(), "MMM dd, yyyy HH:mm")}</TableCell>
-                                        <TableCell><div className="flex items-center gap-2 capitalize">{getTransactionTypeIcon(tx.type)} {tx.type}</div></TableCell>
+                                        <TableCell><div className="flex items-center gap-2 capitalize">{getTransactionTypeIcon(tx.type)} {t(`productTransactionType.${tx.type}`)}</div></TableCell>
                                         <TableCell className={`font-bold ${tx.quantityChange > 0 ? 'text-green-600' : 'text-red-600'}`}>{tx.quantityChange > 0 ? `+${tx.quantityChange}` : tx.quantityChange}</TableCell>
                                         <TableCell className="font-medium">{tx.newStock}</TableCell>
                                         <TableCell>
                                             {tx.transactionPrice !== undefined ? `${tx.transactionPrice.toFixed(2)}` : 'N/A'}
                                         </TableCell>
-                                        <TableCell className="text-xs">{tx.invoiceId ? <Link href={`/invoices/${tx.invoiceId}`} className="text-primary hover:underline">Invoice #{tx.notes}</Link> : tx.notes}</TableCell>
+                                        <TableCell className="text-xs">{tx.invoiceId ? <Link href={`/invoices/${tx.invoiceId}`} className="text-primary hover:underline">{t('productDetailPage.transactionHistory.invoiceLink')} #{tx.notes}</Link> : tx.notes}</TableCell>
                                         <TableCell className="text-right">
                                             <AlertDialog>
                                                 <AlertDialogTrigger asChild>
@@ -386,15 +386,15 @@ export default function ProductDetailPage() {
                                                 </AlertDialogTrigger>
                                                 <AlertDialogContent>
                                                     <AlertDialogHeader>
-                                                        <AlertDialogTitle>Delete Transaction?</AlertDialogTitle>
+                                                        <AlertDialogTitle>{t('productDetailPage.dialog.deleteTitle')}</AlertDialogTitle>
                                                         <AlertDialogDescription>
-                                                            This will permanently delete the transaction and reverse the stock change. This action cannot be undone.
+                                                            {t('productDetailPage.dialog.deleteDesc')}
                                                         </AlertDialogDescription>
                                                     </AlertDialogHeader>
                                                     <AlertDialogFooter>
-                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                        <AlertDialogCancel>{t('productsPage.dialog.cancel')}</AlertDialogCancel>
                                                         <AlertDialogAction onClick={() => handleDeleteTransaction(tx)} className="bg-destructive hover:bg-destructive/90">
-                                                            Confirm Delete
+                                                            {t('productsPage.dialog.confirmDelete')}
                                                         </AlertDialogAction>
                                                     </AlertDialogFooter>
                                                 </AlertDialogContent>
@@ -405,7 +405,7 @@ export default function ProductDetailPage() {
                             </TableBody>
                         </Table>
                     ) : (
-                        <p className="text-muted-foreground text-center py-8">No transaction history found for this product.</p>
+                        <p className="text-muted-foreground text-center py-8">{t('productDetailPage.transactionHistory.noHistory')}</p>
                     )}
                 </CardContent>
             </Card>

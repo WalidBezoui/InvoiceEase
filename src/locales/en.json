@@ -697,5 +697,56 @@
       "productAdded": "Product added successfully.",
       "errorSaving": "Failed to save product. Please try again."
     }
+  },
+   "productDetailPage": {
+    "backToProducts": "Back to Products",
+    "editProduct": "Edit Product",
+    "currentStock": "Current Stock",
+    "unitsAvailable": "units available",
+    "sellingPrice": "Selling Price",
+    "purchasePrice": "Purchase Price",
+    "productDetails": "Product Details",
+    "stockAdjustment": {
+      "title": "Adjust Stock",
+      "description": "Manually add or remove stock for purchases, returns, or corrections.",
+      "quantityLabel": "Quantity",
+      "quantityPlaceholder": "e.g., 50 or -5",
+      "quantityDesc": "Use a negative number to remove stock.",
+      "priceDesc": "Price per unit for this transaction.",
+      "notesLabel": "Notes (Optional)",
+      "notesPlaceholderPurchase": "e.g., New shipment from supplier",
+      "notesPlaceholderSale": "e.g., Direct sale to customer",
+      "confirmButton": "Confirm Adjustment",
+      "purchaseNote": "Stock purchase",
+      "saleNote": "Direct Sale"
+    },
+    "transactionHistory": {
+      "title": "Transaction History",
+      "description": "A complete log of all stock movements for this product.",
+      "date": "Date",
+      "type": "Type",
+      "change": "Change",
+      "newStock": "New Stock",
+      "price": "Price",
+      "notes": "Notes",
+      "invoiceLink": "Invoice",
+      "noHistory": "No transaction history found for this product."
+    },
+    "dialog": {
+      "deleteTitle": "Delete Transaction?",
+      "deleteDesc": "This will permanently delete the transaction and reverse the stock change. This action cannot be undone."
+    },
+    "stockAdjusted": "Stock Adjusted",
+    "stockAdjustedDesc": "Stock for {{productName}} updated to {{newStock}}.",
+    "stockAdjustedError": "Failed to adjust stock. Please try again.",
+    "transactionDeleted": "Transaction Deleted",
+    "transactionDeletedDesc": "The transaction has been deleted and stock has been reversed.",
+    "transactionDeletedError": "Failed to delete transaction."
+  },
+  "productTransactionType": {
+    "sale": "Sale",
+    "purchase": "Purchase",
+    "initial": "Initial",
+    "adjustment": "Adjustment"
   }
 }

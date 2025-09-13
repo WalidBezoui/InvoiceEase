@@ -42,23 +42,20 @@ export default function EditProductPage() {
           if (fetchedProduct.userId === user.uid) {
             setProduct(fetchedProduct);
           } else {
-            setError("You do not have permission to edit this product.");
-            setProduct(null); 
+            setError(t('productForm.toast.authError'));
           }
         } else {
-          setError("Product not found.");
-          setProduct(null);
+          setError(t('productsPage.toast.deleteErrorDesc'));
         }
       } catch (err) {
         console.error("Error fetching product for editing:", err);
-        setError("Failed to load product details. Please try again.");
-        setProduct(null);
+        setError(t('productForm.toast.errorSaving'));
       } finally {
         setIsLoading(false);
       }
     }
     fetchProduct();
-  }, [user, productId]);
+  }, [user, productId, t]);
 
   if (isLoading) {
     return (
@@ -84,10 +81,10 @@ export default function EditProductPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
         <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
-        <h2 className="text-xl font-semibold text-destructive mb-2">Error Loading Product</h2>
+        <h2 className="text-xl font-semibold text-destructive mb-2">{t('productForm.toast.errorSaving')}</h2>
         <p className="text-muted-foreground mb-6">{error}</p>
         <Button onClick={() => router.push("/products")}>
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Products
+          <ArrowLeft className="mr-2 h-4 w-4" /> {t('siteNav.products')}
         </Button>
       </div>
     );
@@ -97,10 +94,10 @@ export default function EditProductPage() {
      return (
        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
         <AlertTriangle className="h-12 w-12 text-muted-foreground mb-4" />
-        <h2 className="text-xl font-semibold text-primary mb-2">Product Not Found</h2>
-        <p className="text-muted-foreground mb-6">The product you are trying to edit does not exist or could not be loaded.</p>
+        <h2 className="text-xl font-semibold text-primary mb-2">{t('productsPage.noProductsMatchSearch')}</h2>
+        <p className="text-muted-foreground mb-6">{t('productsPage.noProductsMatchSearchDesc')}</p>
         <Button onClick={() => router.push("/products")}>
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Products
+          <ArrowLeft className="mr-2 h-4 w-4" /> {t('siteNav.products')}
         </Button>
       </div>
     );
@@ -112,7 +109,7 @@ export default function EditProductPage() {
         <Button variant="outline" size="icon" asChild>
           <Link href="/products">
             <ArrowLeft className="h-4 w-4" />
-            <span className="sr-only">Back to Products</span>
+            <span className="sr-only">{t('siteNav.products')}</span>
           </Link>
         </Button>
         <div>

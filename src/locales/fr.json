@@ -697,5 +697,56 @@
       "productAdded": "Produit ajouté avec succès.",
       "errorSaving": "Échec de l'enregistrement du produit. Veuillez réessayer."
     }
+  },
+  "productDetailPage": {
+    "backToProducts": "Retour aux Produits",
+    "editProduct": "Modifier le Produit",
+    "currentStock": "Stock Actuel",
+    "unitsAvailable": "unités disponibles",
+    "sellingPrice": "Prix de Vente",
+    "purchasePrice": "Prix d'Achat",
+    "productDetails": "Détails du Produit",
+    "stockAdjustment": {
+      "title": "Ajuster le Stock",
+      "description": "Ajoutez ou retirez manuellement du stock pour les achats, retours ou corrections.",
+      "quantityLabel": "Quantité",
+      "quantityPlaceholder": "ex: 50 ou -5",
+      "quantityDesc": "Utilisez un nombre négatif pour retirer du stock.",
+      "priceDesc": "Prix par unité pour cette transaction.",
+      "notesLabel": "Notes (Optionnel)",
+      "notesPlaceholderPurchase": "ex: Nouvelle livraison du fournisseur",
+      "notesPlaceholderSale": "ex: Vente directe au client",
+      "confirmButton": "Confirmer l'Ajustement",
+      "purchaseNote": "Achat de stock",
+      "saleNote": "Vente directe"
+    },
+    "transactionHistory": {
+      "title": "Historique des Transactions",
+      "description": "Un journal complet de tous les mouvements de stock pour ce produit.",
+      "date": "Date",
+      "type": "Type",
+      "change": "Changement",
+      "newStock": "Nouveau Stock",
+      "price": "Prix",
+      "notes": "Notes",
+      "invoiceLink": "Facture",
+      "noHistory": "Aucun historique de transaction trouvé pour ce produit."
+    },
+    "dialog": {
+      "deleteTitle": "Supprimer la Transaction ?",
+      "deleteDesc": "Cela supprimera définitivement la transaction et annulera la modification du stock. Cette action est irréversible."
+    },
+    "stockAdjusted": "Stock Ajusté",
+    "stockAdjustedDesc": "Le stock pour {{productName}} a été mis à jour à {{newStock}}.",
+    "stockAdjustedError": "Échec de l'ajustement du stock. Veuillez réessayer.",
+    "transactionDeleted": "Transaction Supprimée",
+    "transactionDeletedDesc": "La transaction a été supprimée et le stock a été inversé.",
+    "transactionDeletedError": "Échec de la suppression de la transaction."
+  },
+  "productTransactionType": {
+    "sale": "Vente",
+    "purchase": "Achat",
+    "initial": "Initial",
+    "adjustment": "Ajustement"
   }
 }
