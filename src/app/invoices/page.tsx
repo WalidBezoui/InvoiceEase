@@ -4,14 +4,14 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
-import { FilePlus, Search, Download, Eye, Loader2, ChevronDown, FilterX, Send, DollarSign, AlertCircle, XCircle, Undo, FilePenLine } from "lucide-react";
+import { FilePlus, Search, Download, Eye, Loader2, ChevronDown, FilterX, Send, DollarSign, AlertCircle, XCircle, Undo, FilePenLine, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 import { db } from "@/lib/firebase";
 import type { Invoice } from "@/lib/types";
-import { collection, query, where, getDocs, orderBy, doc, updateDoc, serverTimestamp, type FieldValue } from "firebase/firestore";
+import { collection, query, where, getDocs, orderBy, doc, updateDoc, serverTimestamp, type FieldValue, deleteDoc } from "firebase/firestore";
 import { useEffect, useState, useMemo } from "react";
 import { format } from "date-fns";
 import { useLanguage } from "@/hooks/use-language";
@@ -25,6 +25,17 @@ import {
   DropdownMenuItem,
   DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 
 const ALL_STATUSES: Invoice['status'][] = ['draft', 'sent', 'paid', 'overdue', 'cancelled'];
@@ -128,6 +139,32 @@ export default function InvoicesPage() {
       });
     } finally {
       setIsUpdatingStatus(null);
+    }
+  };
+  
+  const handleDeleteInvoice = async (invoiceId: string) => {
+    if (!user) {
+        toast({ title: t('invoiceDetailPage.errorToastTitle'), description: t('invoiceDetailPage.toast.authErrorDesc'), variant: "destructive" });
+        return;
+    }
+
+    const invoiceToDelete = allInvoices.find(inv => inv.id === invoiceId);
+    if (!invoiceToDelete) return;
+    
+    try {
+        await deleteDoc(doc(db, "invoices", invoiceId));
+        setAllInvoices(prev => prev.filter(inv => inv.id !== invoiceId));
+        toast({
+            title: t('invoicesPage.toast.deleteSuccessTitle'),
+            description: t('invoicesPage.toast.deleteSuccessDesc', { invoiceNumber: invoiceToDelete.invoiceNumber }),
+        });
+    } catch (error) {
+        console.error("Error deleting invoice: ", error);
+        toast({
+            title: t('invoicesPage.toast.deleteErrorTitle'),
+            description: t('invoicesPage.toast.deleteErrorDesc'),
+            variant: "destructive",
+        });
     }
   };
 
@@ -348,11 +385,37 @@ export default function InvoicesPage() {
                         </DropdownMenu>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="sm" asChild>
-                          <Link href={`/invoices/${invoice.id}`}>
-                            <Eye className="mr-1 h-4 w-4" /> {t('invoicesPage.viewAction')}
-                          </Link> 
-                        </Button>
+                        <div className="flex items-center justify-end gap-1">
+                            <Button variant="ghost" size="sm" asChild>
+                            <Link href={`/invoices/${invoice.id}`}>
+                                <Eye className="mr-1 h-4 w-4" /> {t('invoicesPage.viewAction')}
+                            </Link> 
+                            </Button>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                                        <Trash2 className="mr-1 h-4 w-4" /> {t('invoicesPage.deleteAction')}
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                    <AlertDialogTitle>{t('invoicesPage.dialog.deleteTitle')}</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        {t('invoicesPage.dialog.deleteDesc', { invoiceNumber: invoice.invoiceNumber })}
+                                    </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                    <AlertDialogCancel>{t('invoicesPage.dialog.cancel')}</AlertDialogCancel>
+                                    <AlertDialogAction
+                                        onClick={() => handleDeleteInvoice(invoice.id!)}
+                                        className="bg-destructive hover:bg-destructive/90"
+                                    >
+                                        {t('invoicesPage.dialog.confirmDelete')}
+                                    </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
@@ -392,5 +455,7 @@ export default function InvoicesPage() {
     
 
 
+
+    
 
     

@@ -194,6 +194,7 @@
       "actions": "Actions"
     },
     "viewAction": "View",
+    "deleteAction": "Delete",
     "loading": "Loading invoices...",
     "error": "Failed to load invoices. Please try again.",
     "noInvoicesMatchCriteria": "No invoices match your criteria",
@@ -201,7 +202,19 @@
     "noInvoicesYet": "No invoices yet",
     "noInvoicesYetDesc": "Get started by creating your first invoice.",
     "createInvoice": "Create Invoice",
-    "exportNoData": "No data to export."
+    "exportNoData": "No data to export.",
+    "dialog": {
+        "deleteTitle": "Are you absolutely sure?",
+        "deleteDesc": "This action cannot be undone. This will permanently delete invoice {{invoiceNumber}}.",
+        "cancel": "Cancel",
+        "confirmDelete": "Yes, delete invoice"
+    },
+    "toast": {
+        "deleteSuccessTitle": "Invoice Deleted",
+        "deleteSuccessDesc": "Invoice {{invoiceNumber}} has been permanently deleted.",
+        "deleteErrorTitle": "Deletion Failed",
+        "deleteErrorDesc": "The invoice could not be deleted. Please try again."
+    }
   },
   "newInvoicePage": {
     "title": "Create New Invoice",
@@ -584,3 +597,5 @@
     }
   }
 }
+
+    

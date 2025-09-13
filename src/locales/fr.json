@@ -194,6 +194,7 @@
       "actions": "Actions"
     },
     "viewAction": "Voir",
+    "deleteAction": "Supprimer",
     "loading": "Chargement des factures...",
     "error": "Échec du chargement des factures. Veuillez réessayer.",
     "noInvoicesMatchCriteria": "Aucune facture ne correspond à vos critères",
@@ -201,7 +202,19 @@
     "noInvoicesYet": "Aucune facture pour le moment",
     "noInvoicesYetDesc": "Commencez par créer votre première facture.",
     "createInvoice": "Créer Facture",
-    "exportNoData": "Aucune donnée à exporter."
+    "exportNoData": "Aucune donnée à exporter.",
+    "dialog": {
+        "deleteTitle": "Êtes-vous absolument sûr ?",
+        "deleteDesc": "Cette action ne peut pas être annulée. Cela supprimera définitivement la facture {{invoiceNumber}}.",
+        "cancel": "Annuler",
+        "confirmDelete": "Oui, supprimer la facture"
+    },
+    "toast": {
+        "deleteSuccessTitle": "Facture Supprimée",
+        "deleteSuccessDesc": "La facture {{invoiceNumber}} a été supprimée définitivement.",
+        "deleteErrorTitle": "Échec de la Suppression",
+        "deleteErrorDesc": "La facture n'a pas pu être supprimée. Veuillez réessayer."
+    }
   },
   "newInvoicePage": {
     "title": "Créer une Nouvelle Facture",
@@ -584,3 +597,5 @@
     }
   }
 }
+
+    
