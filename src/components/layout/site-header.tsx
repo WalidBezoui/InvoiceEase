@@ -142,8 +142,8 @@ export default function SiteHeader() {
               </DropdownMenu>
             </>
           ) : (
-            <>
-              <Button variant="ghost" asChild>
+            <div className="flex items-center gap-1">
+              <Button variant="ghost" asChild className="hidden sm:inline-flex">
                 <Link href="/pricing">
                   <DollarSign className="mr-2 h-4 w-4" /> {t('siteNav.pricing', {default: "Pricing"})}
                 </Link>
@@ -158,7 +158,7 @@ export default function SiteHeader() {
                   <UserPlus className="mr-2 h-4 w-4" /> {t('siteNav.signup')}
                 </Link>
               </Button>
-            </>
+            </div>
           )}
         </nav>
       </div>
