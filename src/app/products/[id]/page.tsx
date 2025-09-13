@@ -131,7 +131,10 @@ export default function ProductDetailPage() {
         quantityChange: adjustment.quantity,
         newStock: newStock,
         notes: adjustment.notes || (isSale ? 'Manual sale' : 'Stock purchase'),
-        transactionPrice: isSale ? adjustment.price : undefined,
+    };
+
+    if (isSale) {
+        newTransactionData.transactionPrice = adjustment.price;
     }
 
     // Update product stock
@@ -382,5 +385,7 @@ export default function ProductDetailPage() {
   );
 }
 
+
+    
 
     
