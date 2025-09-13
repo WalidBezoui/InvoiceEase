@@ -6,7 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
 import { db } from "@/lib/firebase";
-import type { Product, ProductTransaction } from "@/lib/types";
+import type { Product, ProductTransaction, UserPreferences } from "@/lib/types";
 import { doc, getDoc, collection, query, where, orderBy, getDocs, writeBatch, serverTimestamp } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -41,6 +41,7 @@ export default function ProductDetailPage() {
 
   const [product, setProduct] = useState<Product | null>(null);
   const [transactions, setTransactions] = useState<ProductTransaction[]>([]);
+  const [userPrefs, setUserPrefs] = useState<UserPreferences | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [adjustment, setAdjustment] = useState({ quantity: 0, notes: '' });
@@ -67,6 +68,13 @@ export default function ProductDetailPage() {
           setError("Product not found or you don't have permission.");
           setIsLoadingData(false);
           return;
+        }
+
+        // Fetch user preferences
+        const prefDocRef = doc(db, "userPreferences", user.uid);
+        const prefDocSnap = await getDoc(prefDocRef);
+        if (prefDocSnap.exists()) {
+          setUserPrefs(prefDocSnap.data() as UserPreferences);
         }
 
         // Fetch product transactions
@@ -306,3 +314,5 @@ export default function ProductDetailPage() {
     </div>
   );
 }
+
+    
