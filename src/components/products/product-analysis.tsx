@@ -15,9 +15,10 @@ interface ProductAnalysisProps {
   transactions: ProductTransaction[];
   userPrefs: UserPreferences | null;
   t: (key: string, replacements?: Record<string, string | number>) => string;
+  locale: string;
 }
 
-export default function ProductAnalysis({ product, transactions, userPrefs, t }: ProductAnalysisProps) {
+export default function ProductAnalysis({ product, transactions, userPrefs, t, locale }: ProductAnalysisProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [analysisResult, setAnalysisResult] = useState<ProductAnalysisOutput | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -42,7 +43,8 @@ export default function ProductAnalysis({ product, transactions, userPrefs, t }:
                 purchasePrice: product.purchasePrice,
                 currentStock: product.stock,
                 currency: userPrefs?.currency || 'MAD',
-                transactions: transactionSummary
+                transactions: transactionSummary,
+                language: locale,
             });
             setAnalysisResult(result);
         } catch (err) {

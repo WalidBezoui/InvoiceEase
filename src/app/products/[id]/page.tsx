@@ -35,7 +35,7 @@ import ProductAnalysis from "@/components/products/product-analysis";
 
 export default function ProductDetailPage() {
   const { user, loading: authLoading } = useAuth();
-  const { t, isLoadingLocale } = useLanguage();
+  const { t, locale, isLoadingLocale } = useLanguage();
   const router = useRouter();
   const params = useParams();
   const { toast } = useToast();
@@ -420,7 +420,7 @@ export default function ProductDetailPage() {
                     </Card>
                 </TabsContent>
                 <TabsContent value="analysis">
-                    <ProductAnalysis product={product} transactions={transactions} userPrefs={userPrefs} t={t} />
+                    <ProductAnalysis product={product} transactions={transactions} userPrefs={userPrefs} t={t} locale={locale}/>
                 </TabsContent>
             </Tabs>
         </div>

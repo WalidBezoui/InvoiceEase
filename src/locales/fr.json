@@ -638,14 +638,16 @@
       "reference": "Référence",
       "sellingPrice": "Prix de Vente",
       "stock": "Stock",
-      "actions": "Actions"
+      "actions": "Actions",
+      "healthTip": "Conseil",
+      "aiGeneratedTip": "Conseil Généré par IA"
     },
     "actions": {
       "edit": "Modifier",
       "delete": "Supprimer",
       "view": "Voir"
     },
-    "loading": "Chargement des produits...",
+    "loading": "Chargement...",
     "error": "Échec du chargement des produits. Veuillez réessayer.",
     "noProductsMatchSearch": "Aucun produit ne correspond à votre recherche",
     "noProductsMatchSearchDesc": "Essayez d'ajuster votre terme de recherche.",

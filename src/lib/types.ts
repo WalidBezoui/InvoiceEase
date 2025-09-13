@@ -144,6 +144,7 @@ export const ProductAnalysisInputSchema = z.object({
   currentStock: z.number().optional().describe("The current stock level."),
   currency: z.string().describe("The currency code for the prices (e.g., MAD, USD, EUR)."),
   transactions: z.array(TransactionSummarySchema).describe("A list of recent transactions for the product."),
+  language: z.string().describe("The language for the output (e.g., 'en', 'fr')."),
 });
 export type ProductAnalysisInput = z.infer<typeof ProductAnalysisInputSchema>;
 
@@ -152,3 +153,17 @@ export const ProductAnalysisOutputSchema = z.object({
   suggestions: z.array(z.string()).describe("A list of 2-4 actionable, bullet-point suggestions for the user based on the analysis. For example, suggesting a reorder, a price adjustment, or a promotion."),
 });
 export type ProductAnalysisOutput = z.infer<typeof ProductAnalysisOutputSchema>;
+
+// For AI Product Tip
+export const ProductTipInputSchema = z.object({
+    stockLevel: z.number().describe("The current stock quantity."),
+    salesLast30Days: z.number().describe("The number of sales transactions in the last 30 days."),
+    language: z.string().describe("The language for the output tip (e.g., 'en', 'fr')."),
+});
+export type ProductTipInput = z.infer<typeof ProductTipInputSchema>;
+
+export const ProductTipOutputSchema = z.object({
+    tip: z.string().describe("A very short, actionable tip (3-5 words max)."),
+    type: z.enum(['suggestion', 'warning', 'info']).describe("The classification of the tip."),
+});
+export type ProductTipOutput = z.infer<typeof ProductTipOutputSchema>;

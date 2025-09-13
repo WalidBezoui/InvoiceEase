@@ -638,14 +638,16 @@
       "reference": "Reference",
       "sellingPrice": "Selling Price",
       "stock": "Stock",
-      "actions": "Actions"
+      "actions": "Actions",
+      "healthTip": "Health Tip",
+      "aiGeneratedTip": "AI-Generated Tip"
     },
     "actions": {
       "edit": "Edit",
       "delete": "Delete",
       "view": "View"
     },
-    "loading": "Loading products...",
+    "loading": "Loading...",
     "error": "Failed to load products. Please try again.",
     "noProductsMatchSearch": "No products match your search",
     "noProductsMatchSearchDesc": "Try adjusting your search term.",

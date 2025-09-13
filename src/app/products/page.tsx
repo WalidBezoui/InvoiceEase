@@ -4,12 +4,12 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
-import { Package, Search, Loader2, Edit, Trash2, Eye } from "lucide-react"; 
+import { Package, Search, Loader2, Edit, Trash2, Eye, Lightbulb, AlertTriangle, Info } from "lucide-react"; 
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuth } from "@/hooks/use-auth";
 import { db } from "@/lib/firebase";
-import type { Product } from "@/lib/types";
+import type { Product, ProductTipOutput } from "@/lib/types";
 import { collection, query, where, getDocs, orderBy, doc, deleteDoc } from "firebase/firestore";
 import { useEffect, useState, useMemo } from "react";
 import { useLanguage } from "@/hooks/use-language";
@@ -25,12 +25,16 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { getProductTip } from "@/ai/flows/product-analysis-flow";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
 
 export default function ProductsPage() {
   const { user, loading: authLoading } = useAuth();
-  const { t, isLoadingLocale } = useLanguage();
+  const { t, locale, isLoadingLocale } = useLanguage();
   const { toast } = useToast();
   const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [tips, setTips] = useState<Record<string, ProductTipOutput>>({});
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -38,7 +42,7 @@ export default function ProductsPage() {
   const isLoading = authLoading || isLoadingLocale || isLoadingData;
 
   useEffect(() => {
-    async function fetchProducts() {
+    async function fetchProductsAndTips() {
       if (!user) {
         setIsLoadingData(false);
         setAllProducts([]);
@@ -51,10 +55,48 @@ export default function ProductsPage() {
         const q = query(productsRef, where("userId", "==", user.uid), orderBy("name", "asc"));
         const querySnapshot = await getDocs(q);
         const fetchedProducts: Product[] = [];
+        const tipPromises: Promise<{id: string, tip: ProductTipOutput}>[] = [];
+
         querySnapshot.forEach((doc) => {
-          fetchedProducts.push({ id: doc.id, ...doc.data() } as Product);
+          const product = { id: doc.id, ...doc.data() } as Product;
+          fetchedProducts.push(product);
+
+          // Prepare to fetch tip for each product
+          const transactionsQuery = query(
+            collection(db, "productTransactions"),
+            where("productId", "==", product.id),
+            where("type", "==", "sale")
+          );
+
+          const promise = getDocs(transactionsQuery).then(transSnap => {
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            const salesLast30Days = transSnap.docs.filter(d => d.data().transactionDate.toDate() > thirtyDaysAgo).length;
+
+            return getProductTip({
+              stockLevel: product.stock ?? 0,
+              salesLast30Days: salesLast30Days,
+              language: locale
+            }).then(tip => ({ id: product.id!, tip }));
+          }).catch(err => {
+              console.warn(`Could not fetch tip for product ${product.id}:`, err);
+              // Return a nullish or error-indicating object so Promise.all doesn't fail
+              return {id: product.id!, tip: {tip: 'N/A', type: 'info'}};
+          });
+
+          tipPromises.push(promise);
         });
+
         setAllProducts(fetchedProducts);
+
+        // Fetch all tips in parallel
+        const resolvedTips = await Promise.all(tipPromises);
+        const tipsMap: Record<string, ProductTipOutput> = {};
+        resolvedTips.forEach(result => {
+          tipsMap[result.id] = result.tip;
+        });
+        setTips(tipsMap);
+
       } catch (err) {
         console.error("Error fetching products:", err);
         setError(t('productsPage.error'));
@@ -63,14 +105,14 @@ export default function ProductsPage() {
       }
     }
 
-    if (user) {
-      fetchProducts();
+    if (user && !isLoadingLocale) {
+      fetchProductsAndTips();
     } else if (!authLoading && !user) {
       setIsLoadingData(false);
       setAllProducts([]);
       setError(null);
     }
-  }, [user, authLoading, t]);
+  }, [user, authLoading, t, locale, isLoadingLocale]);
 
   const filteredProducts = useMemo(() => {
     if (!searchTerm) return allProducts;
@@ -92,8 +134,6 @@ export default function ProductsPage() {
 
     try {
       await deleteDoc(doc(db, "products", productId));
-      // You might want to delete related transactions as well, or handle them as orphaned.
-      // For now, we just delete the product.
       setAllProducts(prev => prev.filter(p => p.id !== productId));
       toast({
         title: t('productsPage.toast.deleteSuccessTitle'),
@@ -106,6 +146,15 @@ export default function ProductsPage() {
         description: t('productsPage.toast.deleteErrorDesc'),
         variant: 'destructive'
       });
+    }
+  };
+
+  const getTipIcon = (type: ProductTipOutput['type']) => {
+    switch (type) {
+      case 'warning': return <AlertTriangle className="h-4 w-4 text-orange-500" />;
+      case 'suggestion': return <Lightbulb className="h-4 w-4 text-blue-500" />;
+      case 'info': return <Info className="h-4 w-4 text-gray-500" />;
+      default: return null;
     }
   };
 
@@ -159,62 +208,82 @@ export default function ProductsPage() {
           ) : error ? (
             <div className="text-center py-12 text-destructive"><p>{error}</p></div>
           ) : filteredProducts.length > 0 ? (
-             <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t('productsPage.table.name')}</TableHead>
-                  <TableHead>{t('productsPage.table.reference')}</TableHead>
-                  <TableHead className="text-right">{t('productsPage.table.sellingPrice')}</TableHead>
-                  <TableHead className="text-right">{t('productsPage.table.stock')}</TableHead>
-                  <TableHead className="text-right">{t('productsPage.table.actions')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredProducts.map((product) => (
-                  <TableRow key={product.id}>
-                    <TableCell className="font-medium">{product.name}</TableCell>
-                    <TableCell>{product.reference || 'N/A'}</TableCell>
-                    <TableCell className="text-right">{product.sellingPrice.toFixed(2)}</TableCell>
-                    <TableCell className="text-right">{product.stock !== undefined ? product.stock : 'N/A'}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="sm" asChild>
-                          <Link href={`/products/${product.id}`}>
-                            <Eye className="mr-1 h-4 w-4" /> {t('productsPage.actions.view')}
-                          </Link> 
-                        </Button>
-                        <Button variant="ghost" size="sm" asChild>
-                          <Link href={`/products/${product.id}/edit`}>
-                            <Edit className="mr-1 h-4 w-4" /> {t('productsPage.actions.edit')}
-                          </Link> 
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
-                              <Trash2 className="mr-1 h-4 w-4" /> {t('productsPage.actions.delete')}
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>{t('productsPage.dialog.deleteTitle')}</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                {t('productsPage.dialog.deleteDesc', { productName: product.name })}
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>{t('productsPage.dialog.cancel')}</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDelete(product.id!)} className="bg-destructive hover:bg-destructive/90">
-                                {t('productsPage.dialog.confirmDelete')}
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </TableCell>
+             <TooltipProvider>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t('productsPage.table.name')}</TableHead>
+                    <TableHead>{t('productsPage.table.reference')}</TableHead>
+                    <TableHead>{t('productsPage.table.healthTip')}</TableHead>
+                    <TableHead className="text-right">{t('productsPage.table.sellingPrice')}</TableHead>
+                    <TableHead className="text-right">{t('productsPage.table.stock')}</TableHead>
+                    <TableHead className="text-right">{t('productsPage.table.actions')}</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredProducts.map((product) => (
+                    <TableRow key={product.id}>
+                      <TableCell className="font-medium">{product.name}</TableCell>
+                      <TableCell>{product.reference || 'N/A'}</TableCell>
+                      <TableCell>
+                        {tips[product.id!] ? (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="flex items-center gap-1 cursor-pointer">
+                                {getTipIcon(tips[product.id!].type)}
+                                <span className="text-muted-foreground text-xs italic">{tips[product.id!].tip}</span>
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>{t('productsPage.table.aiGeneratedTip')}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        ) : (
+                          <span className="text-muted-foreground text-xs italic">{t('productsPage.loading')}</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">{product.sellingPrice.toFixed(2)}</TableCell>
+                      <TableCell className="text-right">{product.stock !== undefined ? product.stock : 'N/A'}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button variant="ghost" size="sm" asChild>
+                            <Link href={`/products/${product.id}`}>
+                              <Eye className="mr-1 h-4 w-4" /> {t('productsPage.actions.view')}
+                            </Link> 
+                          </Button>
+                          <Button variant="ghost" size="sm" asChild>
+                            <Link href={`/products/${product.id}/edit`}>
+                              <Edit className="mr-1 h-4 w-4" /> {t('productsPage.actions.edit')}
+                            </Link> 
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                                <Trash2 className="mr-1 h-4 w-4" /> {t('productsPage.actions.delete')}
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>{t('productsPage.dialog.deleteTitle')}</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  {t('productsPage.dialog.deleteDesc', { productName: product.name })}
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>{t('productsPage.dialog.cancel')}</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDelete(product.id!)} className="bg-destructive hover:bg-destructive/90">
+                                  {t('productsPage.dialog.confirmDelete')}
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TooltipProvider>
           ) : (
             <div className="text-center py-12">
               <Package className="mx-auto h-12 w-12 text-muted-foreground" />
