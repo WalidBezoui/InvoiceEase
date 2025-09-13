@@ -1,36 +1,14 @@
+
 'use server';
 /**
  * @fileOverview An AI agent for analyzing product transaction data.
  *
  * - analyzeProductTransactions - A function that analyzes sales and stock data.
- * - ProductAnalysisInput - The input type for the analysis function.
- * - ProductAnalysisOutput - The return type for the analysis function.
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { ProductAnalysisInputSchema, ProductAnalysisOutputSchema, type ProductAnalysisInput, type ProductAnalysisOutput } from '@/lib/types';
 
-const TransactionSummarySchema = z.object({
-  type: z.enum(['initial', 'sale', 'purchase', 'adjustment']),
-  quantityChange: z.number(),
-  transactionDate: z.string().describe("The ISO 8601 date of the transaction."),
-  transactionPrice: z.number().optional().describe("The price per unit for this specific transaction."),
-});
-
-export const ProductAnalysisInputSchema = z.object({
-  productName: z.string().describe("The name of the product."),
-  sellingPrice: z.number().describe("The standard selling price of the product."),
-  purchasePrice: z.number().optional().describe("The standard purchase price of the product."),
-  currentStock: z.number().optional().describe("The current stock level."),
-  transactions: z.array(TransactionSummarySchema).describe("A list of recent transactions for the product."),
-});
-export type ProductAnalysisInput = z.infer<typeof ProductAnalysisInputSchema>;
-
-export const ProductAnalysisOutputSchema = z.object({
-  analysis: z.string().describe("A concise, data-driven summary of the product's performance, including sales velocity, profitability insights, and stock level trends. Written in paragraph form."),
-  suggestions: z.array(z.string()).describe("A list of 2-4 actionable, bullet-point suggestions for the user based on the analysis. For example, suggesting a reorder, a price adjustment, or a promotion."),
-});
-export type ProductAnalysisOutput = z.infer<typeof ProductAnalysisOutputSchema>;
 
 export async function analyzeProductTransactions(input: ProductAnalysisInput): Promise<ProductAnalysisOutput> {
   return productAnalysisFlow(input);

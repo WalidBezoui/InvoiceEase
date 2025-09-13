@@ -1,10 +1,11 @@
+
 "use client";
 
 import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Lightbulb, Loader2, AlertTriangle, BarChart as BarChartIcon } from 'lucide-react';
-import type { Product, ProductTransaction } from '@/lib/types';
+import type { Product, ProductTransaction, ProductAnalysisOutput } from '@/lib/types';
 import { analyzeProductTransactions } from '@/ai/flows/product-analysis-flow';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { format } from 'date-fns';
@@ -15,14 +16,9 @@ interface ProductAnalysisProps {
   t: (key: string, replacements?: Record<string, string | number>) => string;
 }
 
-interface AnalysisResult {
-    analysis: string;
-    suggestions: string[];
-}
-
 export default function ProductAnalysis({ product, transactions, t }: ProductAnalysisProps) {
     const [isLoading, setIsLoading] = useState(false);
-    const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+    const [analysisResult, setAnalysisResult] = useState<ProductAnalysisOutput | null>(null);
     const [error, setError] = useState<string | null>(null);
     
     const handleAnalyze = async () => {
@@ -36,7 +32,7 @@ export default function ProductAnalysis({ product, transactions, t }: ProductAna
             quantityChange: tx.quantityChange,
             transactionDate: tx.transactionDate.toDate().toISOString(),
             transactionPrice: tx.transactionPrice
-        }));
+        })).slice(0, 50); // Limit to the 50 most recent transactions to avoid oversized payloads
 
         try {
             const result = await analyzeProductTransactions({
