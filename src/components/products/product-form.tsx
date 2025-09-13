@@ -47,8 +47,8 @@ export default function ProductForm({ initialData, onSave }: ProductFormProps) {
       reference: initialData?.reference || "",
       description: initialData?.description || "",
       sellingPrice: initialData?.sellingPrice || 0,
-      purchasePrice: initialData?.purchasePrice || undefined,
-      stock: initialData?.stock || undefined,
+      purchasePrice: initialData?.purchasePrice ?? 0,
+      stock: initialData?.stock ?? 0,
     },
   });
 
@@ -85,7 +85,7 @@ export default function ProductForm({ initialData, onSave }: ProductFormProps) {
           createdAt: serverTimestamp(),
         });
         
-        if (values.stock !== undefined) {
+        if (values.stock !== undefined && values.stock > 0) {
             const transactionRef = doc(collection(db, "productTransactions"));
             batch.set(transactionRef, {
                 userId: user.uid,
