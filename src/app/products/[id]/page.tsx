@@ -11,7 +11,7 @@ import { doc, getDoc, collection, query, where, orderBy, getDocs, writeBatch, se
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Edit, AlertTriangle, Package, DollarSign, History, PlusCircle, MinusCircle, Wrench, ShoppingCart, Trash2, Lightbulb, BarChart, Info } from "lucide-react";
+import { ArrowLeft, Edit, AlertTriangle, Package, DollarSign, History, PlusCircle, MinusCircle, Wrench, ShoppingCart, Trash2, Lightbulb, BarChart, Info, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLanguage } from "@/hooks/use-language";
 import { format } from "date-fns";
@@ -45,6 +45,7 @@ export default function ProductDetailPage() {
 
   const [product, setProduct] = useState<Product | null>(null);
   const [tip, setTip] = useState<ProductTipOutput | null>(null);
+  const [isTipLoading, setIsTipLoading] = useState(false);
   const [transactions, setTransactions] = useState<ProductTransaction[]>([]);
   const [userPrefs, setUserPrefs] = useState<UserPreferences | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
@@ -60,6 +61,31 @@ export default function ProductDetailPage() {
       : product.sellingPrice;
     setAdjustment({ ...adjustment, quantity: newQuantity, price });
   };
+
+  const updateProductTip = async (currentProduct: Product, currentTransactions: ProductTransaction[]) => {
+    if (!user) return;
+    setIsTipLoading(true);
+    try {
+        const transactionSummary = currentTransactions.map(tx => ({
+            type: tx.type,
+            quantityChange: tx.quantityChange,
+            transactionDate: tx.transactionDate.toDate().toISOString(),
+            transactionPrice: tx.transactionPrice,
+        })).slice(0, 50);
+
+        const tipResult = await getProductTip({
+            stockLevel: currentProduct.stock ?? 0,
+            transactions: transactionSummary,
+            language: locale
+        });
+        setTip(tipResult);
+    } catch(err) {
+        console.warn("Could not refresh product tip", err);
+        setTip({ tip: t('productsPage.error'), type: 'warning' });
+    } finally {
+        setIsTipLoading(false);
+    }
+  }
 
 
   useEffect(() => {
@@ -109,20 +135,8 @@ export default function ProductDetailPage() {
         });
         setTransactions(fetchedTransactions);
 
-        // Fetch AI tip
-        const transactionSummary = fetchedTransactions.map(tx => ({
-            type: tx.type,
-            quantityChange: tx.quantityChange,
-            transactionDate: tx.transactionDate.toDate().toISOString(),
-            transactionPrice: tx.transactionPrice,
-        })).slice(0, 50);
-
-        const tipResult = await getProductTip({
-          stockLevel: fetchedProduct.stock ?? 0,
-          transactions: transactionSummary,
-          language: locale
-        });
-        setTip(tipResult);
+        // Fetch initial AI tip
+        updateProductTip(fetchedProduct, fetchedTransactions);
 
 
       } catch (err) {
@@ -169,12 +183,19 @@ export default function ProductDetailPage() {
 
     try {
       await batch.commit();
-      setProduct(prev => prev ? { ...prev, stock: newStock } : null);
-      setTransactions(prev => [{
+      
+      const updatedProduct = { ...product, stock: newStock };
+      const newTransaction = {
           id: transactionRef.id,
           ...newTransactionData,
           transactionDate: { toDate: () => new Date() } as any,
-      } as ProductTransaction, ...prev]);
+      } as ProductTransaction;
+      const updatedTransactions = [newTransaction, ...transactions];
+
+      setProduct(updatedProduct);
+      setTransactions(updatedTransactions);
+      updateProductTip(updatedProduct, updatedTransactions); // Refresh tip
+
       setAdjustment({ quantity: 0, notes: '', price: product.sellingPrice });
       toast({ title: t('productDetailPage.stockAdjusted'), description: t('productDetailPage.stockAdjustedDesc', {productName: product.name, newStock: newStock})});
     } catch (error) {
@@ -197,8 +218,12 @@ export default function ProductDetailPage() {
 
         try {
             await batch.commit();
-            setProduct(prev => prev ? { ...prev, stock: newStock } : null);
-            setTransactions(prev => prev.filter(tx => tx.id !== transaction.id));
+            const updatedProduct = { ...product, stock: newStock };
+            const updatedTransactions = transactions.filter(tx => tx.id !== transaction.id);
+            setProduct(updatedProduct);
+            setTransactions(updatedTransactions);
+            updateProductTip(updatedProduct, updatedTransactions); // Refresh tip
+
             toast({ title: t('productDetailPage.transactionDeleted'), description: t('productDetailPage.transactionDeletedDesc')});
         } catch (error) {
             console.error("Error deleting transaction:", error);
@@ -218,9 +243,9 @@ export default function ProductDetailPage() {
 
   const getTipIcon = (type: ProductTipOutput['type']) => {
     switch (type) {
-      case 'warning': return <AlertTriangle className="h-4 w-4 text-orange-500" />;
-      case 'suggestion': return <Lightbulb className="h-4 w-4 text-blue-500" />;
-      case 'info': return <Info className="h-4 w-4 text-gray-500" />;
+      case 'warning': return <AlertTriangle className="h-5 w-5 text-orange-500" />;
+      case 'suggestion': return <Lightbulb className="h-5 w-5 text-blue-500" />;
+      case 'info': return <Info className="h-5 w-5 text-gray-500" />;
       default: return null;
     }
   };
@@ -279,19 +304,6 @@ export default function ProductDetailPage() {
           <div className="space-y-1">
             <h1 className="font-headline text-3xl md:text-4xl font-bold text-primary">{product.name}</h1>
             <p className="text-muted-foreground">{t('productsPage.table.reference')}: {product.reference || 'N/A'}</p>
-             {tip && (
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                    <div className="flex items-center gap-1.5 cursor-default pt-1">
-                        {getTipIcon(tip.type)}
-                        <span className="text-sm font-medium text-muted-foreground">{tip.tip}</span>
-                    </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                        <p>{t('productsPage.table.aiGeneratedTip')}</p>
-                    </TooltipContent>
-                </Tooltip>
-             )}
           </div>
         </div>
         <Button asChild>
@@ -334,16 +346,29 @@ export default function ProductDetailPage() {
         </Card>
       </div>
 
-      {product.description && (
+       { (product.description || tip) &&
         <Card className="shadow-lg">
             <CardHeader>
-            <CardTitle className="font-headline text-xl text-primary">{t('productDetailPage.productDetails')}</CardTitle>
+                <CardTitle className="font-headline text-xl text-primary">{t('productDetailPage.productDetails')}</CardTitle>
             </CardHeader>
-            <CardContent>
-                <p className="text-sm text-muted-foreground">{product.description}</p>
+            <CardContent className="space-y-4">
+                {product.description && <p className="text-sm text-muted-foreground">{product.description}</p>}
+                
+                {tip && (
+                    <div className="p-3 bg-secondary/30 rounded-lg flex items-start gap-4">
+                         {isTipLoading ? <Loader2 className="h-5 w-5 animate-spin text-primary mt-1" /> : getTipIcon(tip.type)}
+                         <div>
+                            <h4 className="font-semibold text-primary">{t('productsPage.table.healthTip')}</h4>
+                            {isTipLoading 
+                                ? <p className="text-sm text-muted-foreground">{t('productsPage.loading')}</p>
+                                : <p className="text-sm text-muted-foreground">{tip.tip}</p>
+                            }
+                         </div>
+                    </div>
+                )}
             </CardContent>
         </Card>
-      )}
+       }
       
        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
         <div className="lg:col-span-2">
@@ -468,3 +493,5 @@ export default function ProductDetailPage() {
     </TooltipProvider>
   );
 }
+
+    
