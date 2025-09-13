@@ -43,7 +43,7 @@ export interface Product {
   userId: string;
   name: string;
   reference?: string;
-  description: string;
+  description?: string;
   sellingPrice: number;
   purchasePrice?: number;
   stock?: number;

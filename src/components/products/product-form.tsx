@@ -22,7 +22,7 @@ import { useLanguage } from "@/hooks/use-language";
 const productFormSchema = z.object({
   name: z.string().min(2, "Product/Service name must be at least 2 characters."),
   reference: z.string().optional(),
-  description: z.string().min(2, "Description must be at least 2 characters."),
+  description: z.string().optional(),
   sellingPrice: z.coerce.number().min(0, "Selling price must be a non-negative number."),
   purchasePrice: z.coerce.number().min(0, "Purchase price must be a non-negative number.").optional(),
   stock: z.coerce.number().int("Stock must be a whole number.").optional(),
@@ -70,7 +70,7 @@ export default function ProductForm({ initialData, onSave }: ProductFormProps) {
       userId: user.uid,
       name: values.name,
       reference: values.reference || "",
-      description: values.description,
+      description: values.description || "",
       sellingPrice: values.sellingPrice,
       purchasePrice: values.purchasePrice,
       stock: values.stock,
