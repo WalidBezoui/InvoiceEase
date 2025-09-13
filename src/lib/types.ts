@@ -50,9 +50,7 @@ export interface Product {
   updatedAt?: Timestamp;
 }
 
-export type ProductFormData = Omit<Product, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'sellingPrice'> & {
-  sellingPrice?: number;
-};
+export type ProductFormData = Omit<Product, 'id' | 'userId' | 'createdAt' | 'updatedAt'>;
 
 export type ProductTransactionType = 'initial' | 'sale' | 'purchase' | 'adjustment';
 
@@ -66,7 +64,7 @@ export interface ProductTransaction {
   notes?: string;
   invoiceId?: string; // Link to invoice for 'sale' type
   transactionDate: Timestamp;
-  transactionPrice?: number; // Price per unit for this transaction (for sales)
+  transactionPrice?: number; // Price per unit for this transaction (for sales or purchases)
 }
 
 

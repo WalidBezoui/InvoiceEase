@@ -85,7 +85,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
       invoiceNumber: initialData?.invoiceNumber || `INV-${Date.now().toString().slice(-6)}`,
       issueDate: initialData?.issueDate ? new Date(initialData.issueDate) : new Date(),
       dueDate: initialData?.dueDate ? new Date(initialData.dueDate) : new Date(new Date().setDate(new Date().getDate() + 30)),
-      items: initialData?.items?.map(item => ({ ...item })) || [{ description: "", quantity: 1, unitPrice: 0 }],
+      items: initialData?.items?.map(item => ({ ...item })) || [{ description: "", quantity: 1, unitPrice: 0, reference: "" }],
       notes: initialData?.notes || userPrefs?.defaultNotes || "",
       taxRate: initialData?.taxRate ?? userPrefs?.defaultTaxRate ?? 0,
     },

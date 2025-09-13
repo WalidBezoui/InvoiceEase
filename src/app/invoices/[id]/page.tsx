@@ -196,9 +196,9 @@ export default function InvoiceDetailPage() {
     }
   };
   
-    const updateStockAndCreateTransactions = async (paidInvoice: Invoice, revert = false) => {
+    const updateStockAndCreateTransactions = async (paidInvoice: Invoice) => {
         const batch = writeBatch(db);
-        const sign = revert ? 1 : -1; // Add stock back if reverting, remove if marking as paid
+        const sign = -1; // Remove stock when marking as paid
 
         for (const item of paidInvoice.items) {
             if (item.productId) {
@@ -211,37 +211,40 @@ export default function InvoiceDetailPage() {
 
                     batch.update(productRef, { stock: newStock });
 
-                    if (!revert) {
-                        const transactionRef = doc(collection(db, "productTransactions"));
-                        batch.set(transactionRef, {
-                            userId: paidInvoice.userId,
-                            productId: item.productId,
-                            type: 'sale',
-                            quantityChange: item.quantity * sign,
-                            newStock: newStock,
-                            invoiceId: paidInvoice.id,
-                            notes: paidInvoice.invoiceNumber,
-                            transactionPrice: item.unitPrice, // Log the sale price
-                            transactionDate: serverTimestamp(),
-                        });
-                    }
+                    const transactionRef = doc(collection(db, "productTransactions"));
+                    batch.set(transactionRef, {
+                        userId: paidInvoice.userId,
+                        productId: item.productId,
+                        type: 'sale',
+                        quantityChange: item.quantity * sign,
+                        newStock: newStock,
+                        invoiceId: paidInvoice.id,
+                        notes: paidInvoice.invoiceNumber,
+                        transactionPrice: item.unitPrice, // Log the sale price
+                        transactionDate: serverTimestamp(),
+                    });
                 }
             }
         }
         await batch.commit();
     };
     
-    const revertStockUpdate = async (paidInvoice: Invoice) => {
-        // Find transactions related to this invoice and delete them, which will trigger stock reversal
-        const transQuery = query(collection(db, "productTransactions"), where("invoiceId", "==", paidInvoice.id));
-        const transSnapshot = await getDocs(transQuery);
+    const revertStockUpdate = async (invoiceToRevert: Invoice) => {
         const batch = writeBatch(db);
+        // Find transactions related to this invoice
+        const transQuery = query(collection(db, "productTransactions"), where("invoiceId", "==", invoiceToRevert.id));
+        const transSnapshot = await getDocs(transQuery);
         
         if (!transSnapshot.empty) {
             for (const transDoc of transSnapshot.docs) {
                 const transaction = transDoc.data() as ProductTransaction;
                 
                 const productRef = doc(db, "products", transaction.productId);
+                
+                // Reverting the stock change. `quantityChange` is negative for sales, so subtracting it will add stock back.
+                // We're not reading the current stock to avoid race conditions; we're just reversing the transaction's effect.
+                // For a more robust system, a Cloud Function with retries would be better to read-and-write.
+                // For client-side, we can read the product, calculate new stock, and update.
                 const productSnap = await getDoc(productRef);
                 if (productSnap.exists()) {
                     const productData = productSnap.data();
@@ -249,6 +252,7 @@ export default function InvoiceDetailPage() {
                     batch.update(productRef, { stock: reversedStock });
                 }
                 
+                // Delete the transaction so it doesn't appear in history
                 batch.delete(transDoc.ref);
             }
         }
@@ -270,11 +274,13 @@ export default function InvoiceDetailPage() {
     };
 
     try {
+        // From any status to 'paid'
         if (newStatus === 'paid' && !invoice.stockUpdated) {
             await updateStockAndCreateTransactions(invoice);
             updateData.paidDate = new Date().toISOString();
             updateData.stockUpdated = true;
-        } else if (invoice.status === 'paid' && newStatus !== 'paid') { // e.g., reverting to "Sent"
+        // From 'paid' back to something else (e.g., 'sent' or 'draft')
+        } else if (invoice.status === 'paid' && newStatus !== 'paid' && invoice.stockUpdated) {
             await revertStockUpdate(invoice);
             updateData.paidDate = null;
             updateData.stockUpdated = false;
@@ -286,7 +292,7 @@ export default function InvoiceDetailPage() {
 
         await updateDoc(invoiceRef, updateData as any); 
 
-        setInvoice(prev => prev ? { ...prev, ...updateData, status: newStatus } : null);
+        setInvoice(prev => prev ? { ...prev, ...updateData, status: newStatus, stockUpdated: updateData.stockUpdated } : null);
 
         toast({
             title: t('invoiceDetailPage.statusUpdatedToastTitle'), 
@@ -294,7 +300,7 @@ export default function InvoiceDetailPage() {
         });
 
     } catch (err) {
-      console.error("Error updating invoice status:", err);
+      console.error("Error updating invoice status or stock:", err);
       toast({
         title: t('invoiceDetailPage.errorToastTitle'), 
         description: t('invoiceDetailPage.statusUpdateErrorToastDesc'), 
@@ -605,7 +611,8 @@ export default function InvoiceDetailPage() {
                 <Table>
                 <TableHeader>
                     <TableRow className="bg-muted/30">
-                    <TableHead className="w-[50%]">{t('invoiceDetailPage.itemDescription')}</TableHead>
+                    <TableHead className="w-[45%]">{t('invoiceDetailPage.itemDescription')}</TableHead>
+                    <TableHead>{t('invoiceForm.addItemDialog.selectProductTab.reference')}</TableHead>
                     <TableHead className="text-center">{t('invoiceDetailPage.itemQuantity')}</TableHead>
                     <TableHead className="text-right">{t('invoiceDetailPage.itemUnitPrice')}</TableHead>
                     <TableHead className="text-right">{t('invoiceDetailPage.itemTotal')}</TableHead>
@@ -615,6 +622,7 @@ export default function InvoiceDetailPage() {
                     {invoice.items.map((item, index) => (
                     <TableRow key={index}>
                         <TableCell className="font-medium">{item.description}</TableCell>
+                        <TableCell>{item.reference || 'N/A'}</TableCell>
                         <TableCell className="text-center">{item.quantity}</TableCell>
                         <TableCell className="text-right">{item.unitPrice.toFixed(2)}</TableCell>
                         <TableCell className="text-right">{item.total.toFixed(2)}</TableCell>

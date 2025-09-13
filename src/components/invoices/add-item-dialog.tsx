@@ -136,7 +136,7 @@ export default function AddItemDialog({ products, isLoading, onAddItem, currency
                                 {filteredProducts.map(product => (
                                 <TableRow key={product.id}>
                                     <TableCell className="font-medium">{product.name}</TableCell>
-                                    <TableCell>{product.reference}</TableCell>
+                                    <TableCell>{product.reference || 'N/A'}</TableCell>
                                     <TableCell className="text-right">{currency} {product.sellingPrice.toFixed(2)}</TableCell>
                                     <TableCell className="text-right">{product.stock !== undefined ? product.stock : 'N/A'}</TableCell>
                                     <TableCell>

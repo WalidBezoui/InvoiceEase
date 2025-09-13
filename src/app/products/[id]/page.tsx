@@ -44,7 +44,7 @@ export default function ProductDetailPage() {
   const [userPrefs, setUserPrefs] = useState<UserPreferences | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [adjustment, setAdjustment] = useState({ quantity: 0, notes: '', price: 0 });
+  const [adjustment, setAdjustment] = useState<{ quantity: number, notes: string, price: number }>({ quantity: 0, notes: '', price: 0 });
 
   const isLoading = authLoading || isLoadingLocale || isLoadingData;
   
@@ -133,7 +133,7 @@ export default function ProductDetailPage() {
     const isPurchase = adjustment.quantity > 0;
     const type = isPurchase ? 'purchase' : 'sale';
     
-    const newTransactionData: Partial<ProductTransaction> = {
+    const newTransactionData: Omit<ProductTransaction, 'id' | 'transactionDate'> = {
         userId: user.uid,
         productId: product.id!,
         type: type,
@@ -142,10 +142,6 @@ export default function ProductDetailPage() {
         notes: adjustment.notes || (isPurchase ? 'Stock purchase' : 'Direct Sale'),
         transactionPrice: adjustment.price,
     };
-    
-    if (newTransactionData.transactionPrice === undefined) {
-        delete newTransactionData.transactionPrice;
-    }
 
     // Update product stock
     batch.update(productRef, { stock: newStock });
@@ -289,7 +285,7 @@ export default function ProductDetailPage() {
                 </div>
                  <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">Purchase Price</span>
-                    <span className="font-medium">{product.purchasePrice?.toFixed(2) || 'N/A'} {userPrefs?.currency}</span>
+                    <span className="font-medium">{(product.purchasePrice?.toFixed(2) || 'N/A')} {userPrefs?.currency}</span>
                 </div>
             </div>
         </CardContent>
@@ -396,7 +392,3 @@ export default function ProductDetailPage() {
     </div>
   );
 }
-
-    
-
-    
