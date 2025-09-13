@@ -2,34 +2,33 @@
   src/app/print-invoice.css 
   This stylesheet contains all styles related to printing the invoice.
 */
+
+/* Hide the print-specific container on screen */
 @media screen {
   .invoice-print-container {
     display: none;
   }
 }
 
+/* --- Print-Specific Styles --- */
 @media print {
-  /* Hide all interactive elements and the default on-screen invoice */
-  .print-hidden, .invoice-card-on-screen {
-    display: none !important;
-  }
-  
-  /* Make the print container visible */
-  .invoice-print-container {
-    display: block !important;
-  }
-}
-
-
-/* Print view styles */
-@media print {
-  /* Define the page size and remove default margins */
+  /* Define A4 page size and reset margins */
   @page {
     size: A4;
     margin: 0;
   }
   
-  /* Reset body styles for printing */
+  /* Hide all on-screen elements and general site layout during print */
+  .print-hidden, .invoice-page-container, header, footer {
+    display: none !important;
+  }
+  
+  /* Ensure the print container is the only thing visible */
+  .invoice-print-container {
+    display: block !important;
+  }
+
+  /* Basic body reset for printing */
   body {
     background-color: #fff !important;
     font-family: Arial, Helvetica, sans-serif !important;
@@ -41,18 +40,20 @@
     print-color-adjust: exact !important;
   }
 
-  /* Each page within the print container */
+  /* Each printable page */
   .invoice-print-page {
-    page-break-after: always; /* Create a new page after this element */
+    page-break-after: always;
     width: 210mm; /* A4 width */
     height: 297mm; /* A4 height */
     box-sizing: border-box;
-    padding: 1.5cm; /* Add some padding to the page */
+    padding: 1.5cm; /* Internal padding for content */
     position: relative;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
   }
   .invoice-print-page:last-child {
-    page-break-after: auto; /* No page break after the last page */
+    page-break-after: auto;
   }
   
   /* The main card container for the invoice on each page */
@@ -64,8 +65,7 @@
     position: relative;
     background-color: #fff;
     border: 1px solid #e5e7eb;
-    border-radius: 0.5rem;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    box-shadow: none;
     box-sizing: border-box;
   }
 
@@ -93,14 +93,14 @@
   }
 
   .print-logo {
-    max-height: 4rem; /* 64px */
+    max-height: 4rem;
     max-width: 200px;
     object-fit: contain;
     margin-bottom: 0.75rem;
   }
   
   .print-company-header {
-    font-size: 1.5rem; /* 24px */
+    font-size: 1.5rem;
     font-weight: 700;
     color: #468499; /* Primary color */
     margin-top: 0.5rem;
@@ -117,27 +117,27 @@
     font-weight: 600;
     color: #468499; /* Primary color */
     margin-bottom: 0.375rem;
-    font-size: 0.875rem; /* 14px */
+    font-size: 0.875rem;
   }
 
   .print-address-details {
-    font-size: 0.8rem; /* smaller font for address block */
-    color: #4b5563; /* gray-600 */
+    font-size: 0.8rem;
+    color: #4b5563;
     line-height: 1.5;
   }
 
   .print-invoice-title {
-    font-size: 2rem; /* 32px */
+    font-size: 2rem;
     font-weight: 700;
     text-transform: uppercase;
-    color: #468499; /* Primary color */
+    color: #468499;
     letter-spacing: 0.05em;
     line-height: 1;
   }
 
   .print-invoice-number {
-    color: #6b7280; /* gray-500 */
-    font-size: 0.875rem; /* 14px */
+    color: #6b7280;
+    font-size: 0.875rem;
   }
 
   .print-date {
@@ -145,10 +145,9 @@
     color: #4b5563;
   }
 
-
   /* Main content area of the invoice card */
   .print-card-content {
-    flex-grow: 1; /* This is the key change to push the footer down */
+    flex-grow: 1; /* Pushes the footer down */
     padding: 1.25rem;
     position: relative;
     z-index: 1;
@@ -166,15 +165,15 @@
   .print-card-content th, .print-card-content td {
     padding: 0.5rem 0.75rem;
     text-align: left;
-    border-bottom: 1px solid #f3f4f6; /* gray-100 */
+    border-bottom: 1px solid #f3f4f6;
   }
   .print-card-content th {
     font-weight: 600;
-    background-color: #f9fafb; /* gray-50 */
-    color: #374151; /* gray-700 */
+    background-color: #f9fafb;
+    color: #374151;
   }
   .print-card-content tr {
-    page-break-inside: avoid !important; /* CRITICAL: Prevent rows from splitting across pages */
+    page-break-inside: avoid !important; /* Prevent rows from splitting across pages */
   }
   .print-card-content .text-right { text-align: right; }
   .print-card-content .text-center { text-align: center; }
@@ -187,6 +186,7 @@
     z-index: 1;
     font-size: 9pt;
     line-height: 1.5;
+    margin-top: auto; /* Pushed to bottom by flex-grow on content */
   }
   
   .print-section-title-sm {
@@ -197,12 +197,12 @@
   }
 
   .print-notes {
-    font-size: 0.75rem; /* 12px */
-    color: #6b7280; /* gray-500 */
+    font-size: 0.75rem;
+    color: #6b7280;
     white-space: pre-wrap;
   }
 
-  /* Page number footer */
+  /* Page number footer at the very bottom of the page */
   .print-page-number-footer {
     position: absolute;
     bottom: 0.75cm;
