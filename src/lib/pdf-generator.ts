@@ -40,28 +40,30 @@ export const generateInvoicePdf = async (
   const margin = 15;
 
   const addPageHeader = (isFirstPage: boolean) => {
-    let logoCursorY = margin;
+    let cursorY = margin;
     
     // Left side: Logo and Company Info
     if (prefs.logoDataUrl) {
       try {
         const img = new Image();
         img.src = prefs.logoDataUrl;
-        doc.addImage(img, 'PNG', margin, logoCursorY, 40, 20, undefined, 'FAST'); 
-        logoCursorY += 22; // Move cursor down after logo
+        doc.addImage(img, 'PNG', margin, cursorY, 40, 20, undefined, 'FAST');
+        cursorY += 25; // Move cursor down after logo
       } catch (e) { 
         console.error("Could not add company logo to PDF.", e); 
-        logoCursorY += 22;
+        cursorY += 25;
       }
     } else {
-        logoCursorY += 22; // Reserve space even if no logo
+        cursorY += 22; // Reserve space even if no logo
     }
     
     if (prefs.invoiceHeader) {
-      doc.setFontSize(9);
-      doc.setFont(FONT_NAME, 'normal');
-      doc.setTextColor(80, 80, 80);
-      doc.text(prefs.invoiceHeader.split('\n'), margin, logoCursorY);
+      doc.setFontSize(12);
+      doc.setFont(FONT_NAME, 'bold');
+      doc.setTextColor(40, 40, 40);
+      const headerLines = doc.splitTextToSize(prefs.invoiceHeader, 80);
+      doc.text(headerLines, margin, cursorY);
+      cursorY += headerLines.length * 5;
     }
     
     // Right side: Invoice Title Block
@@ -87,8 +89,8 @@ export const generateInvoicePdf = async (
 
 
     // Separator line
-    let separatorY = Math.max(logoCursorY + (prefs.invoiceHeader ? prefs.invoiceHeader.split('\n').length * 4 : 0) + 10, titleY + 30);
-    doc.setDrawColor(200, 200, 200);
+    let separatorY = Math.max(cursorY + 5, titleY + 30);
+    doc.setDrawColor(180, 180, 180);
     doc.setLineWidth(0.5);
     doc.line(margin, separatorY, pageWidth - margin, separatorY);
     
