@@ -306,7 +306,7 @@ export default function InvoiceDetailPage() {
 
   return (
     <div className="invoice-page-container">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 print:hidden mb-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 print-hidden mb-8">
         <div className="flex items-center gap-4">
             <Button variant="outline" size="icon" asChild>
             <Link href="/invoices">
@@ -455,7 +455,7 @@ export default function InvoiceDetailPage() {
       </div>
 
       {/* On-screen view - visible on screen, hidden on print */}
-      <Card className="invoice-card-on-screen shadow-lg print:hidden relative">
+      <Card className="invoice-card-on-screen shadow-lg print-hidden relative">
         {displayWatermarkLogoUrl && (
           <div 
             className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none"
@@ -677,19 +677,19 @@ export default function InvoiceDetailPage() {
                  <div className="w-full">
                     <div className="grid grid-cols-3 gap-6">
                         <div className="col-span-2 space-y-3">
-                        {invoice.notes && (
+                        {pageIndex === itemChunks.length -1 && invoice.notes && (
                             <div>
                             <h4 className="print-section-title-sm">{t('invoiceDetailPage.notes')}</h4>
                             <p className="print-notes">{invoice.notes}</p>
                             </div>
                         )}
-                        {invoice.appliedDefaultPaymentTerms && (
+                        {pageIndex === itemChunks.length -1 && invoice.appliedDefaultPaymentTerms && (
                             <div>
                                 <h4 className="print-section-title-sm">{t('invoiceDetailPage.paymentTerms')}</h4>
                                 <p className="print-notes">{invoice.appliedDefaultPaymentTerms}</p>
                             </div>
                         )}
-                        {(invoice.language?.toLowerCase().startsWith("fr") || (!invoice.language && locale === 'fr')) && (
+                        {pageIndex === itemChunks.length -1 && (invoice.language?.toLowerCase().startsWith("fr") || (!invoice.language && locale === 'fr')) && (
                             <div className="pt-2 mt-2 border-t">
                             <p className="print-notes">
                                 {t('invoiceDetailPage.stoppedAtTheSumOf')} <strong className="text-black">{numberToFrenchWords(invoice.totalAmount, invoice.currency)}</strong>.
@@ -698,20 +698,24 @@ export default function InvoiceDetailPage() {
                         )}
                         </div>
                         <div className="space-y-2">
-                        <div className="flex justify-between">
-                            <span>{t('invoiceDetailPage.subtotal')}</span>
-                            <span className="font-medium">{invoice.currency} {invoice.subtotal.toFixed(2)}</span>
-                        </div>
-                        {invoice.taxAmount !== undefined && invoice.taxAmount !== 0 && (
-                            <div className="flex justify-between">
-                            <span>{t('invoiceDetailPage.tax')} ({invoice.taxRate || 0}%):</span>
-                            <span className="font-medium">{invoice.currency} {invoice.taxAmount.toFixed(2)}</span>
-                            </div>
+                        {pageIndex === itemChunks.length - 1 && (
+                         <>
+                          <div className="flex justify-between">
+                              <span>{t('invoiceDetailPage.subtotal')}</span>
+                              <span className="font-medium">{invoice.currency} {invoice.subtotal.toFixed(2)}</span>
+                          </div>
+                          {invoice.taxAmount !== undefined && invoice.taxAmount !== 0 && (
+                              <div className="flex justify-between">
+                              <span>{t('invoiceDetailPage.tax')} ({invoice.taxRate || 0}%):</span>
+                              <span className="font-medium">{invoice.currency} {invoice.taxAmount.toFixed(2)}</span>
+                              </div>
+                          )}
+                          <div className="flex justify-between text-lg font-bold border-t pt-2 mt-2">
+                              <span>{t('invoiceDetailPage.total')}</span>
+                              <span>{invoice.currency} {invoice.totalAmount.toFixed(2)}</span>
+                          </div>
+                         </>
                         )}
-                        <div className="flex justify-between text-lg font-bold border-t pt-2 mt-2">
-                            <span>{t('invoiceDetailPage.total')}</span>
-                            <span>{invoice.currency} {invoice.totalAmount.toFixed(2)}</span>
-                        </div>
                         </div>
                     </div>
                   </div>
@@ -727,3 +731,5 @@ export default function InvoiceDetailPage() {
     </div>
   );
 }
+
+    
