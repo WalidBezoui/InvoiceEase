@@ -639,6 +639,7 @@
       "reference": "Reference",
       "sellingPrice": "Selling Price",
       "stock": "Stock",
+      "lastActivity": "Last Activity",
       "actions": "Actions",
       "healthTip": "Health Tip",
       "aiGeneratedTip": "AI-Generated Tip"

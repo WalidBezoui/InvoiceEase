@@ -47,6 +47,7 @@ export interface Product {
   sellingPrice: number;
   purchasePrice?: number;
   stock?: number;
+  lastTransactionDate?: Date; // Added for sorting
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }
@@ -165,7 +166,7 @@ export const ProductTipInputSchema = z.object({
 export type ProductTipInput = z.infer<typeof ProductTipInputSchema>;
 
 export const ProductTipOutputSchema = z.object({
-    tip: z.string().describe("A very short, actionable tip (3-5 words max)."),
+    tip: z.string().describe("A very short, actionable tip (max 5 words)."),
     type: z.enum(['suggestion', 'warning', 'info']).describe("The classification of the tip."),
 });
 export type ProductTipOutput = z.infer<typeof ProductTipOutputSchema>;

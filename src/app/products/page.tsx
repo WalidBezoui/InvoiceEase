@@ -4,13 +4,13 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
-import { Package, Search, Loader2, Edit, Trash2, Eye, Lightbulb, AlertTriangle, Info, ChevronDown, FilterX } from "lucide-react"; 
+import { Package, Search, Loader2, Edit, Trash2, Eye, Lightbulb, AlertTriangle, Info, ChevronDown, FilterX, ArrowUpDown } from "lucide-react"; 
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuth } from "@/hooks/use-auth";
 import { db } from "@/lib/firebase";
 import type { Product, ProductTipOutput } from "@/lib/types";
-import { collection, query, where, getDocs, orderBy, doc, deleteDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, orderBy, doc, deleteDoc, limit } from "firebase/firestore";
 import { useEffect, useState, useMemo } from "react";
 import { useLanguage } from "@/hooks/use-language";
 import {
@@ -37,6 +37,8 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { formatDistanceToNow } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 
 const ALL_TIP_TYPES: ProductTipOutput['type'][] = ['warning', 'suggestion', 'info'];
@@ -51,6 +53,8 @@ export default function ProductsPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTipTypes, setSelectedTipTypes] = useState<Set<ProductTipOutput['type']>>(new Set());
+  const [sortConfig, setSortConfig] = useState<{ key: keyof Product; direction: 'asc' | 'desc' } | null>(null);
+
 
   const isLoading = authLoading || isLoadingLocale || isLoadingData;
 
@@ -68,21 +72,22 @@ export default function ProductsPage() {
         const q = query(productsRef, where("userId", "==", user.uid), orderBy("name", "asc"));
         const querySnapshot = await getDocs(q);
         const fetchedProducts: Product[] = [];
-        const tipPromises: Promise<{id: string, tip: ProductTipOutput}>[] = [];
+        const dataPromises: Promise<any>[] = [];
 
         querySnapshot.forEach((doc) => {
           const product = { id: doc.id, ...doc.data() } as Product;
-          fetchedProducts.push(product);
+          
+          const dataPromise = async () => {
+            const transactionsQuery = query(
+              collection(db, "productTransactions"),
+              where("productId", "==", product.id),
+              orderBy("transactionDate", "desc"),
+              where("userId", "==", user.uid),
+              limit(50) 
+            );
 
-          const transactionsQuery = query(
-            collection(db, "productTransactions"),
-            where("productId", "==", product.id),
-            orderBy("transactionDate", "desc"),
-            where("userId", "==", user.uid)
-          );
-
-          const promise = getDocs(transactionsQuery).then(transSnap => {
-             const transactionSummary = transSnap.docs.map(d => {
+            const transSnap = await getDocs(transactionsQuery);
+            const transactionSummary = transSnap.docs.map(d => {
                 const data = d.data();
                 return {
                     type: data.type,
@@ -90,28 +95,40 @@ export default function ProductsPage() {
                     transactionDate: data.transactionDate.toDate().toISOString(),
                     transactionPrice: data.transactionPrice
                 }
-            }).slice(0, 50);
+            });
 
-            return getProductTip({
+            const tip = await getProductTip({
               stockLevel: product.stock ?? 0,
               transactions: transactionSummary,
               language: locale
-            }).then(tip => ({ id: product.id!, tip }));
-          }).catch(err => {
+            }).catch(err => {
               console.warn(`Could not fetch tip for product ${product.id}:`, err);
-              return {id: product.id!, tip: {tip: 'N/A', type: 'info'}};
-          });
+              return {tip: 'N/A', type: 'info'};
+            });
 
-          tipPromises.push(promise);
+            return {
+                product: {
+                    ...product,
+                    lastTransactionDate: transSnap.docs[0]?.data().transactionDate.toDate()
+                },
+                tip
+            };
+          };
+          dataPromises.push(dataPromise());
         });
 
-        setAllProducts(fetchedProducts);
-
-        const resolvedTips = await Promise.all(tipPromises);
+        const results = await Promise.all(dataPromises);
+        const productsWithLastTx: Product[] = [];
         const tipsMap: Record<string, ProductTipOutput> = {};
-        resolvedTips.forEach(result => {
-          tipsMap[result.id] = result.tip;
+
+        results.forEach(result => {
+            productsWithLastTx.push(result.product);
+            if(result.product.id) {
+                tipsMap[result.product.id] = result.tip;
+            }
         });
+
+        setAllProducts(productsWithLastTx);
         setTips(tipsMap);
 
       } catch (err) {
@@ -130,6 +147,15 @@ export default function ProductsPage() {
       setError(null);
     }
   }, [user, authLoading, t, locale, isLoadingLocale]);
+  
+  const handleRequestSort = (key: keyof Product) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
 
   const handleTipTypeToggle = (tipType: ProductTipOutput['type']) => {
     setSelectedTipTypes(prev => {
@@ -147,7 +173,7 @@ export default function ProductsPage() {
     setSelectedTipTypes(new Set());
   };
 
-  const filteredProducts = useMemo(() => {
+  const filteredAndSortedProducts = useMemo(() => {
     let productsToDisplay = [...allProducts];
     
     if (searchTerm) {
@@ -165,9 +191,24 @@ export default function ProductsPage() {
             return productTip && selectedTipTypes.has(productTip.type);
         });
     }
+
+    if (sortConfig !== null) {
+      productsToDisplay.sort((a, b) => {
+        const aValue = a[sortConfig.key] ?? (sortConfig.key === 'lastTransactionDate' ? new Date(0) : 0);
+        const bValue = b[sortConfig.key] ?? (sortConfig.key === 'lastTransactionDate' ? new Date(0) : 0);
+        
+        if (aValue < bValue) {
+          return sortConfig.direction === 'asc' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortConfig.direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
     
     return productsToDisplay;
-  }, [allProducts, searchTerm, selectedTipTypes, tips]);
+  }, [allProducts, searchTerm, selectedTipTypes, tips, sortConfig]);
 
   const handleDelete = async (productId: string) => {
     if (!user) {
@@ -286,7 +327,7 @@ export default function ProductsPage() {
             </div>
           ) : error ? (
             <div className="text-center py-12 text-destructive"><p>{error}</p></div>
-          ) : filteredProducts.length > 0 ? (
+          ) : filteredAndSortedProducts.length > 0 ? (
              <TooltipProvider>
               <div className="w-full overflow-x-auto">
               <Table>
@@ -294,8 +335,18 @@ export default function ProductsPage() {
                   <TableRow>
                     <TableHead>{t('productsPage.table.name')}</TableHead>
                     <TableHead className="hidden md:table-cell">{t('productsPage.table.reference')}</TableHead>
-                    <TableHead className="hidden sm:table-cell text-right">{t('productsPage.table.sellingPrice')}</TableHead>
-                    <TableHead className="text-right">{t('productsPage.table.stock')}</TableHead>
+                    <TableHead className="hidden sm:table-cell text-right">
+                      <Button variant="ghost" onClick={() => handleRequestSort('stock')}>
+                        {t('productsPage.table.stock')}
+                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                      </Button>
+                    </TableHead>
+                    <TableHead className="hidden lg:table-cell">
+                      <Button variant="ghost" onClick={() => handleRequestSort('lastTransactionDate')}>
+                        {t('productsPage.table.lastActivity')}
+                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                      </Button>
+                    </TableHead>
                     <TableHead className="min-w-[200px]">
                         {t('productsPage.table.healthTip')}
                     </TableHead>
@@ -303,16 +354,16 @@ export default function ProductsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredProducts.map((product) => {
+                  {filteredAndSortedProducts.map((product) => {
                     const tip = tips[product.id!];
                     const tipStyling = getTipStyling(tip?.type);
                     return (
-                    <TableRow key={product.id} className={cn(tipStyling.cellClass)}>
+                    <TableRow key={product.id}>
                       <TableCell className="font-medium">{product.name}</TableCell>
                       <TableCell className="hidden md:table-cell">{product.reference || 'N/A'}</TableCell>
-                      <TableCell className="text-right hidden sm:table-cell">{product.sellingPrice.toFixed(2)}</TableCell>
-                      <TableCell className="text-right font-medium">{product.stock !== undefined ? product.stock : 'N/A'}</TableCell>
-                      <TableCell>
+                      <TableCell className="text-right hidden sm:table-cell font-medium">{product.stock !== undefined ? product.stock : 'N/A'}</TableCell>
+                      <TableCell className="hidden lg:table-cell text-xs">{product.lastTransactionDate ? formatDistanceToNow(product.lastTransactionDate, { addSuffix: true, locale: locale === 'fr' ? fr : undefined }) : 'N/A'}</TableCell>
+                      <TableCell className={cn(tipStyling.cellClass)}>
                         {tip ? (
                             <div className="flex items-center gap-2">
                                 <span className="flex-shrink-0">{tipStyling.icon}</span>
@@ -399,3 +450,4 @@ export default function ProductsPage() {
     </div>
   );
 }
+
