@@ -36,6 +36,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 
 
 const ALL_TIP_TYPES: ProductTipOutput['type'][] = ['warning', 'suggestion', 'info'];
@@ -73,7 +74,6 @@ export default function ProductsPage() {
           const product = { id: doc.id, ...doc.data() } as Product;
           fetchedProducts.push(product);
 
-          // Get the last 15 transactions for trend analysis
           const transactionsQuery = query(
             collection(db, "productTransactions"),
             where("productId", "==", product.id),
@@ -90,7 +90,7 @@ export default function ProductsPage() {
                     transactionDate: data.transactionDate.toDate().toISOString(),
                     transactionPrice: data.transactionPrice
                 }
-            }).slice(0, 50); // Limit to recent transactions
+            }).slice(0, 50);
 
             return getProductTip({
               stockLevel: product.stock ?? 0,
@@ -194,14 +194,16 @@ export default function ProductsPage() {
     }
   };
 
-  const getTipIcon = (type: ProductTipOutput['type']) => {
+  const getTipStyling = (type: ProductTipOutput['type']) => {
     switch (type) {
-      case 'warning': return <AlertTriangle className="h-5 w-5 text-orange-500" />;
-      case 'suggestion': return <Lightbulb className="h-5 w-5 text-blue-500" />;
-      case 'info': return <Info className="h-5 w-5 text-gray-500" />;
-      default: return <Info className="h-5 w-5 text-gray-500" />;
+      case 'warning': return { icon: <AlertTriangle className="h-5 w-5 text-orange-600" />, cellClass: 'bg-orange-50' };
+      case 'suggestion': return { icon: <Lightbulb className="h-5 w-5 text-blue-600" />, cellClass: 'bg-blue-50' };
+      case 'info':
+      default:
+        return { icon: <Info className="h-5 w-5 text-gray-500" />, cellClass: '' };
     }
   };
+
 
   if (isLoading) {
     return (
@@ -306,22 +308,25 @@ export default function ProductsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredProducts.map((product) => (
+                  {filteredProducts.map((product) => {
+                    const tip = tips[product.id!];
+                    const tipStyling = tip ? getTipStyling(tip.type) : getTipStyling('info');
+                    return (
                     <TableRow key={product.id}>
                       <TableCell className="font-medium">{product.name}</TableCell>
                       <TableCell className="hidden md:table-cell">{product.reference || 'N/A'}</TableCell>
                       <TableCell className="text-right hidden sm:table-cell">{product.sellingPrice.toFixed(2)}</TableCell>
                       <TableCell className="text-right font-medium">{product.stock !== undefined ? product.stock : 'N/A'}</TableCell>
-                      <TableCell className="text-center">
-                        {tips[product.id!] ? (
+                      <TableCell className={cn("text-center", tipStyling.cellClass)}>
+                        {tip ? (
                             <Tooltip>
-                                <TooltipTrigger>
-                                    <div className="flex justify-center">
-                                      {getTipIcon(tips[product.id!].type)}
+                                <TooltipTrigger asChild>
+                                    <div className="flex justify-center cursor-help">
+                                      {tipStyling.icon}
                                     </div>
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                    <p className="text-sm">{tips[product.id!].tip}</p>
+                                    <p className="text-sm">{tip.tip}</p>
                                 </TooltipContent>
                             </Tooltip>
                         ) : (
@@ -373,7 +378,7 @@ export default function ProductsPage() {
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))}
+                  )})}
                 </TableBody>
               </Table>
             </TooltipProvider>
@@ -404,3 +409,5 @@ export default function ProductsPage() {
     </div>
   );
 }
+
+    
