@@ -40,26 +40,28 @@ export const generateInvoicePdf = async (
   const margin = 15;
 
   const addPageHeader = (isFirstPage: boolean) => {
-    let cursorY = margin;
+    let logoCursorY = margin;
     
     // Left side: Logo and Company Info
     if (prefs.logoDataUrl) {
       try {
         const img = new Image();
         img.src = prefs.logoDataUrl;
-        doc.addImage(img, 'PNG', margin, cursorY, 40, 20); // Logo
-        cursorY += 25; // Move cursor down after logo
+        doc.addImage(img, 'PNG', margin, logoCursorY, 40, 20, undefined, 'FAST'); 
+        logoCursorY += 22; // Move cursor down after logo
       } catch (e) { 
         console.error("Could not add company logo to PDF.", e); 
-        cursorY += 25;
+        logoCursorY += 22;
       }
+    } else {
+        logoCursorY += 22; // Reserve space even if no logo
     }
     
     if (prefs.invoiceHeader) {
-      doc.setFontSize(11);
-      doc.setFont(FONT_NAME, 'bold');
-      doc.setTextColor(33, 33, 33); // Dark Grey for company name/header
-      doc.text(prefs.invoiceHeader.split('\n'), margin, cursorY);
+      doc.setFontSize(9);
+      doc.setFont(FONT_NAME, 'normal');
+      doc.setTextColor(80, 80, 80);
+      doc.text(prefs.invoiceHeader.split('\n'), margin, logoCursorY);
     }
     
     // Right side: Invoice Title Block
@@ -85,7 +87,7 @@ export const generateInvoicePdf = async (
 
 
     // Separator line
-    let separatorY = Math.max(cursorY + 10, titleY + 30);
+    let separatorY = Math.max(logoCursorY + (prefs.invoiceHeader ? prefs.invoiceHeader.split('\n').length * 4 : 0) + 10, titleY + 30);
     doc.setDrawColor(200, 200, 200);
     doc.setLineWidth(0.5);
     doc.line(margin, separatorY, pageWidth - margin, separatorY);
@@ -206,59 +208,67 @@ export const generateInvoicePdf = async (
   // --- PDF CONTENT STARTS HERE ---
 
   const itemChunks = chunkArray(invoice.items, ROWS_PER_PAGE);
-  const totalPages = itemChunks.length;
+  const totalPages = itemChunks.length === 0 ? 1 : itemChunks.length;
   let summaryAdded = false;
 
-  itemChunks.forEach((chunk, index) => {
-    const isFirstPage = index === 0;
-    const isLastPage = index === totalPages - 1;
+  if (itemChunks.length === 0) {
+    // Handle case with no items
+    addPageHeader(true);
+    addSummaryAndNotes(110);
+    addPageFooter(1, 1);
+  } else {
+    itemChunks.forEach((chunk, index) => {
+      const isFirstPage = index === 0;
+      const isLastPage = index === totalPages - 1;
 
-    addPageHeader(isFirstPage);
-    
-    const tableBody = chunk.map(item => [
-        item.description,
-        item.quantity.toString(),
-        item.unitPrice.toFixed(2),
-        (item.quantity * item.unitPrice).toFixed(2)
-    ]);
-    
-    autoTable(doc, {
-      startY: isFirstPage ? 110 : 80, // More space on first page for client details
-      head: [[
-          t('invoiceDetailPage.itemDescription'),
-          t('invoiceDetailPage.itemQuantity'),
-          t('invoiceDetailPage.itemUnitPrice'),
-          t('invoiceDetailPage.itemTotal')
-      ]],
-      body: tableBody,
-      theme: 'grid',
-      headStyles: {
-          fillColor: [230, 230, 230],
-          textColor: 40,
-          fontStyle: 'bold'
-      },
-      columnStyles: {
-          0: { cellWidth: 'auto' },
-          1: { cellWidth: 20, halign: 'center' },
-          2: { cellWidth: 30, halign: 'right' },
-          3: { cellWidth: 30, halign: 'right' }
-      },
-      margin: { left: margin, right: margin }
+      addPageHeader(isFirstPage);
+      
+      const tableBody = chunk.map(item => [
+          item.description,
+          item.quantity.toString(),
+          item.unitPrice.toFixed(2),
+          (item.quantity * item.unitPrice).toFixed(2)
+      ]);
+      
+      autoTable(doc, {
+        startY: isFirstPage ? 110 : 80, // More space on first page for client details
+        head: [[
+            t('invoiceDetailPage.itemDescription'),
+            t('invoiceDetailPage.itemQuantity'),
+            t('invoiceDetailPage.itemUnitPrice'),
+            t('invoiceDetailPage.itemTotal')
+        ]],
+        body: tableBody,
+        theme: 'grid',
+        headStyles: {
+            fillColor: [230, 230, 230],
+            textColor: 40,
+            fontStyle: 'bold'
+        },
+        columnStyles: {
+            0: { cellWidth: 'auto' },
+            1: { cellWidth: 20, halign: 'center' },
+            2: { cellWidth: 30, halign: 'right' },
+            3: { cellWidth: 30, halign: 'right' }
+        },
+        margin: { left: margin, right: margin }
+      });
+
+      if (isLastPage) {
+          summaryAdded = addSummaryAndNotes((doc as any).lastAutoTable.finalY);
+      }
+      
+      addPageFooter(index + 1, totalPages + (isLastPage && !summaryAdded ? 1 : 0));
+      
+      if (!isLastPage) {
+        doc.addPage();
+      }
     });
+  }
 
-    if (isLastPage) {
-        summaryAdded = addSummaryAndNotes((doc as any).lastAutoTable.finalY);
-    }
-    
-    addPageFooter(index + 1, totalPages + (isLastPage && !summaryAdded ? 1 : 0));
-    
-    if (!isLastPage) {
-      doc.addPage();
-    }
-  });
 
   // If summary didn't fit on the last page, add a new page for it
-  if (!summaryAdded) {
+  if (!summaryAdded && itemChunks.length > 0) {
     doc.addPage();
     addPageHeader(false); // Not the first page
     addSummaryAndNotes(80);
