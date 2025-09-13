@@ -454,7 +454,7 @@ export default function InvoiceDetailPage() {
         </div>
       </div>
 
-      <div className="hidden print:block">
+      <div className="invoice-print-container">
         {itemChunks.map((items, pageIndex) => (
           <div key={`page-${pageIndex}`} className="invoice-print-page">
             <Card className="invoice-card-for-print shadow-none border-none relative">
@@ -465,7 +465,7 @@ export default function InvoiceDetailPage() {
                 ></div>
               )}
               
-              <CardHeader className="print-card-header border-b pb-4 print:pb-2 print:border-b-slate-200">
+              <CardHeader className="print-card-header">
                 <div className="flex flex-col items-center text-center">
                   {displayLogoUrl && (
                     <img
@@ -512,7 +512,7 @@ export default function InvoiceDetailPage() {
                 </div>
               </CardHeader>
         
-              <CardContent className="print-card-content flex-grow">
+              <CardContent className="print-card-content">
                 <div className="overflow-x-auto">
                   <Table className="print:text-xs">
                     <TableHeader>
@@ -537,8 +537,8 @@ export default function InvoiceDetailPage() {
                 </div>
               </CardContent>
 
-              <CardFooter className="print-card-footer flex flex-col items-stretch border-t">
-                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 print:pt-2">
+              <CardFooter className="print-card-footer">
+                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 print:pt-2 w-full">
                     <div className="md:col-span-2 space-y-3 print:space-y-2">
                       {invoice.notes && (
                         <div>
@@ -551,6 +551,13 @@ export default function InvoiceDetailPage() {
                             <h4 className="font-semibold text-primary mb-1.5 print:text-sm">{t('invoiceDetailPage.paymentTerms')}</h4>
                             <p className="text-sm text-muted-foreground print:text-xs">{invoice.appliedDefaultPaymentTerms}</p>
                          </div>
+                      )}
+                       {(invoice.language?.toLowerCase().startsWith("fr") || (!invoice.language && locale === 'fr')) && (
+                        <div className="pt-4 mt-4 border-t print:pt-2 print:mt-2 print:border-slate-200">
+                          <p className="text-sm text-muted-foreground print:text-xs">
+                            {t('invoiceDetailPage.stoppedAtTheSumOf')} <strong className="text-foreground">{numberToFrenchWords(invoice.totalAmount, invoice.currency)}</strong>.
+                          </p>
+                        </div>
                       )}
                     </div>
                     <div className="space-y-2 p-4 bg-secondary/20 rounded-lg shadow-sm print:bg-transparent print:shadow-none print:p-3 print:border print:border-slate-200 print:rounded-md">
@@ -570,24 +577,12 @@ export default function InvoiceDetailPage() {
                       </div>
                     </div>
                   </div>
-          
-                  {(invoice.language?.toLowerCase().startsWith("fr") || (!invoice.language && locale === 'fr')) && (
-                    <div className="pt-4 mt-4 border-t print:pt-2 print:mt-2 print:border-slate-200">
-                      <p className="text-sm text-muted-foreground print:text-xs">
-                        {t('invoiceDetailPage.stoppedAtTheSumOf')} <strong className="text-foreground">{numberToFrenchWords(invoice.totalAmount, invoice.currency)}</strong>.
-                      </p>
-                    </div>
-                  )}
-
-                {displayCompanyInvoiceFooter && (
-                  <div className="border-t w-full my-4 print:my-2"></div>
-                )}
-                
-                <div className="flex justify-between items-center text-xs text-muted-foreground text-center w-full print:text-[0.7rem]">
-                   {displayCompanyInvoiceFooter && <p>{displayCompanyInvoiceFooter}</p>}
-                   <p>Page {pageIndex + 1} of {itemChunks.length}</p>
-                </div>
               </CardFooter>
+
+              <div className="print-page-footer">
+                {displayCompanyInvoiceFooter && <p>{displayCompanyInvoiceFooter}</p>}
+                <p>Page {pageIndex + 1} of {itemChunks.length}</p>
+              </div>
             </Card>
           </div>
         ))}
@@ -595,7 +590,7 @@ export default function InvoiceDetailPage() {
 
 
       {/* On-screen view */}
-      <Card className="invoice-card-for-print shadow-lg print:hidden relative">
+      <Card className="invoice-card-on-screen shadow-lg print:hidden relative">
         {displayWatermarkLogoUrl && (
           <div 
             className="print-only-watermark-container"
@@ -604,33 +599,33 @@ export default function InvoiceDetailPage() {
             }}
           ></div>
         )}
-        <CardHeader className="print-card-header border-b pb-4 print:pb-2 print:border-b-slate-200">
+        <CardHeader className="border-b pb-4">
           <div className="flex flex-col items-center text-center">
             {displayLogoUrl && (
               <img
                 src={displayLogoUrl}
                 alt="Company Logo"
-                className="h-20 max-w-[200px] object-contain print:h-16" 
+                className="h-20 max-w-[200px] object-contain" 
                 data-ai-hint="company logo"
               />
             )}
             {displayCompanyInvoiceHeader && (
-              <h2 className="text-2xl font-bold text-primary print:text-xl mt-3 print:mt-2">
+              <h2 className="text-2xl font-bold text-primary mt-3">
                 {displayCompanyInvoiceHeader}
               </h2>
             )}
           </div>
-          <div className="border-t w-full my-4 print:my-2"></div>
+          <div className="border-t w-full my-4"></div>
           <div className="flex justify-end text-right">
             <div>
-              <h3 className="text-3xl font-bold text-primary uppercase tracking-tight print:text-2xl leading-tight">
+              <h3 className="text-3xl font-bold text-primary uppercase tracking-tight leading-tight">
                 {t('invoiceDetailPage.invoiceTitle')}
               </h3>
-              <p className="text-muted-foreground text-sm print:text-xs">
+              <p className="text-muted-foreground text-sm">
                 # {invoice.invoiceNumber}
               </p>
               {invoice.currency && (
-                <p className="text-sm text-muted-foreground mt-0.5 print:text-xs">
+                <p className="text-sm text-muted-foreground mt-0.5">
                   {t('invoiceDetailPage.currency')} {invoice.currency}
                 </p>
               )}
@@ -638,13 +633,11 @@ export default function InvoiceDetailPage() {
           </div>
         </CardHeader>
         
-        <CardContent className={cn(
-          "print-card-content pt-6 space-y-6 print:pt-4 print:space-y-4"
-        )}>
+        <CardContent className="pt-6 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
             <div>
-              <h4 className="font-semibold text-primary mb-1.5 print:text-sm">{t('invoiceDetailPage.billTo')}</h4>
-              <div className="space-y-0.5 text-sm text-muted-foreground print:text-xs">
+              <h4 className="font-semibold text-primary mb-1.5">{t('invoiceDetailPage.billTo')}</h4>
+              <div className="space-y-0.5 text-sm text-muted-foreground">
                 <p className="font-medium text-foreground">{invoice.clientName}</p>
                 {invoice.clientCompany && <p>{invoice.clientCompany}</p>}
                 {invoice.clientAddress && <p>{invoice.clientAddress.split('\\n').map((line, i) => (<span key={i}>{line}<br/></span>))}</p>}
@@ -652,68 +645,68 @@ export default function InvoiceDetailPage() {
                 {invoice.clientICE && <p>ICE: {invoice.clientICE}</p>}
               </div>
             </div>
-            <div className="text-left md:text-right space-y-2 print:text-xs">
+            <div className="text-left md:text-right space-y-2">
               <div>
-                <h4 className="font-semibold text-primary mb-0.5 print:text-sm">{t('invoiceDetailPage.issueDate')}</h4>
+                <h4 className="font-semibold text-primary mb-0.5">{t('invoiceDetailPage.issueDate')}</h4>
                 <span className="text-muted-foreground">{format(new Date(invoice.issueDate), "PPP", { locale: getDateFnsLocale() })}</span>
               </div>
               <div>
-                <h4 className="font-semibold text-primary mb-0.5 print:text-sm">{t('invoiceDetailPage.dueDate')}</h4>
+                <h4 className="font-semibold text-primary mb-0.5">{t('invoiceDetailPage.dueDate')}</h4>
                 <span className="text-muted-foreground">{format(new Date(invoice.dueDate), "PPP", { locale: getDateFnsLocale() })}</span>
               </div>
             </div>
           </div>
 
           <div className="overflow-x-auto">
-            <Table className="print:text-xs">
+            <Table>
               <TableHeader>
-                <TableRow className="bg-muted/30 print:bg-slate-100">
-                  <TableHead className="w-[50%] print:py-2">{t('invoiceDetailPage.itemDescription')}</TableHead>
-                  <TableHead className="text-center print:py-2">{t('invoiceDetailPage.itemQuantity')}</TableHead>
-                  <TableHead className="text-right print:py-2">{t('invoiceDetailPage.itemUnitPrice')}</TableHead>
-                  <TableHead className="text-right print:py-2">{t('invoiceDetailPage.itemTotal')}</TableHead>
+                <TableRow className="bg-muted/30">
+                  <TableHead className="w-[50%]">{t('invoiceDetailPage.itemDescription')}</TableHead>
+                  <TableHead className="text-center">{t('invoiceDetailPage.itemQuantity')}</TableHead>
+                  <TableHead className="text-right">{t('invoiceDetailPage.itemUnitPrice')}</TableHead>
+                  <TableHead className="text-right">{t('invoiceDetailPage.itemTotal')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {invoice.items.map((item, index) => (
-                  <TableRow key={index} className="print:border-b-slate-200">
-                    <TableCell className="font-medium print:py-1.5">{item.description}</TableCell>
-                    <TableCell className="text-center print:py-1.5">{item.quantity}</TableCell>
-                    <TableCell className="text-right print:py-1.5">{item.unitPrice.toFixed(2)}</TableCell>
-                    <TableCell className="text-right print:py-1.5">{item.total.toFixed(2)}</TableCell>
+                  <TableRow key={index}>
+                    <TableCell className="font-medium">{item.description}</TableCell>
+                    <TableCell className="text-center">{item.quantity}</TableCell>
+                    <TableCell className="text-right">{item.unitPrice.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">{item.total.toFixed(2)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 print:pt-2">
-            <div className="md:col-span-2 space-y-3 print:space-y-2">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+            <div className="md:col-span-2 space-y-3">
               {invoice.notes && (
                 <div>
-                  <h4 className="font-semibold text-primary mb-1.5 print:text-sm">{t('invoiceDetailPage.notes')}</h4>
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap print:text-xs">{invoice.notes}</p>
+                  <h4 className="font-semibold text-primary mb-1.5">{t('invoiceDetailPage.notes')}</h4>
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{invoice.notes}</p>
                 </div>
               )}
               {invoice.appliedDefaultPaymentTerms && (
                  <div>
-                    <h4 className="font-semibold text-primary mb-1.5 print:text-sm">{t('invoiceDetailPage.paymentTerms')}</h4>
-                    <p className="text-sm text-muted-foreground print:text-xs">{invoice.appliedDefaultPaymentTerms}</p>
+                    <h4 className="font-semibold text-primary mb-1.5">{t('invoiceDetailPage.paymentTerms')}</h4>
+                    <p className="text-sm text-muted-foreground">{invoice.appliedDefaultPaymentTerms}</p>
                  </div>
               )}
             </div>
-            <div className="space-y-2 p-4 bg-secondary/20 rounded-lg shadow-sm print:bg-transparent print:shadow-none print:p-3 print:border print:border-slate-200 print:rounded-md">
-              <div className="flex justify-between text-sm print:text-xs">
+            <div className="space-y-2 p-4 bg-secondary/20 rounded-lg shadow-sm">
+              <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">{t('invoiceDetailPage.subtotal')}</span>
                 <span className="font-medium">{invoice.currency} {invoice.subtotal.toFixed(2)}</span>
               </div>
               {invoice.taxAmount !== undefined && invoice.taxAmount !== 0 && (
-                <div className="flex justify-between text-sm print:text-xs">
+                <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">{t('invoiceDetailPage.tax')} ({invoice.taxRate || 0}%):</span>
                   <span className="font-medium">{invoice.currency} {invoice.taxAmount.toFixed(2)}</span>
                 </div>
               )}
-              <div className="flex justify-between text-xl font-bold text-primary border-t border-border pt-2 mt-2 print:text-lg print:pt-1 print:mt-1 print:border-slate-300">
+              <div className="flex justify-between text-xl font-bold text-primary border-t border-border pt-2 mt-2">
                 <span>{t('invoiceDetailPage.total')}</span>
                 <span>{invoice.currency} {invoice.totalAmount.toFixed(2)}</span>
               </div>
@@ -721,8 +714,8 @@ export default function InvoiceDetailPage() {
           </div>
           
           {(invoice.language?.toLowerCase().startsWith("fr") || (!invoice.language && locale === 'fr')) && (
-            <div className="pt-4 mt-4 border-t print:pt-2 print:mt-2 print:border-slate-200">
-              <p className="text-sm text-muted-foreground print:text-xs">
+            <div className="pt-4 mt-4 border-t">
+              <p className="text-sm text-muted-foreground">
                 {t('invoiceDetailPage.stoppedAtTheSumOf')} <strong className="text-foreground">{numberToFrenchWords(invoice.totalAmount, invoice.currency)}</strong>.
               </p>
             </div>
@@ -732,10 +725,10 @@ export default function InvoiceDetailPage() {
 
         {displayCompanyInvoiceFooter && (
           <CardFooter className={cn(
-            "print-card-footer border-t print:mt-4 print:pt-2 print:pb-2",
+            "border-t pt-4 pb-4 mt-4",
             displayCompanyInvoiceFooter ? "has-content" : ""
           )}>
-            <p className="text-xs text-muted-foreground text-center w-full print:text-[0.7rem]">{displayCompanyInvoiceFooter}</p>
+            <p className="text-xs text-muted-foreground text-center w-full">{displayCompanyInvoiceFooter}</p>
           </CardFooter>
         )}
       </Card>
