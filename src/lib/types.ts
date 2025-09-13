@@ -66,6 +66,7 @@ export interface ProductTransaction {
   notes?: string;
   invoiceId?: string; // Link to invoice for 'sale' type
   transactionDate: Timestamp;
+  transactionPrice?: number; // Price per unit for this transaction (for sales)
 }
 
 

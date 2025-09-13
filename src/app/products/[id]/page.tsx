@@ -7,11 +7,11 @@ import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
 import { db } from "@/lib/firebase";
 import type { Product, ProductTransaction, UserPreferences } from "@/lib/types";
-import { doc, getDoc, collection, query, where, orderBy, getDocs, writeBatch, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, orderBy, getDocs, writeBatch, serverTimestamp, deleteDoc } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Edit, AlertTriangle, Package, DollarSign, History, PlusCircle, MinusCircle, Wrench, ShoppingCart } from "lucide-react";
+import { ArrowLeft, Edit, AlertTriangle, Package, DollarSign, History, PlusCircle, MinusCircle, Wrench, ShoppingCart, Trash2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLanguage } from "@/hooks/use-language";
 import { format } from "date-fns";
@@ -155,6 +155,33 @@ export default function ProductDetailPage() {
     }
   };
   
+    const handleDeleteTransaction = async (transaction: ProductTransaction) => {
+        if (!product || !user) return;
+
+        const batch = writeBatch(db);
+        const transactionRef = doc(db, "productTransactions", transaction.id!);
+        const productRef = doc(db, "products", product.id!);
+
+        const newStock = (product.stock ?? 0) - transaction.quantityChange;
+
+        // Revert stock on product
+        batch.update(productRef, { stock: newStock });
+        
+        // Delete the transaction
+        batch.delete(transactionRef);
+
+        try {
+            await batch.commit();
+            // Optimistically update UI
+            setProduct(prev => prev ? { ...prev, stock: newStock } : null);
+            setTransactions(prev => prev.filter(tx => tx.id !== transaction.id));
+            toast({ title: "Transaction Deleted", description: "The transaction has been deleted and stock has been reversed."});
+        } catch (error) {
+            console.error("Error deleting transaction:", error);
+            toast({ title: "Error", description: "Failed to delete transaction.", variant: "destructive" });
+        }
+    };
+
   const getTransactionTypeIcon = (type: ProductTransaction['type']) => {
     switch (type) {
         case 'sale': return <ShoppingCart className="h-4 w-4 text-red-500" />;
@@ -290,6 +317,7 @@ export default function ProductDetailPage() {
                                 <TableHead>Change</TableHead>
                                 <TableHead>New Stock</TableHead>
                                 <TableHead>Notes</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -300,6 +328,29 @@ export default function ProductDetailPage() {
                                     <TableCell className={`font-bold ${tx.quantityChange > 0 ? 'text-green-600' : 'text-red-600'}`}>{tx.quantityChange > 0 ? `+${tx.quantityChange}` : tx.quantityChange}</TableCell>
                                     <TableCell className="font-medium">{tx.newStock}</TableCell>
                                     <TableCell>{tx.invoiceId ? <Link href={`/invoices/${tx.invoiceId}`} className="text-primary hover:underline">Invoice #{tx.notes}</Link> : tx.notes}</TableCell>
+                                    <TableCell className="text-right">
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Delete Transaction?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        This will permanently delete the transaction and reverse the stock change. This action cannot be undone.
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleDeleteTransaction(tx)} className="bg-destructive hover:bg-destructive/90">
+                                                        Confirm Delete
+                                                    </AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
@@ -314,5 +365,3 @@ export default function ProductDetailPage() {
     </div>
   );
 }
-
-    

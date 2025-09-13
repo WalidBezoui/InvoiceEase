@@ -6,8 +6,8 @@ import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { useLanguage, type Locale } from "@/hooks/use-language"; 
 import { db } from "@/lib/firebase";
-import type { Invoice, UserPreferences } from "@/lib/types";
-import { doc, getDoc, updateDoc, serverTimestamp, type FieldValue } from "firebase/firestore";
+import type { Invoice, UserPreferences, Product, ProductTransaction } from "@/lib/types";
+import { doc, getDoc, updateDoc, serverTimestamp, type FieldValue, collection, where, query, getDocs, writeBatch } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -195,6 +195,66 @@ export default function InvoiceDetailPage() {
       default: return "outline";
     }
   };
+  
+    const updateStockAndCreateTransactions = async (paidInvoice: Invoice, revert = false) => {
+        const batch = writeBatch(db);
+        const sign = revert ? 1 : -1; // Add stock back if reverting, remove if marking as paid
+
+        for (const item of paidInvoice.items) {
+            if (item.productId) {
+                const productRef = doc(db, "products", item.productId);
+                const productSnap = await getDoc(productRef);
+
+                if (productSnap.exists()) {
+                    const product = productSnap.data() as Product;
+                    const newStock = (product.stock ?? 0) + (item.quantity * sign);
+
+                    batch.update(productRef, { stock: newStock });
+
+                    if (!revert) {
+                        const transactionRef = doc(collection(db, "productTransactions"));
+                        batch.set(transactionRef, {
+                            userId: paidInvoice.userId,
+                            productId: item.productId,
+                            type: 'sale',
+                            quantityChange: item.quantity * sign,
+                            newStock: newStock,
+                            invoiceId: paidInvoice.id,
+                            notes: paidInvoice.invoiceNumber,
+                            transactionPrice: item.unitPrice, // Log the sale price
+                            transactionDate: serverTimestamp(),
+                        });
+                    }
+                }
+            }
+        }
+        await batch.commit();
+    };
+    
+    const revertStockUpdate = async (paidInvoice: Invoice) => {
+        // Find transactions related to this invoice and delete them, which will trigger stock reversal
+        const transQuery = query(collection(db, "productTransactions"), where("invoiceId", "==", paidInvoice.id));
+        const transSnapshot = await getDocs(transQuery);
+        const batch = writeBatch(db);
+        
+        if (!transSnapshot.empty) {
+            for (const transDoc of transSnapshot.docs) {
+                const transaction = transDoc.data() as ProductTransaction;
+                
+                const productRef = doc(db, "products", transaction.productId);
+                const productSnap = await getDoc(productRef);
+                if (productSnap.exists()) {
+                    const productData = productSnap.data();
+                    const reversedStock = (productData.stock ?? 0) - transaction.quantityChange;
+                    batch.update(productRef, { stock: reversedStock });
+                }
+                
+                batch.delete(transDoc.ref);
+            }
+        }
+        
+        await batch.commit();
+    };
 
   const handleStatusChange = async (newStatus: Invoice['status']) => {
     if (!invoice || !user || !invoice.id) return;
@@ -203,38 +263,36 @@ export default function InvoiceDetailPage() {
     setIsUpdatingStatus(true);
     const invoiceRef = doc(db, "invoices", invoice.id);
     
-    const updateData: { status: Invoice['status']; updatedAt: FieldValue; sentDate?: string | null; paidDate?: string | null } = {
+    const updateData: { status: Invoice['status']; updatedAt: FieldValue; sentDate?: string | null; paidDate?: string | null, stockUpdated?: boolean } = {
       status: newStatus,
       updatedAt: serverTimestamp() as FieldValue,
+      stockUpdated: invoice.stockUpdated
     };
 
-    if (newStatus === 'sent') {
-      if (invoice.status === 'draft') { 
-        updateData.sentDate = new Date().toISOString();
-      } else if (invoice.status === 'paid') { 
-        updateData.paidDate = null; 
-      }
-    } else if (newStatus === 'paid' && (invoice.status === 'sent' || invoice.status === 'overdue')) { 
-      updateData.paidDate = new Date().toISOString();
-    }
-    
     try {
-      await updateDoc(invoiceRef, updateData as any); 
-      setInvoice(prev => {
-        if (!prev) return null;
-        const updatedInvoice = { 
-          ...prev, 
-          status: newStatus, 
-          updatedAt: new Date() 
-        };
-        if (updateData.hasOwnProperty('sentDate')) updatedInvoice.sentDate = updateData.sentDate;
-        if (updateData.hasOwnProperty('paidDate')) updatedInvoice.paidDate = updateData.paidDate;
-        return updatedInvoice;
-      });
-      toast({
-        title: t('invoiceDetailPage.statusUpdatedToastTitle', {status: newStatus}), 
-        description: t('invoiceDetailPage.statusUpdatedToastDesc', {invoiceNumber: invoice.invoiceNumber, status: newStatus}), 
-      });
+        if (newStatus === 'paid' && !invoice.stockUpdated) {
+            await updateStockAndCreateTransactions(invoice);
+            updateData.paidDate = new Date().toISOString();
+            updateData.stockUpdated = true;
+        } else if (invoice.status === 'paid' && newStatus !== 'paid') { // e.g., reverting to "Sent"
+            await revertStockUpdate(invoice);
+            updateData.paidDate = null;
+            updateData.stockUpdated = false;
+        }
+        
+        if (newStatus === 'sent' && invoice.status === 'draft') {
+            updateData.sentDate = new Date().toISOString();
+        }
+
+        await updateDoc(invoiceRef, updateData as any); 
+
+        setInvoice(prev => prev ? { ...prev, ...updateData, status: newStatus } : null);
+
+        toast({
+            title: t('invoiceDetailPage.statusUpdatedToastTitle'), 
+            description: t('invoiceDetailPage.statusUpdatedToastDesc', {invoiceNumber: invoice.invoiceNumber, status: newStatus}), 
+        });
+
     } catch (err) {
       console.error("Error updating invoice status:", err);
       toast({
