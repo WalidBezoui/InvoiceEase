@@ -22,7 +22,7 @@ const productAnalysisPrompt = ai.definePrompt({
     You are an expert business analyst specializing in inventory management and sales strategy for small businesses.
     Your task is to analyze the provided data for a single product and give the user a clear, concise analysis and actionable suggestions.
 
-    Analyze the following product data:
+    Analyze the following product data (All prices are in {{{currency}}}):
     - Product Name: {{{productName}}}
     - Current Stock: {{{currentStock}}}
     - Standard Selling Price: {{{sellingPrice}}}

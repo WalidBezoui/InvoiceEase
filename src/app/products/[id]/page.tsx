@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
@@ -134,19 +135,16 @@ export default function ProductDetailPage() {
     const isPurchase = adjustment.quantity > 0;
     const type = isPurchase ? 'purchase' : 'sale';
     
-    const newTransactionData: Omit<ProductTransaction, 'id' | 'transactionDate'> & {transactionPrice?: number} = {
+    const newTransactionData: Partial<ProductTransaction> = {
         userId: user.uid,
         productId: product.id!,
         type: type,
         quantityChange: adjustment.quantity,
         newStock: newStock,
         notes: adjustment.notes || (isPurchase ? t('productDetailPage.stockAdjustment.purchaseNote') : t('productDetailPage.stockAdjustment.saleNote')),
+        transactionPrice: adjustment.price,
     };
     
-    if (adjustment.price !== undefined && adjustment.price !== null) {
-      newTransactionData.transactionPrice = adjustment.price;
-    }
-
     // Update product stock
     batch.update(productRef, { stock: newStock });
 
@@ -422,7 +420,7 @@ export default function ProductDetailPage() {
                     </Card>
                 </TabsContent>
                 <TabsContent value="analysis">
-                    <ProductAnalysis product={product} transactions={transactions} t={t} />
+                    <ProductAnalysis product={product} transactions={transactions} userPrefs={userPrefs} t={t} />
                 </TabsContent>
             </Tabs>
         </div>

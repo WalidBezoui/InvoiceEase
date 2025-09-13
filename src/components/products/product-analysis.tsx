@@ -5,7 +5,7 @@ import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Lightbulb, Loader2, AlertTriangle, BarChart as BarChartIcon } from 'lucide-react';
-import type { Product, ProductTransaction, ProductAnalysisOutput } from '@/lib/types';
+import type { Product, ProductTransaction, ProductAnalysisOutput, UserPreferences } from '@/lib/types';
 import { analyzeProductTransactions } from '@/ai/flows/product-analysis-flow';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { format } from 'date-fns';
@@ -13,10 +13,11 @@ import { format } from 'date-fns';
 interface ProductAnalysisProps {
   product: Product;
   transactions: ProductTransaction[];
+  userPrefs: UserPreferences | null;
   t: (key: string, replacements?: Record<string, string | number>) => string;
 }
 
-export default function ProductAnalysis({ product, transactions, t }: ProductAnalysisProps) {
+export default function ProductAnalysis({ product, transactions, userPrefs, t }: ProductAnalysisProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [analysisResult, setAnalysisResult] = useState<ProductAnalysisOutput | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -40,6 +41,7 @@ export default function ProductAnalysis({ product, transactions, t }: ProductAna
                 sellingPrice: product.sellingPrice,
                 purchasePrice: product.purchasePrice,
                 currentStock: product.stock,
+                currency: userPrefs?.currency || 'MAD',
                 transactions: transactionSummary
             });
             setAnalysisResult(result);

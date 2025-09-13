@@ -142,6 +142,7 @@ export const ProductAnalysisInputSchema = z.object({
   sellingPrice: z.number().describe("The standard selling price of the product."),
   purchasePrice: z.number().optional().describe("The standard purchase price of the product."),
   currentStock: z.number().optional().describe("The current stock level."),
+  currency: z.string().describe("The currency code for the prices (e.g., MAD, USD, EUR)."),
   transactions: z.array(TransactionSummarySchema).describe("A list of recent transactions for the product."),
 });
 export type ProductAnalysisInput = z.infer<typeof ProductAnalysisInputSchema>;
