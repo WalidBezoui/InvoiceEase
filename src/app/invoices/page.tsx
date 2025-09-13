@@ -4,17 +4,17 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
-import { FilePlus, Search, Download, Eye, Loader2, ChevronDown, FilterX } from "lucide-react";
+import { FilePlus, Search, Download, Eye, Loader2, ChevronDown, FilterX, Send, DollarSign, AlertCircle, XCircle, Undo, FilePenLine } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 import { db } from "@/lib/firebase";
 import type { Invoice } from "@/lib/types";
-import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
+import { collection, query, where, getDocs, orderBy, doc, updateDoc, serverTimestamp, type FieldValue } from "firebase/firestore";
 import { useEffect, useState, useMemo } from "react";
 import { format } from "date-fns";
-import { useLanguage } from "@/hooks/use-language"; // Import useLanguage
+import { useLanguage } from "@/hooks/use-language";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,15 +23,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
   DropdownMenuItem,
+  DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu";
+import { useToast } from "@/hooks/use-toast";
 
 const ALL_STATUSES: Invoice['status'][] = ['draft', 'sent', 'paid', 'overdue', 'cancelled'];
 
 export default function InvoicesPage() {
   const { user, loading: authLoading } = useAuth();
-  const { t, isLoadingLocale } = useLanguage(); // Use language hook
+  const { t, isLoadingLocale } = useLanguage();
+  const { toast } = useToast();
   const [allInvoices, setAllInvoices] = useState<Invoice[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatuses, setSelectedStatuses] = useState<Set<Invoice['status']>>(new Set());
@@ -66,7 +70,7 @@ export default function InvoicesPage() {
     
     if (user) {
         fetchInvoices();
-    } else if (!authLoading && !user) { // Auth is done, and there's no user
+    } else if (!authLoading && !user) {
         setIsLoadingData(false); 
         setAllInvoices([]); 
         setError(null);
@@ -88,6 +92,45 @@ export default function InvoicesPage() {
   const handleClearStatusFilters = () => {
     setSelectedStatuses(new Set());
   };
+  
+  const handleStatusChange = async (invoiceId: string, currentStatus: Invoice['status'], newStatus: Invoice['status']) => {
+    if (!user) return;
+    setIsUpdatingStatus(invoiceId);
+
+    const invoiceRef = doc(db, "invoices", invoiceId);
+    
+    const updateData: { status: Invoice['status']; updatedAt: FieldValue; sentDate?: string | null; paidDate?: string | null } = {
+      status: newStatus,
+      updatedAt: serverTimestamp() as FieldValue,
+    };
+    
+    if (newStatus === 'sent' && currentStatus === 'draft') {
+      updateData.sentDate = new Date().toISOString();
+    } else if (newStatus === 'paid' && (currentStatus === 'sent' || currentStatus === 'overdue')) {
+      updateData.paidDate = new Date().toISOString();
+    } else if (newStatus === 'sent' && currentStatus === 'paid') {
+      updateData.paidDate = null;
+    }
+
+    try {
+      await updateDoc(invoiceRef, updateData as any);
+      setAllInvoices(prev => prev.map(inv => inv.id === invoiceId ? { ...inv, status: newStatus } : inv));
+      toast({
+        title: t('invoiceDetailPage.statusUpdatedToastTitle'),
+        description: t('invoiceDetailPage.statusUpdatedToastDesc', { invoiceNumber: allInvoices.find(i=>i.id === invoiceId)?.invoiceNumber || '', status: t(`invoiceStatus.${newStatus}`) }),
+      });
+    } catch (err) {
+      console.error("Error updating invoice status:", err);
+      toast({
+        title: t('invoiceDetailPage.errorToastTitle'),
+        description: t('invoiceDetailPage.statusUpdateErrorToastDesc'),
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdatingStatus(null);
+    }
+  };
+
 
   const filteredInvoices = useMemo(() => {
     let invoicesToDisplay = [...allInvoices];
@@ -262,25 +305,58 @@ export default function InvoicesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredInvoices.map((invoice) => (
-                  <TableRow key={invoice.id}>
-                    <TableCell className="font-medium">{invoice.invoiceNumber}</TableCell>
-                    <TableCell>{invoice.clientName}</TableCell>
-                    <TableCell>{format(new Date(invoice.issueDate), "MMM dd, yyyy")}</TableCell>
-                    <TableCell>{format(new Date(invoice.dueDate), "MMM dd, yyyy")}</TableCell>
-                    <TableCell className="text-right">{invoice.currency} {invoice.totalAmount.toFixed(2)}</TableCell>
-                    <TableCell>
-                      <Badge variant={getStatusBadgeVariant(invoice.status)} className="capitalize">{t(`invoiceStatus.${invoice.status}`, { default: invoice.status })}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="sm" asChild>
-                        <Link href={`/invoices/${invoice.id}`}>
-                          <Eye className="mr-1 h-4 w-4" /> {t('invoicesPage.viewAction')}
-                        </Link> 
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {filteredInvoices.map((invoice) => {
+                  const canMarkAsSent = invoice.status === 'draft';
+                  const canMarkAsPaid = invoice.status === 'sent' || invoice.status === 'overdue';
+                  const canMarkAsOverdue = invoice.status === 'sent';
+                  const canCancel = invoice.status === 'sent' || invoice.status === 'overdue';
+                  const canRevertToSent = invoice.status === 'paid';
+                  const canReopenAsDraft = invoice.status === 'cancelled';
+                  const hasActions = canMarkAsSent || canMarkAsPaid || canMarkAsOverdue || canCancel || canRevertToSent || canReopenAsDraft;
+
+                  return (
+                    <TableRow key={invoice.id}>
+                      <TableCell className="font-medium">{invoice.invoiceNumber}</TableCell>
+                      <TableCell>{invoice.clientName}</TableCell>
+                      <TableCell>{format(new Date(invoice.issueDate), "MMM dd, yyyy")}</TableCell>
+                      <TableCell>{format(new Date(invoice.dueDate), "MMM dd, yyyy")}</TableCell>
+                      <TableCell className="text-right">{invoice.currency} {invoice.totalAmount.toFixed(2)}</TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild disabled={!hasActions || isUpdatingStatus === invoice.id}>
+                            <Button variant="ghost" className="p-1 h-auto" >
+                              {isUpdatingStatus === invoice.id ? <Loader2 className="h-4 w-4 animate-spin"/> :
+                                <Badge variant={getStatusBadgeVariant(invoice.status)} className="capitalize hover:opacity-80 cursor-pointer">
+                                  {t(`invoiceStatus.${invoice.status}`, { default: invoice.status })}
+                                </Badge>
+                              }
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                             <DropdownMenuLabel>{t('invoiceDetailPage.changeStatus')}</DropdownMenuLabel>
+                             <DropdownMenuSeparator/>
+                             <DropdownMenuGroup>
+                              {canMarkAsSent && <DropdownMenuItem onClick={() => handleStatusChange(invoice.id, invoice.status, 'sent')}><Send className="mr-2 h-4 w-4" />{t('invoiceDetailPage.markAsSent')}</DropdownMenuItem>}
+                              {canMarkAsPaid && <DropdownMenuItem onClick={() => handleStatusChange(invoice.id, invoice.status, 'paid')}><DollarSign className="mr-2 h-4 w-4" />{t('invoiceDetailPage.markAsPaid')}</DropdownMenuItem>}
+                              {canMarkAsOverdue && <DropdownMenuItem onClick={() => handleStatusChange(invoice.id, invoice.status, 'overdue')}><AlertCircle className="mr-2 h-4 w-4" />{t('invoiceDetailPage.markAsOverdue')}</DropdownMenuItem>}
+                              {canCancel && <DropdownMenuItem onClick={() => handleStatusChange(invoice.id, invoice.status, 'cancelled')} className="text-destructive"><XCircle className="mr-2 h-4 w-4" />{t('invoiceDetailPage.cancelInvoice')}</DropdownMenuItem>}
+                              {(canRevertToSent || canReopenAsDraft) && <DropdownMenuSeparator />}
+                              {canRevertToSent && <DropdownMenuItem onClick={() => handleStatusChange(invoice.id, invoice.status, 'sent')}><Undo className="mr-2 h-4 w-4" />{t('invoiceDetailPage.revertToSent')}</DropdownMenuItem>}
+                              {canReopenAsDraft && <DropdownMenuItem onClick={() => handleStatusChange(invoice.id, invoice.status, 'draft')}><FilePenLine className="mr-2 h-4 w-4" />{t('invoiceDetailPage.reopenAsDraft')}</DropdownMenuItem>}
+                             </DropdownMenuGroup>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="sm" asChild>
+                          <Link href={`/invoices/${invoice.id}`}>
+                            <Eye className="mr-1 h-4 w-4" /> {t('invoicesPage.viewAction')}
+                          </Link> 
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           )}
@@ -315,3 +391,6 @@ export default function InvoicesPage() {
 
     
 
+
+
+    
