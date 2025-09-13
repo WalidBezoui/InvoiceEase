@@ -2,8 +2,10 @@
   src/app/print-invoice.css 
   This stylesheet contains all styles related to printing the invoice.
 */
-.print-hidden {
+@media screen {
+  .invoice-print-container {
     display: none;
+  }
 }
 
 @media print {
@@ -18,13 +20,6 @@
   }
 }
 
-
-/* Default screen view: Hide the print-specific container */
-@media screen {
-  .invoice-print-container {
-    display: none;
-  }
-}
 
 /* Print view styles */
 @media print {
@@ -219,5 +214,3 @@
     z-index: 1;
   }
 }
-
-    
