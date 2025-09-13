@@ -78,33 +78,51 @@ const productTipPrompt = ai.definePrompt({
     input: { schema: ProductTipInputSchema },
     output: { schema: ProductTipOutputSchema },
     prompt: `
-        You are an inventory management assistant. Based on the product data, provide a very short, actionable tip (3-5 words max) in the specified language: {{language}}.
-        
-        Data:
+        You are an expert inventory management assistant. Your goal is to provide a very short, actionable tip (max 4 words) in the specified language: {{language}}.
+        This tip will be displayed in a table cell to give the user a quick health check of the product.
+
+        Here is the data you will analyze:
         - Stock Level: {{stockLevel}}
         - Number of sales in last 30 days: {{salesLast30Days}}
 
-        Analyze the data and choose ONE of the following tip types: 'suggestion', 'warning', or 'info'.
-        
-        - Use 'warning' for critical issues like "Stock is very low" or "No recent sales".
-        - Use 'suggestion' for opportunities like "Selling fast" or "Consider promotion".
-        - Use 'info' for neutral statements like "Steady sales".
+        Use the following rules to generate the tip:
+        1.  **Analyze the data**: Correlate the stock level with the sales velocity.
+        2.  **Choose a Tip Type**: Select ONE of 'warning', 'suggestion', or 'info'.
+            -   **Warning**: Use for critical issues that require immediate attention.
+            -   **Suggestion**: Use for opportunities or non-critical actions.
+            -   **Info**: Use for neutral or positive status updates.
+        3.  **Generate a Concise Tip**: The tip must be very short and impactful.
 
-        Your tip must be concise and fit in a small table cell.
+        Here are your rules and expert examples. Follow them closely.
+
+        **WARNINGS (Type: 'warning')**
+        - If stock is 0: "Out of stock"
+        - If stock is between 1 and 5: "Critically low stock"
+        - If stock is > 5 but sales > stock * 2: "Very high demand"
+        - If sales in last 30 days is 0 and stock is > 0: "Stagnant stock"
+        
+        **SUGGESTIONS (Type: 'suggestion')**
+        - If sales > 10 and stock > sales: "Selling well"
+        - If sales > 20: "Best-seller potential"
+        - If stock is high (e.g., > 50) and sales are low (e.g., < 5): "Consider promotion"
+
+        **INFO (Type: 'info')**
+        - If sales are between 1 and 10, and stock > sales: "Steady sales"
+        - If stock is high (>50) and sales are also high (>10): "Healthy stock level"
 
         Example responses in English:
-        - { "tip": "Stock is low", "type": "warning" }
-        - { "tip": "Selling fast", "type": "suggestion" }
-        - { "tip": "Slow-moving", "type": "warning" }
+        - { "tip": "Critically low stock", "type": "warning" }
+        - { "tip": "Stagnant stock", "type": "warning" }
+        - { "tip": "Selling well", "type": "suggestion" }
         - { "tip": "Steady sales", "type": "info" }
 
         Example responses in French:
-        - { "tip": "Stock faible", "type": "warning" }
-        - { "tip": "Vente rapide", "type": "suggestion" }
-        - { "tip": "Peu de ventes", "type": "warning" }
+        - { "tip": "Stock très faible", "type": "warning" }
+        - { "tip": "Stock stagnant", "type": "warning" }
+        - { "tip": "Bonne vente", "type": "suggestion" }
         - { "tip": "Ventes stables", "type": "info" }
         
-        Now, analyze the provided data and generate the response.
+        Now, analyze the provided data and generate the expert response in {{language}}.
     `,
 });
 
