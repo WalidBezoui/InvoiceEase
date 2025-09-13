@@ -6,7 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { useLanguage, type Locale } from "@/hooks/use-language"; 
 import { db } from "@/lib/firebase";
-import type { Invoice, InvoiceItem, UserPreferences } from "@/lib/types";
+import type { Invoice, UserPreferences } from "@/lib/types";
 import { doc, getDoc, updateDoc, serverTimestamp, type FieldValue } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,8 +36,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { generateInvoicePdf } from "@/lib/pdf-generator";
 
-const ITEMS_PER_PAGE = 10;
 
 const currencyWordForms: { [key: string]: { singular: string, plural: string, centimeSingular: string, centimePlural: string } } = {
   MAD: { singular: "Dirham Marocain", plural: "Dirhams Marocains", centimeSingular: "centime", centimePlural: "centimes" },
@@ -118,11 +118,6 @@ function numberToFrenchWords(num: number, currencyCode: string): string {
 
 const dateLocales: Record<Locale, typeof fr | typeof en> = { en, fr };
 
-// Helper function to chunk items for pagination
-const chunk = <T,>(arr: T[], size: number): T[][] =>
-  Array.from({ length: Math.ceil(arr.length / size) }, (v, i) =>
-    arr.slice(i * size, i * size + size)
-  );
 
 export default function InvoiceDetailPage() {
   const { user, loading: authLoading } = useAuth();
@@ -138,6 +133,7 @@ export default function InvoiceDetailPage() {
   const [isLoadingPreferences, setIsLoadingPreferences] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   const isLoading = authLoading || isLoadingLocale || isLoadingData || isLoadingPreferences;
   
@@ -252,6 +248,31 @@ export default function InvoiceDetailPage() {
   };
 
 
+  const handleDownloadPdf = async () => {
+    if (!invoice || !userPreferences) {
+      toast({
+        title: "Cannot generate PDF",
+        description: "Invoice data is not fully loaded yet.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setIsGeneratingPdf(true);
+    try {
+      await generateInvoicePdf(invoice, userPreferences, t);
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      toast({
+        title: "PDF Generation Failed",
+        description: "An unexpected error occurred while creating the PDF.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
+
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-[60vh]">
@@ -300,13 +321,11 @@ export default function InvoiceDetailPage() {
   const displayWatermarkLogoUrl = userPreferences?.watermarkLogoDataUrl;
   const displayCompanyInvoiceHeader = userPreferences?.invoiceHeader || "";
   const displayCompanyInvoiceFooter = userPreferences?.invoiceFooter || "";
-  
-  const itemChunks = chunk(invoice.items, ITEMS_PER_PAGE);
 
 
   return (
     <div className="invoice-page-container">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 print-hidden mb-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div className="flex items-center gap-4">
             <Button variant="outline" size="icon" asChild>
             <Link href="/invoices">
@@ -434,12 +453,11 @@ export default function InvoiceDetailPage() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Button variant="outline" onClick={printInvoice}>
-            <Printer className="mr-2 h-4 w-4" /> {t('invoiceDetailPage.printPdf')}
+          <Button variant="outline" onClick={handleDownloadPdf} disabled={isGeneratingPdf}>
+            {isGeneratingPdf ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+            {t('invoiceDetailPage.downloadPdf')}
           </Button>
-          <Button variant="outline" onClick={printInvoice}>
-            <Download className="mr-2 h-4 w-4" /> {t('invoiceDetailPage.downloadPdf')}
-          </Button>
+
           { (invoice.status === 'draft' || invoice.status === 'sent') && !isUpdatingStatus ? (
             <Button asChild>
               <Link href={`/invoices/${invoice.id}/edit`}>
@@ -454,8 +472,7 @@ export default function InvoiceDetailPage() {
         </div>
       </div>
 
-      {/* On-screen view - visible on screen, hidden on print */}
-      <Card className="invoice-card-on-screen shadow-lg print-hidden relative">
+      <Card className="invoice-card-on-screen shadow-lg relative">
         {displayWatermarkLogoUrl && (
           <div 
             className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none"
@@ -603,133 +620,6 @@ export default function InvoiceDetailPage() {
         </div>
       </Card>
       
-      {/* Print-only container - hidden on screen, visible on print */}
-      <div className="invoice-print-container">
-        {itemChunks.map((items, pageIndex) => (
-          <div key={`page-${pageIndex}`} className="invoice-print-page">
-            <div className="invoice-card-for-print">
-              {displayWatermarkLogoUrl && (
-                <div className="print-only-watermark-container" style={{ backgroundImage: `url(${displayWatermarkLogoUrl})` }}></div>
-              )}
-              
-              <header className="print-card-header">
-                <div className="flex flex-col items-center text-center">
-                  {displayLogoUrl && (
-                    <img src={displayLogoUrl} alt="Company Logo" className="print-logo" data-ai-hint="company logo"/>
-                  )}
-                  {displayCompanyInvoiceHeader && (
-                    <h2 className="print-company-header">{displayCompanyInvoiceHeader}</h2>
-                  )}
-                </div>
-                <div className="print-header-divider"></div>
-                <div className="flex justify-between items-start">
-                    <div className="w-1/2">
-                        <h4 className="print-section-title">{t('invoiceDetailPage.billTo')}</h4>
-                        <div className="print-address-details">
-                            <p className="font-medium text-black">{invoice.clientName}</p>
-                            {invoice.clientCompany && <p>{invoice.clientCompany}</p>}
-                            {invoice.clientAddress && <p>{invoice.clientAddress.split('\\n').map((line, i) => (<span key={i}>{line}<br/></span>))}</p>}
-                            {invoice.clientEmail && <p>{invoice.clientEmail}</p>}
-                            {invoice.clientICE && <p>ICE: {invoice.clientICE}</p>}
-                        </div>
-                    </div>
-                    <div className="text-right w-1/2">
-                        <div>
-                            <h3 className="print-invoice-title">{t('invoiceDetailPage.invoiceTitle')}</h3>
-                            <p className="print-invoice-number"># {invoice.invoiceNumber}</p>
-                        </div>
-                        <div className="mt-2">
-                            <h4 className="print-section-title">{t('invoiceDetailPage.issueDate')}</h4>
-                            <span className="print-date">{format(new Date(invoice.issueDate), "PPP", { locale: getDateFnsLocale() })}</span>
-                        </div>
-                        <div className="mt-2">
-                            <h4 className="print-section-title">{t('invoiceDetailPage.dueDate')}</h4>
-                            <span className="print-date">{format(new Date(invoice.dueDate), "PPP", { locale: getDateFnsLocale() })}</span>
-                        </div>
-                    </div>
-                </div>
-              </header>
-        
-              <main className="print-card-content">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[50%]">{t('invoiceDetailPage.itemDescription')}</TableHead>
-                      <TableHead className="text-center">{t('invoiceDetailPage.itemQuantity')}</TableHead>
-                      <TableHead className="text-right">{t('invoiceDetailPage.itemUnitPrice')}</TableHead>
-                      <TableHead className="text-right">{t('invoiceDetailPage.itemTotal')}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {items.map((item, index) => (
-                      <TableRow key={index}>
-                        <TableCell className="font-medium">{item.description}</TableCell>
-                        <TableCell className="text-center">{item.quantity}</TableCell>
-                        <TableCell className="text-right">{item.unitPrice.toFixed(2)}</TableCell>
-                        <TableCell className="text-right">{item.total.toFixed(2)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </main>
-
-              <footer className="print-card-footer">
-                 <div className="w-full">
-                    <div className="grid grid-cols-3 gap-6">
-                        <div className="col-span-2 space-y-3">
-                        {pageIndex === itemChunks.length -1 && invoice.notes && (
-                            <div>
-                            <h4 className="print-section-title-sm">{t('invoiceDetailPage.notes')}</h4>
-                            <p className="print-notes">{invoice.notes}</p>
-                            </div>
-                        )}
-                        {pageIndex === itemChunks.length -1 && invoice.appliedDefaultPaymentTerms && (
-                            <div>
-                                <h4 className="print-section-title-sm">{t('invoiceDetailPage.paymentTerms')}</h4>
-                                <p className="print-notes">{invoice.appliedDefaultPaymentTerms}</p>
-                            </div>
-                        )}
-                        {pageIndex === itemChunks.length -1 && (invoice.language?.toLowerCase().startsWith("fr") || (!invoice.language && locale === 'fr')) && (
-                            <div className="pt-2 mt-2 border-t">
-                            <p className="print-notes">
-                                {t('invoiceDetailPage.stoppedAtTheSumOf')} <strong className="text-black">{numberToFrenchWords(invoice.totalAmount, invoice.currency)}</strong>.
-                            </p>
-                            </div>
-                        )}
-                        </div>
-                        <div className="space-y-2">
-                        {pageIndex === itemChunks.length - 1 && (
-                         <>
-                          <div className="flex justify-between">
-                              <span>{t('invoiceDetailPage.subtotal')}</span>
-                              <span className="font-medium">{invoice.currency} {invoice.subtotal.toFixed(2)}</span>
-                          </div>
-                          {invoice.taxAmount !== undefined && invoice.taxAmount !== 0 && (
-                              <div className="flex justify-between">
-                              <span>{t('invoiceDetailPage.tax')} ({invoice.taxRate || 0}%):</span>
-                              <span className="font-medium">{invoice.currency} {invoice.taxAmount.toFixed(2)}</span>
-                              </div>
-                          )}
-                          <div className="flex justify-between text-lg font-bold border-t pt-2 mt-2">
-                              <span>{t('invoiceDetailPage.total')}</span>
-                              <span>{invoice.currency} {invoice.totalAmount.toFixed(2)}</span>
-                          </div>
-                         </>
-                        )}
-                        </div>
-                    </div>
-                  </div>
-              </footer>
-              <div className="print-page-number-footer">
-                {displayCompanyInvoiceFooter && <p>{displayCompanyInvoiceFooter}</p>}
-                <p>Page {pageIndex + 1} of {itemChunks.length}</p>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
-
-    
