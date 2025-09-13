@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp, doc, updateDoc, writeBatch } from "firebase/firestore";
-import type { Product, ProductFormData } from "@/lib/types";
+import type { Product } from "@/lib/types";
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
@@ -28,6 +28,9 @@ const productFormSchema = z.object({
   stock: z.coerce.number().int("Stock must be a whole number.").optional(),
 });
 
+type ProductFormValues = z.infer<typeof productFormSchema>;
+
+
 interface ProductFormProps {
   initialData?: Product;
   onSave?: (productId: string) => void; 
@@ -40,19 +43,23 @@ export default function ProductForm({ initialData, onSave }: ProductFormProps) {
   const { t } = useLanguage();
   const [isSaving, setIsSaving] = useState(false);
 
-  const form = useForm<z.infer<typeof productFormSchema>>({
+  const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
-    defaultValues: {
-      name: initialData?.name || "",
-      reference: initialData?.reference || "",
-      description: initialData?.description || "",
-      sellingPrice: initialData?.sellingPrice || 0,
-      purchasePrice: initialData?.purchasePrice ?? 0,
-      stock: initialData?.stock ?? 0,
+    defaultValues: initialData ? {
+        ...initialData,
+        purchasePrice: initialData.purchasePrice ?? 0,
+        stock: initialData.stock ?? 0,
+    } : {
+      name: "",
+      reference: "",
+      description: "",
+      sellingPrice: 0,
+      purchasePrice: 0,
+      stock: 0,
     },
   });
 
-  async function onSubmit(values: z.infer<typeof productFormSchema>) {
+  async function onSubmit(values: ProductFormValues) {
     if (!user) {
       toast({ title: "Authentication Error", description: "You must be logged in.", variant: "destructive" });
       return;

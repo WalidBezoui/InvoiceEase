@@ -133,15 +133,18 @@ export default function ProductDetailPage() {
     const isPurchase = adjustment.quantity > 0;
     const type = isPurchase ? 'purchase' : 'sale';
     
-    const newTransactionData: Omit<ProductTransaction, 'id' | 'transactionDate'> = {
+    const newTransactionData: Omit<ProductTransaction, 'id' | 'transactionDate'> & {transactionPrice?: number} = {
         userId: user.uid,
         productId: product.id!,
         type: type,
         quantityChange: adjustment.quantity,
         newStock: newStock,
         notes: adjustment.notes || (isPurchase ? 'Stock purchase' : 'Direct Sale'),
-        transactionPrice: adjustment.price,
     };
+    
+    if (adjustment.price !== undefined && adjustment.price !== null) {
+      newTransactionData.transactionPrice = adjustment.price;
+    }
 
     // Update product stock
     batch.update(productRef, { stock: newStock });
@@ -265,128 +268,148 @@ export default function ProductDetailPage() {
         </Button>
       </div>
 
+       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <Card className="shadow-md">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Current Stock</CardTitle>
+            <Package className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{product.stock ?? 'N/A'}</div>
+            <p className="text-xs text-muted-foreground">units available</p>
+          </CardContent>
+        </Card>
+        <Card className="shadow-md">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Selling Price</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{product.sellingPrice.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">{userPrefs?.currency || 'MAD'}</p>
+          </CardContent>
+        </Card>
+        <Card className="shadow-md">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Purchase Price</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+             <div className="text-2xl font-bold">{product.purchasePrice?.toFixed(2) || 'N/A'}</div>
+             <p className="text-xs text-muted-foreground">{userPrefs?.currency || 'MAD'}</p>
+          </CardContent>
+        </Card>
+      </div>
+
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle className="font-headline text-xl text-primary flex items-center"><Package className="mr-2"/> Product Details</CardTitle>
+          <CardTitle className="font-headline text-xl text-primary">Product Details</CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
-            <div className="space-y-1">
-                <div className="text-muted-foreground">Description</div>
-                <div className="font-medium text-base whitespace-pre-wrap">{product.description}</div>
-            </div>
-             <div className="space-y-1">
-                <div className="text-muted-foreground">Current Stock</div>
-                <div className="font-bold text-2xl text-primary">{product.stock !== undefined ? product.stock : 'N/A'}</div>
-            </div>
-            <div className="space-y-4">
-                 <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Selling Price</span>
-                    <span className="font-medium">{product.sellingPrice.toFixed(2)} {userPrefs?.currency}</span>
-                </div>
-                 <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Purchase Price</span>
-                    <span className="font-medium">{(product.purchasePrice?.toFixed(2) || 'N/A')} {userPrefs?.currency}</span>
-                </div>
-            </div>
+        <CardContent>
+            <p className="text-sm text-muted-foreground">{product.description}</p>
         </CardContent>
       </Card>
       
-       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="shadow-lg">
-            <CardHeader>
-                <CardTitle className="font-headline text-xl text-primary flex items-center"><Wrench className="mr-2"/> Adjust Stock</CardTitle>
-                <CardDescription>Manually add or remove stock (e.g., for new purchases, returns, or corrections).</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="md:col-span-1">
-                        <Label htmlFor="quantity-adjustment">Quantity</Label>
-                        <Input id="quantity-adjustment" type="number" placeholder="e.g., 50 or -5" value={adjustment.quantity || ''} onChange={e => handleQuantityChange(parseInt(e.target.value) || 0)} />
-                        <p className="text-xs text-muted-foreground mt-1">Use a negative number to remove stock.</p>
-                    </div>
-                     <div className="md:col-span-2">
-                        <Label htmlFor="adjustment-notes">Notes (Optional)</Label>
-                        <Input id="adjustment-notes" type="text" placeholder="e.g., New shipment, Direct sale" value={adjustment.notes} onChange={e => setAdjustment(prev => ({ ...prev, notes: e.target.value }))} />
-                    </div>
-                    {adjustment.quantity !== 0 && (
-                        <div className="md:col-span-1">
-                            <Label htmlFor="adjustment-price">
-                              {adjustment.quantity > 0 ? "Purchase Price" : "Selling Price"}
-                            </Label>
-                            <Input id="adjustment-price" type="number" step="0.01" value={adjustment.price} onChange={e => setAdjustment(prev => ({...prev, price: parseFloat(e.target.value) || 0}))} />
-                            <p className="text-xs text-muted-foreground mt-1">Price per unit for this transaction.</p>
+       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        <div className="lg:col-span-2">
+            <Card className="shadow-lg">
+                <CardHeader>
+                    <CardTitle className="font-headline text-xl text-primary flex items-center"><Wrench className="mr-2"/> Adjust Stock</CardTitle>
+                    <CardDescription>Manually add or remove stock for purchases, returns, or corrections.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="col-span-2">
+                            <Label htmlFor="quantity-adjustment">Quantity</Label>
+                            <Input id="quantity-adjustment" type="number" placeholder="e.g., 50 or -5" value={adjustment.quantity || ''} onChange={e => handleQuantityChange(parseInt(e.target.value) || 0)} />
+                            <p className="text-xs text-muted-foreground mt-1">Use a negative number to remove stock.</p>
                         </div>
-                    )}
-                </div>
-                 <Button onClick={handleStockAdjustment} disabled={adjustment.quantity === 0}>
-                    {adjustment.quantity > 0 ? <PlusCircle className="mr-2"/> : <MinusCircle className="mr-2"/>}
-                    Adjust Stock
-                </Button>
-            </CardContent>
-        </Card>
+                        {adjustment.quantity !== 0 && (
+                            <div className="col-span-2">
+                                <Label htmlFor="adjustment-price">
+                                {adjustment.quantity > 0 ? "Purchase Price" : "Selling Price"}
+                                </Label>
+                                <Input id="adjustment-price" type="number" step="0.01" value={adjustment.price} onChange={e => setAdjustment(prev => ({...prev, price: parseFloat(e.target.value) || 0}))} />
+                                <p className="text-xs text-muted-foreground mt-1">Price per unit for this transaction.</p>
+                            </div>
+                        )}
+                        <div className="col-span-2">
+                            <Label htmlFor="adjustment-notes">Notes (Optional)</Label>
+                            <Input id="adjustment-notes" type="text" placeholder={adjustment.quantity > 0 ? 'e.g., New shipment' : 'e.g., Direct sale'} value={adjustment.notes} onChange={e => setAdjustment(prev => ({ ...prev, notes: e.target.value }))} />
+                        </div>
+                    </div>
+                    <Button onClick={handleStockAdjustment} disabled={adjustment.quantity === 0}>
+                        {adjustment.quantity > 0 ? <PlusCircle className="mr-2"/> : <MinusCircle className="mr-2"/>}
+                        Confirm Adjustment
+                    </Button>
+                </CardContent>
+            </Card>
+        </div>
 
-        <Card className="shadow-lg">
-            <CardHeader>
-                <CardTitle className="font-headline text-xl text-primary flex items-center"><History className="mr-2"/> Transaction History</CardTitle>
-                <CardDescription>A complete log of all stock movements for this product.</CardDescription>
-            </CardHeader>
-            <CardContent className="max-h-96 overflow-y-auto">
-                {transactions.length > 0 ? (
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Date</TableHead>
-                                <TableHead>Type</TableHead>
-                                <TableHead>Change</TableHead>
-                                <TableHead>New Stock</TableHead>
-                                <TableHead>Price</TableHead>
-                                <TableHead>Notes</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {transactions.map(tx => (
-                                <TableRow key={tx.id}>
-                                    <TableCell>{format(tx.transactionDate.toDate(), "MMM dd, yyyy HH:mm")}</TableCell>
-                                    <TableCell><div className="flex items-center gap-2 capitalize">{getTransactionTypeIcon(tx.type)} {tx.type}</div></TableCell>
-                                    <TableCell className={`font-bold ${tx.quantityChange > 0 ? 'text-green-600' : 'text-red-600'}`}>{tx.quantityChange > 0 ? `+${tx.quantityChange}` : tx.quantityChange}</TableCell>
-                                    <TableCell className="font-medium">{tx.newStock}</TableCell>
-                                    <TableCell>
-                                        {tx.transactionPrice !== undefined ? `${tx.transactionPrice.toFixed(2)}` : 'N/A'}
-                                    </TableCell>
-                                    <TableCell>{tx.invoiceId ? <Link href={`/invoices/${tx.invoiceId}`} className="text-primary hover:underline">Invoice #{tx.notes}</Link> : tx.notes}</TableCell>
-                                    <TableCell className="text-right">
-                                        <AlertDialog>
-                                            <AlertDialogTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </AlertDialogTrigger>
-                                            <AlertDialogContent>
-                                                <AlertDialogHeader>
-                                                    <AlertDialogTitle>Delete Transaction?</AlertDialogTitle>
-                                                    <AlertDialogDescription>
-                                                        This will permanently delete the transaction and reverse the stock change. This action cannot be undone.
-                                                    </AlertDialogDescription>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => handleDeleteTransaction(tx)} className="bg-destructive hover:bg-destructive/90">
-                                                        Confirm Delete
-                                                    </AlertDialogAction>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
-                                    </TableCell>
+        <div className="lg:col-span-3">
+            <Card className="shadow-lg h-full">
+                <CardHeader>
+                    <CardTitle className="font-headline text-xl text-primary flex items-center"><History className="mr-2"/> Transaction History</CardTitle>
+                    <CardDescription>A complete log of all stock movements for this product.</CardDescription>
+                </CardHeader>
+                <CardContent className="max-h-[400px] overflow-y-auto">
+                    {transactions.length > 0 ? (
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Date</TableHead>
+                                    <TableHead>Type</TableHead>
+                                    <TableHead>Change</TableHead>
+                                    <TableHead>New Stock</TableHead>
+                                    <TableHead>Price</TableHead>
+                                    <TableHead>Notes</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                ) : (
-                    <p className="text-muted-foreground text-center py-8">No transaction history found for this product.</p>
-                )}
-            </CardContent>
-        </Card>
+                            </TableHeader>
+                            <TableBody>
+                                {transactions.map(tx => (
+                                    <TableRow key={tx.id}>
+                                        <TableCell className="text-xs">{format(tx.transactionDate.toDate(), "MMM dd, yyyy HH:mm")}</TableCell>
+                                        <TableCell><div className="flex items-center gap-2 capitalize">{getTransactionTypeIcon(tx.type)} {tx.type}</div></TableCell>
+                                        <TableCell className={`font-bold ${tx.quantityChange > 0 ? 'text-green-600' : 'text-red-600'}`}>{tx.quantityChange > 0 ? `+${tx.quantityChange}` : tx.quantityChange}</TableCell>
+                                        <TableCell className="font-medium">{tx.newStock}</TableCell>
+                                        <TableCell>
+                                            {tx.transactionPrice !== undefined ? `${tx.transactionPrice.toFixed(2)}` : 'N/A'}
+                                        </TableCell>
+                                        <TableCell className="text-xs">{tx.invoiceId ? <Link href={`/invoices/${tx.invoiceId}`} className="text-primary hover:underline">Invoice #{tx.notes}</Link> : tx.notes}</TableCell>
+                                        <TableCell className="text-right">
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10">
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>Delete Transaction?</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                            This will permanently delete the transaction and reverse the stock change. This action cannot be undone.
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={() => handleDeleteTransaction(tx)} className="bg-destructive hover:bg-destructive/90">
+                                                            Confirm Delete
+                                                        </AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    ) : (
+                        <p className="text-muted-foreground text-center py-8">No transaction history found for this product.</p>
+                    )}
+                </CardContent>
+            </Card>
+        </div>
       </div>
 
     </div>
