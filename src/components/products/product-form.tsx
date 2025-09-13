@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { db } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp, doc, updateDoc } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, doc, updateDoc, writeBatch } from "firebase/firestore";
 import type { Product, ProductFormData } from "@/lib/types";
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
@@ -21,8 +21,11 @@ import { useLanguage } from "@/hooks/use-language";
 
 const productFormSchema = z.object({
   name: z.string().min(2, "Product/Service name must be at least 2 characters."),
+  reference: z.string().optional(),
   description: z.string().min(2, "Description must be at least 2 characters."),
-  unitPrice: z.coerce.number().min(0, "Unit price must be a non-negative number."),
+  sellingPrice: z.coerce.number().min(0, "Selling price must be a non-negative number."),
+  purchasePrice: z.coerce.number().min(0, "Purchase price must be a non-negative number.").optional(),
+  stock: z.coerce.number().int("Stock must be a whole number.").optional(),
 });
 
 interface ProductFormProps {
@@ -37,43 +40,68 @@ export default function ProductForm({ initialData, onSave }: ProductFormProps) {
   const { t } = useLanguage();
   const [isSaving, setIsSaving] = useState(false);
 
-  const form = useForm<ProductFormData>({
+  const form = useForm<z.infer<typeof productFormSchema>>({
     resolver: zodResolver(productFormSchema),
     defaultValues: {
       name: initialData?.name || "",
+      reference: initialData?.reference || "",
       description: initialData?.description || "",
-      unitPrice: initialData?.unitPrice || 0,
+      sellingPrice: initialData?.sellingPrice || 0,
+      purchasePrice: initialData?.purchasePrice || undefined,
+      stock: initialData?.stock || undefined,
     },
   });
 
-  async function onSubmit(values: ProductFormData) {
+  async function onSubmit(values: z.infer<typeof productFormSchema>) {
     if (!user) {
       toast({ title: "Authentication Error", description: "You must be logged in.", variant: "destructive" });
       return;
     }
     setIsSaving(true);
 
-    const productData: Omit<Product, 'id' | 'createdAt' | 'updatedAt'> = {
+    const productData = {
       userId: user.uid,
       name: values.name,
+      reference: values.reference || "",
       description: values.description,
-      unitPrice: values.unitPrice,
+      sellingPrice: values.sellingPrice,
+      purchasePrice: values.purchasePrice,
+      stock: values.stock,
+      updatedAt: serverTimestamp(),
     };
 
     try {
       if (initialData?.id) {
         const productRef = doc(db, "products", initialData.id);
-        await updateDoc(productRef, { ...productData, updatedAt: serverTimestamp() });
+        await updateDoc(productRef, productData);
         toast({ title: t('productForm.toast.productUpdated') });
-        if (onSave) onSave(initialData.id); else router.push("/products");
+        if (onSave) onSave(initialData.id); else router.push(`/products/${initialData.id}`);
       } else {
-        const docRef = await addDoc(collection(db, "products"), {
+        const batch = writeBatch(db);
+        const productRef = doc(collection(db, "products"));
+        
+        batch.set(productRef, {
           ...productData,
           createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
         });
+        
+        if (values.stock !== undefined) {
+            const transactionRef = doc(collection(db, "productTransactions"));
+            batch.set(transactionRef, {
+                userId: user.uid,
+                productId: productRef.id,
+                type: 'initial',
+                quantityChange: values.stock,
+                newStock: values.stock,
+                notes: 'Initial stock',
+                transactionDate: serverTimestamp(),
+            });
+        }
+
+        await batch.commit();
+        
         toast({ title: t('productForm.toast.productAdded') });
-        if (onSave) onSave(docRef.id);
+        if (onSave) onSave(productRef.id);
         else router.push("/products");
       }
     } catch (error) {
@@ -97,13 +125,22 @@ export default function ProductForm({ initialData, onSave }: ProductFormProps) {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <FormField control={form.control} name="name" render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('productForm.labels.name')}</FormLabel>
-                <FormControl><Input placeholder={t('productForm.placeholders.name')} {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField control={form.control} name="name" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('productForm.labels.name')}</FormLabel>
+                  <FormControl><Input placeholder={t('productForm.placeholders.name')} {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <FormField control={form.control} name="reference" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('productForm.labels.reference', { default: "Reference / SKU"})}</FormLabel>
+                  <FormControl><Input placeholder={t('productForm.placeholders.reference', { default: "e.g., SKU-12345"})} {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+            </div>
             <FormField control={form.control} name="description" render={({ field }) => (
               <FormItem>
                 <FormLabel>{t('productForm.labels.description')}</FormLabel>
@@ -111,13 +148,29 @@ export default function ProductForm({ initialData, onSave }: ProductFormProps) {
                 <FormMessage />
               </FormItem>
             )} />
-            <FormField control={form.control} name="unitPrice" render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('productForm.labels.unitPrice')}</FormLabel>
-                <FormControl><Input type="number" step="0.01" placeholder={t('productForm.placeholders.unitPrice')} {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <FormField control={form.control} name="sellingPrice" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('productForm.labels.sellingPrice', { default: "Selling Price" })}</FormLabel>
+                  <FormControl><Input type="number" step="0.01" placeholder={t('productForm.placeholders.sellingPrice', { default: "199.99"})} {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <FormField control={form.control} name="purchasePrice" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('productForm.labels.purchasePrice', { default: "Purchase Price (Optional)"})}</FormLabel>
+                  <FormControl><Input type="number" step="0.01" placeholder={t('productForm.placeholders.purchasePrice', { default: "120.00"})} {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <FormField control={form.control} name="stock" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('productForm.labels.stock', { default: "Stock Quantity (Optional)"})}</FormLabel>
+                  <FormControl><Input type="number" step="1" placeholder={t('productForm.placeholders.stock', { default: "100" })} {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+            </div>
           </CardContent>
           <CardFooter className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => router.back()}>{t('productForm.buttons.cancel')}</Button>

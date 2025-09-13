@@ -28,6 +28,7 @@ import AddItemDialog from "./add-item-dialog";
 
 const invoiceItemSchema = z.object({
   id: z.string().optional(),
+  productId: z.string().optional(),
   description: z.string().min(1, "Description is required"),
   quantity: z.coerce.number().min(0.01, "Quantity must be at least 0.01"),
   unitPrice: z.coerce.number().min(0, "Unit price must be non-negative"),
@@ -83,11 +84,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
       invoiceNumber: initialData?.invoiceNumber || `INV-${Date.now().toString().slice(-6)}`,
       issueDate: initialData?.issueDate ? new Date(initialData.issueDate) : new Date(),
       dueDate: initialData?.dueDate ? new Date(initialData.dueDate) : new Date(new Date().setDate(new Date().getDate() + 30)),
-      items: initialData?.items?.map(item => ({
-        description: item.description,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice
-      })) || [{ description: "", quantity: 1, unitPrice: 0 }],
+      items: initialData?.items?.map(item => ({ ...item })) || [{ description: "", quantity: 1, unitPrice: 0 }],
       notes: initialData?.notes || userPrefs?.defaultNotes || "",
       taxRate: initialData?.taxRate ?? userPrefs?.defaultTaxRate ?? 0,
     },
@@ -159,11 +156,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
                 invoiceNumber: initialData.invoiceNumber,
                 issueDate: new Date(initialData.issueDate),
                 dueDate: new Date(initialData.dueDate),
-                items: initialData.items.map(item => ({
-                  description: item.description,
-                  quantity: item.quantity,
-                  unitPrice: item.unitPrice,
-                })),
+                items: initialData.items.map(item => ({ ...item })),
                 notes: initialData.notes || "",
                 taxRate: initialData.taxRate ?? userPrefs?.defaultTaxRate ?? 0,
             });
@@ -219,6 +212,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     setIsSaving(true);
 
     const invoiceItemsToSave: InvoiceItem[] = values.items.map(item => ({
+      productId: item.productId,
       description: item.description,
       quantity: item.quantity,
       unitPrice: item.unitPrice,
@@ -247,6 +241,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
       language: initialData?.language || userPrefs?.language || "fr",
       appliedDefaultNotes: initialData ? initialData.appliedDefaultNotes : (values.notes === (userPrefs?.defaultNotes || "") ? userPrefs?.defaultNotes : ""),
       appliedDefaultPaymentTerms: initialData ? initialData.appliedDefaultPaymentTerms : (userPrefs?.defaultPaymentTerms || ""),
+      stockUpdated: initialData?.stockUpdated || false,
     };
 
     try {
@@ -279,7 +274,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     }
   }
 
-  const handleAddItem = (item: { description: string; quantity: number; unitPrice: number; }) => {
+  const handleAddItem = (item: Pick<InvoiceItem, 'productId' | 'description' | 'quantity' | 'unitPrice'>) => {
     // If the first item is the default empty one, remove it
     if (fields.length === 1 && fields[0].description === "" && fields[0].unitPrice === 0) {
       remove(0);

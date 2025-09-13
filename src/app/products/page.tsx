@@ -4,7 +4,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
-import { Package, Search, Loader2, Edit, Trash2 } from "lucide-react"; 
+import { Package, Search, Loader2, Edit, Trash2, Eye } from "lucide-react"; 
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuth } from "@/hooks/use-auth";
@@ -77,6 +77,7 @@ export default function ProductsPage() {
     const lowerSearchTerm = searchTerm.toLowerCase();
     return allProducts.filter(product =>
       product.name.toLowerCase().includes(lowerSearchTerm) ||
+      (product.reference && product.reference.toLowerCase().includes(lowerSearchTerm)) ||
       product.description.toLowerCase().includes(lowerSearchTerm)
     );
   }, [allProducts, searchTerm]);
@@ -91,6 +92,8 @@ export default function ProductsPage() {
 
     try {
       await deleteDoc(doc(db, "products", productId));
+      // You might want to delete related transactions as well, or handle them as orphaned.
+      // For now, we just delete the product.
       setAllProducts(prev => prev.filter(p => p.id !== productId));
       toast({
         title: t('productsPage.toast.deleteSuccessTitle'),
@@ -160,8 +163,9 @@ export default function ProductsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t('productsPage.table.name')}</TableHead>
-                  <TableHead>{t('productsPage.table.description')}</TableHead>
-                  <TableHead className="text-right">{t('productsPage.table.unitPrice')}</TableHead>
+                  <TableHead>{t('productsPage.table.reference', { default: "Reference" })}</TableHead>
+                  <TableHead className="text-right">{t('productsPage.table.sellingPrice', { default: "Selling Price" })}</TableHead>
+                  <TableHead className="text-right">{t('productsPage.table.stock', { default: "Stock" })}</TableHead>
                   <TableHead className="text-right">{t('productsPage.table.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -169,10 +173,16 @@ export default function ProductsPage() {
                 {filteredProducts.map((product) => (
                   <TableRow key={product.id}>
                     <TableCell className="font-medium">{product.name}</TableCell>
-                    <TableCell>{product.description}</TableCell>
-                    <TableCell className="text-right">{product.unitPrice.toFixed(2)}</TableCell>
+                    <TableCell>{product.reference || 'N/A'}</TableCell>
+                    <TableCell className="text-right">{product.sellingPrice.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">{product.stock !== undefined ? product.stock : 'N/A'}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
+                        <Button variant="ghost" size="sm" asChild>
+                          <Link href={`/products/${product.id}`}>
+                            <Eye className="mr-1 h-4 w-4" /> {t('productsPage.actions.view', { default: 'View' })}
+                          </Link> 
+                        </Button>
                         <Button variant="ghost" size="sm" asChild>
                           <Link href={`/products/${product.id}/edit`}>
                             <Edit className="mr-1 h-4 w-4" /> {t('productsPage.actions.edit')}

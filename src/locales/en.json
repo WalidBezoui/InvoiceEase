@@ -332,12 +332,14 @@
         "customItem": "Custom Item"
       },
       "selectProductTab": {
-        "searchPlaceholder": "Search products...",
+        "searchPlaceholder": "Search products by name or reference...",
         "noProducts": "No products found.",
         "addProductCTA": "Add a new product",
         "name": "Name",
+        "reference": "Ref.",
         "description": "Description",
         "price": "Price",
+        "stock": "Stock",
         "select": "Select"
       },
       "customItemTab": {
@@ -383,7 +385,7 @@
     "revertToSent": "Revert to Sent",
     "reopenAsDraft": "Re-open as Draft",
     "confirmPaidTitle": "Confirm Payment",
-    "confirmPaidDescription": "Are you sure you want to mark this invoice as paid? This action cannot be easily undone.",
+    "confirmPaidDescription": "This will mark the invoice as paid and update product stock levels if applicable. This action cannot be easily undone.",
     "confirmPaidAction": "Confirm Paid",
     "confirmPaidCancel": "Cancel",
     "confirmCancelTitle": "Confirm Cancellation",
@@ -629,18 +631,19 @@
     "yourProductsCard": {
       "title": "Your Products",
       "description": "View and manage your product list.",
-      "searchPlaceholder": "Search products...",
-      "export": "Export"
+      "searchPlaceholder": "Search by name or reference..."
     },
     "table": {
       "name": "Name",
-      "description": "Description",
-      "unitPrice": "Unit Price",
+      "reference": "Reference",
+      "sellingPrice": "Selling Price",
+      "stock": "Stock",
       "actions": "Actions"
     },
     "actions": {
       "edit": "Edit",
-      "delete": "Delete"
+      "delete": "Delete",
+      "view": "View"
     },
     "loading": "Loading products...",
     "error": "Failed to load products. Please try again.",
@@ -669,13 +672,19 @@
     "addDescription": "Fill in the details for the new product or service.",
     "labels": {
       "name": "Product/Service Name",
+      "reference": "Reference / SKU",
       "description": "Description",
-      "unitPrice": "Unit Price"
+      "sellingPrice": "Selling Price",
+      "purchasePrice": "Purchase Price (Optional)",
+      "stock": "Stock Quantity (Optional)"
     },
     "placeholders": {
       "name": "e.g., Website Maintenance Plan",
+      "reference": "e.g., SKU-12345",
       "description": "e.g., Monthly checkups, backups, and security scans.",
-      "unitPrice": "150.00"
+      "sellingPrice": "199.99",
+      "purchasePrice": "120.00",
+      "stock": "100"
     },
     "buttons": {
       "cancel": "Cancel",

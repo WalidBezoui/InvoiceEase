@@ -332,12 +332,14 @@
         "customItem": "Article Personnalisé"
       },
       "selectProductTab": {
-        "searchPlaceholder": "Rechercher des produits...",
+        "searchPlaceholder": "Rechercher par nom ou référence...",
         "noProducts": "Aucun produit trouvé.",
         "addProductCTA": "Ajouter un nouveau produit",
         "name": "Nom",
+        "reference": "Réf.",
         "description": "Description",
         "price": "Prix",
+        "stock": "Stock",
         "select": "Sélectionner"
       },
       "customItemTab": {
@@ -383,7 +385,7 @@
     "revertToSent": "Revenir à Envoyée",
     "reopenAsDraft": "Réouvrir comme Brouillon",
     "confirmPaidTitle": "Confirmer le Paiement",
-    "confirmPaidDescription": "Êtes-vous sûr de vouloir marquer cette facture comme payée ? Cette action ne peut pas être facilement annulée.",
+    "confirmPaidDescription": "Ceci marquera la facture comme payée et mettra à jour les niveaux de stock des produits si applicable. Cette action ne peut pas être facilement annulée.",
     "confirmPaidAction": "Confirmer Payée",
     "confirmPaidCancel": "Annuler",
     "confirmCancelTitle": "Confirmer l'Annulation",
@@ -629,18 +631,19 @@
     "yourProductsCard": {
       "title": "Vos Produits",
       "description": "Consultez et gérez votre liste de produits.",
-      "searchPlaceholder": "Rechercher des produits...",
-      "export": "Exporter"
+      "searchPlaceholder": "Rechercher par nom ou référence..."
     },
     "table": {
       "name": "Nom",
-      "description": "Description",
-      "unitPrice": "Prix Unitaire",
+      "reference": "Référence",
+      "sellingPrice": "Prix de Vente",
+      "stock": "Stock",
       "actions": "Actions"
     },
     "actions": {
       "edit": "Modifier",
-      "delete": "Supprimer"
+      "delete": "Supprimer",
+      "view": "Voir"
     },
     "loading": "Chargement des produits...",
     "error": "Échec du chargement des produits. Veuillez réessayer.",
@@ -669,13 +672,19 @@
     "addDescription": "Remplissez les détails du nouveau produit ou service.",
     "labels": {
       "name": "Nom du Produit/Service",
+      "reference": "Référence / SKU",
       "description": "Description",
-      "unitPrice": "Prix Unitaire"
+      "sellingPrice": "Prix de Vente",
+      "purchasePrice": "Prix d'Achat (Optionnel)",
+      "stock": "Quantité en Stock (Optionnel)"
     },
     "placeholders": {
       "name": "ex: Plan de Maintenance de Site Web",
+      "reference": "ex: SKU-12345",
       "description": "ex: Vérifications mensuelles, sauvegardes et analyses de sécurité.",
-      "unitPrice": "150.00"
+      "sellingPrice": "199.99",
+      "purchasePrice": "120.00",
+      "stock": "100"
     },
     "buttons": {
       "cancel": "Annuler",

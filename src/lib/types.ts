@@ -41,16 +41,37 @@ export interface Product {
   id?: string;
   userId: string;
   name: string;
+  reference?: string;
   description: string;
-  unitPrice: number;
+  sellingPrice: number;
+  purchasePrice?: number;
+  stock?: number;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }
 
-export type ProductFormData = Omit<Product, 'id' | 'userId' | 'createdAt' | 'updatedAt'>;
+export type ProductFormData = Omit<Product, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'sellingPrice'> & {
+  sellingPrice?: number;
+};
+
+export type ProductTransactionType = 'initial' | 'sale' | 'purchase' | 'adjustment';
+
+export interface ProductTransaction {
+  id?: string;
+  userId: string;
+  productId: string;
+  type: ProductTransactionType;
+  quantityChange: number;
+  newStock: number;
+  notes?: string;
+  invoiceId?: string; // Link to invoice for 'sale' type
+  transactionDate: Timestamp;
+}
+
 
 export interface InvoiceItem {
-  id?: string; 
+  id?: string;
+  productId?: string; // Link to the product
   description: string;
   quantity: number;
   unitPrice: number;
@@ -86,6 +107,7 @@ export interface Invoice {
   
   sentDate?: string | null; 
   paidDate?: string | null; 
+  stockUpdated?: boolean; // Flag to check if stock has been updated for this invoice
 
   createdAt?: Timestamp; 
   updatedAt?: Timestamp; 

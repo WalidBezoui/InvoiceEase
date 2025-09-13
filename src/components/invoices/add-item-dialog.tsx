@@ -16,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Loader2, PlusCircle, Search, PackagePlus } from "lucide-react";
-import type { Product } from '@/lib/types';
+import type { Product, InvoiceItem } from '@/lib/types';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -26,7 +26,7 @@ import Link from 'next/link';
 interface AddItemDialogProps {
   products: Product[];
   isLoading: boolean;
-  onAddItem: (item: { description: string; quantity: number; unitPrice: number }) => void;
+  onAddItem: (item: Pick<InvoiceItem, 'productId' | 'description' | 'quantity' | 'unitPrice'>) => void;
   currency: string;
   t: (key: string, params?: Record<string, any>) => string;
 }
@@ -54,14 +54,19 @@ export default function AddItemDialog({ products, isLoading, onAddItem, currency
 
   const filteredProducts = useMemo(() => {
     if (!searchTerm) return products;
-    return products.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
+    const lowerSearch = searchTerm.toLowerCase();
+    return products.filter(p => 
+        p.name.toLowerCase().includes(lowerSearch) ||
+        (p.reference && p.reference.toLowerCase().includes(lowerSearch))
+    );
   }, [products, searchTerm]);
 
   const handleSelectProduct = (product: Product) => {
     onAddItem({
+      productId: product.id,
       description: product.name,
       quantity: 1,
-      unitPrice: product.unitPrice,
+      unitPrice: product.sellingPrice,
     });
     setOpen(false);
   };
@@ -120,8 +125,9 @@ export default function AddItemDialog({ products, isLoading, onAddItem, currency
                             <TableHeader>
                                 <TableRow>
                                 <TableHead>{t('invoiceForm.addItemDialog.selectProductTab.name')}</TableHead>
-                                <TableHead>{t('invoiceForm.addItemDialog.selectProductTab.description')}</TableHead>
+                                <TableHead>{t('invoiceForm.addItemDialog.selectProductTab.reference', { default: 'Ref.'})}</TableHead>
                                 <TableHead className="text-right">{t('invoiceForm.addItemDialog.selectProductTab.price')}</TableHead>
+                                <TableHead className="text-right">{t('invoiceForm.addItemDialog.selectProductTab.stock', { default: 'Stock' })}</TableHead>
                                 <TableHead className="w-[100px]"></TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -129,8 +135,9 @@ export default function AddItemDialog({ products, isLoading, onAddItem, currency
                                 {filteredProducts.map(product => (
                                 <TableRow key={product.id}>
                                     <TableCell className="font-medium">{product.name}</TableCell>
-                                    <TableCell>{product.description}</TableCell>
-                                    <TableCell className="text-right">{currency} {product.unitPrice.toFixed(2)}</TableCell>
+                                    <TableCell>{product.reference}</TableCell>
+                                    <TableCell className="text-right">{currency} {product.sellingPrice.toFixed(2)}</TableCell>
+                                    <TableCell className="text-right">{product.stock !== undefined ? product.stock : 'N/A'}</TableCell>
                                     <TableCell>
                                         <Button size="sm" onClick={() => handleSelectProduct(product)}>
                                             {t('invoiceForm.addItemDialog.selectProductTab.select')}
