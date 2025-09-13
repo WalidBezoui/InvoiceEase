@@ -227,6 +227,7 @@ export const generateInvoicePdf = async (
       
       const tableBody = chunk.map(item => [
           item.description,
+          item.reference || 'N/A',
           item.quantity.toString(),
           item.unitPrice.toFixed(2),
           (item.quantity * item.unitPrice).toFixed(2)
@@ -236,6 +237,7 @@ export const generateInvoicePdf = async (
         startY: isFirstPage ? 120 : 90, // More space on first page for client details
         head: [[
             t('invoiceDetailPage.itemDescription'),
+            t('invoiceForm.addItemDialog.selectProductTab.reference'),
             t('invoiceDetailPage.itemQuantity'),
             t('invoiceDetailPage.itemUnitPrice'),
             t('invoiceDetailPage.itemTotal')
@@ -249,9 +251,10 @@ export const generateInvoicePdf = async (
         },
         columnStyles: {
             0: { cellWidth: 'auto' },
-            1: { cellWidth: 20, halign: 'center' },
-            2: { cellWidth: 30, halign: 'right' },
-            3: { cellWidth: 30, halign: 'right' }
+            1: { cellWidth: 25 },
+            2: { cellWidth: 20, halign: 'center' },
+            3: { cellWidth: 30, halign: 'right' },
+            4: { cellWidth: 30, halign: 'right' }
         },
         margin: { left: margin, right: margin }
       });
@@ -280,3 +283,5 @@ export const generateInvoicePdf = async (
 
   doc.save(`invoice-${invoice.invoiceNumber}.pdf`);
 };
+
+    

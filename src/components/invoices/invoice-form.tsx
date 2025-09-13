@@ -437,33 +437,42 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
           <CardContent className="space-y-4">
             {fields.map((item, index) => (
               <div key={item.id || `item-${index}`} className="flex flex-col md:flex-row gap-4 items-start p-4 border rounded-md bg-secondary/30">
-                <FormField control={form.control} name={`items.${index}.description`} render={({ field: itemField }) => (
-                  <FormItem className="flex-grow">
-                    <FormLabel>{t('invoiceForm.formFields.itemDescription')}</FormLabel>
-                    <FormControl><Input placeholder={t('invoiceForm.placeholders.itemDescription')} {...itemField} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name={`items.${index}.quantity`} render={({ field: itemField }) => (
-                  <FormItem className="w-full md:w-24">
-                    <FormLabel>{t('invoiceForm.formFields.itemQuantity')}</FormLabel>
-                    <FormControl><Input type="number" placeholder={t('invoiceForm.placeholders.itemQuantity')} {...itemField} step="any" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name={`items.${index}.unitPrice`} render={({ field: itemField }) => (
-                  <FormItem className="w-full md:w-32">
-                    <FormLabel>{t('invoiceForm.formFields.itemUnitPrice')}</FormLabel>
-                    <FormControl><Input type="number" placeholder={t('invoiceForm.placeholders.itemUnitPrice')} step="0.01" {...itemField} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                 <div className="w-full md:w-32">
+                <div className="flex-grow grid gap-4 grid-cols-1 sm:grid-cols-5">
+                    <FormField control={form.control} name={`items.${index}.description`} render={({ field: itemField }) => (
+                      <FormItem className="sm:col-span-2">
+                        <FormLabel>{t('invoiceForm.formFields.itemDescription')}</FormLabel>
+                        <FormControl><Input placeholder={t('invoiceForm.placeholders.itemDescription')} {...itemField} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                     <FormField control={form.control} name={`items.${index}.reference`} render={({ field: itemField }) => (
+                        <FormItem>
+                            <FormLabel>{t('invoiceForm.addItemDialog.selectProductTab.reference')}</FormLabel>
+                            <FormControl><Input placeholder="SKU-123" {...itemField} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )} />
+                    <FormField control={form.control} name={`items.${index}.quantity`} render={({ field: itemField }) => (
+                      <FormItem>
+                        <FormLabel>{t('invoiceForm.formFields.itemQuantity')}</FormLabel>
+                        <FormControl><Input type="number" placeholder="1" {...itemField} step="any" /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name={`items.${index}.unitPrice`} render={({ field: itemField }) => (
+                      <FormItem>
+                        <FormLabel>{t('invoiceForm.formFields.itemUnitPrice')}</FormLabel>
+                        <FormControl><Input type="number" placeholder="100.00" step="0.01" {...itemField} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                </div>
+                 <div className="w-full md:w-32 self-end">
                     <FormLabel>{t('invoiceForm.formFields.itemTotal')}</FormLabel>
                     <Input
                       readOnly
                       value={(watchItems[index]?.quantity * watchItems[index]?.unitPrice || 0).toFixed(2)}
-                      className="bg-muted cursor-default"
+                      className="bg-muted cursor-default font-semibold"
                     />
                   </div>
                 <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="mt-auto text-destructive hover:bg-destructive/10 self-end md:self-center">
@@ -526,3 +535,5 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     </Form>
   );
 }
+
+    
