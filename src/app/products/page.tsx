@@ -4,7 +4,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
-import { Package, Search, Loader2, Edit, Trash2, Eye, Lightbulb, AlertTriangle, Info } from "lucide-react"; 
+import { Package, Search, Loader2, Edit, Trash2, Eye, Lightbulb, AlertTriangle, Info, ChevronDown, FilterX } from "lucide-react"; 
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuth } from "@/hooks/use-auth";
@@ -27,7 +27,17 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { getProductTip } from "@/ai/flows/product-analysis-flow";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
+
+const ALL_TIP_TYPES: ProductTipOutput['type'][] = ['warning', 'suggestion', 'info'];
 
 export default function ProductsPage() {
   const { user, loading: authLoading } = useAuth();
@@ -38,6 +48,7 @@ export default function ProductsPage() {
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedTipTypes, setSelectedTipTypes] = useState<Set<ProductTipOutput['type']>>(new Set());
 
   const isLoading = authLoading || isLoadingLocale || isLoadingData;
 
@@ -61,7 +72,6 @@ export default function ProductsPage() {
           const product = { id: doc.id, ...doc.data() } as Product;
           fetchedProducts.push(product);
 
-          // Prepare to fetch tip for each product
           const transactionsQuery = query(
             collection(db, "productTransactions"),
             where("productId", "==", product.id),
@@ -80,7 +90,6 @@ export default function ProductsPage() {
             }).then(tip => ({ id: product.id!, tip }));
           }).catch(err => {
               console.warn(`Could not fetch tip for product ${product.id}:`, err);
-              // Return a nullish or error-indicating object so Promise.all doesn't fail
               return {id: product.id!, tip: {tip: 'N/A', type: 'info'}};
           });
 
@@ -89,7 +98,6 @@ export default function ProductsPage() {
 
         setAllProducts(fetchedProducts);
 
-        // Fetch all tips in parallel
         const resolvedTips = await Promise.all(tipPromises);
         const tipsMap: Record<string, ProductTipOutput> = {};
         resolvedTips.forEach(result => {
@@ -114,15 +122,43 @@ export default function ProductsPage() {
     }
   }, [user, authLoading, t, locale, isLoadingLocale]);
 
+  const handleTipTypeToggle = (tipType: ProductTipOutput['type']) => {
+    setSelectedTipTypes(prev => {
+      const newSelected = new Set(prev);
+      if (newSelected.has(tipType)) {
+        newSelected.delete(tipType);
+      } else {
+        newSelected.add(tipType);
+      }
+      return newSelected;
+    });
+  };
+  
+  const handleClearTipFilters = () => {
+    setSelectedTipTypes(new Set());
+  };
+
   const filteredProducts = useMemo(() => {
-    if (!searchTerm) return allProducts;
-    const lowerSearchTerm = searchTerm.toLowerCase();
-    return allProducts.filter(product =>
-      product.name.toLowerCase().includes(lowerSearchTerm) ||
-      (product.reference && product.reference.toLowerCase().includes(lowerSearchTerm)) ||
-      product.description.toLowerCase().includes(lowerSearchTerm)
-    );
-  }, [allProducts, searchTerm]);
+    let productsToDisplay = [...allProducts];
+    
+    if (searchTerm) {
+        const lowerSearchTerm = searchTerm.toLowerCase();
+        productsToDisplay = productsToDisplay.filter(product =>
+            product.name.toLowerCase().includes(lowerSearchTerm) ||
+            (product.reference && product.reference.toLowerCase().includes(lowerSearchTerm)) ||
+            product.description.toLowerCase().includes(lowerSearchTerm)
+        );
+    }
+
+    if (selectedTipTypes.size > 0) {
+        productsToDisplay = productsToDisplay.filter(product => {
+            const productTip = tips[product.id!];
+            return productTip && selectedTipTypes.has(productTip.type);
+        });
+    }
+    
+    return productsToDisplay;
+  }, [allProducts, searchTerm, selectedTipTypes, tips]);
 
   const handleDelete = async (productId: string) => {
     if (!user) {
@@ -187,15 +223,47 @@ export default function ProductsPage() {
               <CardTitle className="font-headline text-xl text-primary">{t('productsPage.yourProductsCard.title')}</CardTitle>
               <CardDescription>{t('productsPage.yourProductsCard.description')}</CardDescription>
             </div>
-            <div className="relative w-full md:w-auto md:min-w-[300px]">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input 
-                type="search" 
-                placeholder={t('productsPage.yourProductsCard.searchPlaceholder')} 
-                className="pl-8 w-full"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+            <div className="flex items-center gap-2 w-full md:w-auto flex-wrap">
+              <div className="relative flex-grow">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input 
+                  type="search" 
+                  placeholder={t('productsPage.yourProductsCard.searchPlaceholder')} 
+                  className="pl-8 w-full min-w-[200px]"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+               <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="flex-shrink-0">
+                     {t('productsPage.yourProductsCard.filterByTip')} {selectedTipTypes.size > 0 ? `(${selectedTipTypes.size})` : ''} <ChevronDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>{t('productsPage.yourProductsCard.filterByTip')}</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {ALL_TIP_TYPES.map((tipType) => (
+                    <DropdownMenuCheckboxItem
+                      key={tipType}
+                      checked={selectedTipTypes.has(tipType)}
+                      onCheckedChange={() => handleTipTypeToggle(tipType)}
+                      onSelect={(e) => e.preventDefault()} 
+                      className="capitalize"
+                    >
+                      {t(`productTipType.${tipType}`, { default: tipType })}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                  {selectedTipTypes.size > 0 && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onSelect={handleClearTipFilters} className="text-sm">
+                        <FilterX className="mr-2 h-4 w-4" /> {t('invoicesPage.yourInvoicesCard.clearAllFilters')}
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </CardHeader>
@@ -266,12 +334,12 @@ export default function ProductsPage() {
                           </TooltipTrigger><TooltipContent><p>{t('productsPage.actions.edit')}</p></TooltipContent></Tooltip>
 
                           <AlertDialog>
-                            <Tooltip><TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
+                             <Tooltip><TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10">
                                   <Trash2 className="h-4 w-4" />
                                   <span className="sr-only">{t('productsPage.actions.delete')}</span>
                                 </Button>
-                            </TooltipTrigger><TooltipContent><p>{t('productsPage.actions.delete')}</p></TooltipContent></Tooltip>
+                             </TooltipTrigger><TooltipContent><p>{t('productsPage.actions.delete')}</p></TooltipContent></Tooltip>
                             <AlertDialogContent>
                               <AlertDialogHeader>
                                 <AlertDialogTitle>{t('productsPage.dialog.deleteTitle')}</AlertDialogTitle>
@@ -298,11 +366,14 @@ export default function ProductsPage() {
             <div className="text-center py-12">
               <Package className="mx-auto h-12 w-12 text-muted-foreground" />
               <h3 className="mt-4 text-xl font-semibold text-primary">
-                {allProducts.length > 0 && searchTerm ? t('productsPage.noProductsMatchSearch') : t('productsPage.noProductsYet')}
+                {allProducts.length > 0 && (searchTerm || selectedTipTypes.size > 0)
+                  ? t('productsPage.noProductsMatchFilter')
+                  : t('productsPage.noProductsYet')
+                }
               </h3>
               <p className="mt-2 text-sm text-muted-foreground">
-                {allProducts.length > 0 && searchTerm 
-                  ? t('productsPage.noProductsMatchSearchDesc') 
+                {allProducts.length > 0 && (searchTerm || selectedTipTypes.size > 0)
+                  ? t('productsPage.noProductsMatchFilterDesc')
                   : t('productsPage.noProductsYetDesc')
                 }
               </p>
@@ -318,5 +389,3 @@ export default function ProductsPage() {
     </div>
   );
 }
-
-    

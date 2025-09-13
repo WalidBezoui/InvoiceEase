@@ -631,7 +631,8 @@
     "yourProductsCard": {
       "title": "Vos Produits",
       "description": "Consultez et gérez votre liste de produits.",
-      "searchPlaceholder": "Rechercher par nom ou référence..."
+      "searchPlaceholder": "Rechercher par nom ou référence...",
+      "filterByTip": "Filtrer par Conseil"
     },
     "table": {
       "name": "Nom",
@@ -651,6 +652,8 @@
     "error": "Échec du chargement des produits. Veuillez réessayer.",
     "noProductsMatchSearch": "Aucun produit ne correspond à votre recherche",
     "noProductsMatchSearchDesc": "Essayez d'ajuster votre terme de recherche.",
+    "noProductsMatchFilter": "Aucun produit ne correspond à vos critères de filtre",
+    "noProductsMatchFilterDesc": "Essayez d'ajuster votre recherche ou vos filtres.",
     "noProductsYet": "Aucun produit pour le moment",
     "noProductsYetDesc": "Ajoutez votre premier produit pour commencer.",
     "addProduct": "Ajouter un Produit",
@@ -762,5 +765,10 @@
     "purchase": "Achat",
     "initial": "Initial",
     "adjustment": "Ajustement"
+  },
+   "productTipType": {
+    "warning": "Avertissement",
+    "suggestion": "Suggestion",
+    "info": "Info"
   }
 }

@@ -631,7 +631,8 @@
     "yourProductsCard": {
       "title": "Your Products",
       "description": "View and manage your product list.",
-      "searchPlaceholder": "Search by name or reference..."
+      "searchPlaceholder": "Search by name or reference...",
+      "filterByTip": "Filter by Tip"
     },
     "table": {
       "name": "Name",
@@ -651,6 +652,8 @@
     "error": "Failed to load products. Please try again.",
     "noProductsMatchSearch": "No products match your search",
     "noProductsMatchSearchDesc": "Try adjusting your search term.",
+    "noProductsMatchFilter": "No products match your filter criteria",
+    "noProductsMatchFilterDesc": "Try adjusting your search or filters.",
     "noProductsYet": "No products yet",
     "noProductsYetDesc": "Add your first product to get started.",
     "addProduct": "Add Product",
@@ -762,5 +765,10 @@
     "purchase": "Purchase",
     "initial": "Initial",
     "adjustment": "Adjustment"
+  },
+  "productTipType": {
+    "warning": "Warning",
+    "suggestion": "Suggestion",
+    "info": "Info"
   }
 }
