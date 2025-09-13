@@ -131,17 +131,21 @@ export default function ProductDetailPage() {
 
     const newStock = (product.stock || 0) + adjustment.quantity;
     const isPurchase = adjustment.quantity > 0;
-    const type = isPurchase ? 'purchase' : 'adjustment';
+    const type = isPurchase ? 'purchase' : 'sale';
     
-    const newTransactionData: Omit<ProductTransaction, 'id' | 'transactionDate'> = {
+    const newTransactionData: Partial<ProductTransaction> = {
         userId: user.uid,
         productId: product.id!,
         type: type,
         quantityChange: adjustment.quantity,
         newStock: newStock,
-        notes: adjustment.notes || (isPurchase ? 'Stock purchase' : 'Manual sale/adjustment'),
+        notes: adjustment.notes || (isPurchase ? 'Stock purchase' : 'Direct Sale'),
         transactionPrice: adjustment.price,
     };
+    
+    if (newTransactionData.transactionPrice === undefined) {
+        delete newTransactionData.transactionPrice;
+    }
 
     // Update product stock
     batch.update(productRef, { stock: newStock });
@@ -160,7 +164,7 @@ export default function ProductDetailPage() {
           id: transactionRef.id,
           ...newTransactionData,
           transactionDate: { toDate: () => new Date() } as any,
-      }, ...prev]);
+      } as ProductTransaction, ...prev]);
       setAdjustment({ quantity: 0, notes: '', price: product.sellingPrice }); // Reset form
       toast({ title: "Stock Adjusted", description: `Stock for ${product.name} updated to ${newStock}.`});
     } catch (error) {
@@ -392,5 +396,7 @@ export default function ProductDetailPage() {
     </div>
   );
 }
+
+    
 
     
