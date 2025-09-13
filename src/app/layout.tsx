@@ -4,7 +4,6 @@ import './globals.css';
 import { AuthProvider } from '@/contexts/auth-context';
 import { LanguageProvider } from '@/contexts/language-context'; // Import
 import { Toaster } from '@/components/ui/toaster';
-import './print-invoice.css'; // Import the new print stylesheet
 
 export const metadata: Metadata = {
   title: 'InvoiceEase',
