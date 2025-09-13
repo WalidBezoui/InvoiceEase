@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
@@ -11,7 +10,7 @@ import { doc, getDoc, collection, query, where, orderBy, getDocs, writeBatch, se
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Edit, AlertTriangle, Package, DollarSign, History, PlusCircle, MinusCircle, Wrench, ShoppingCart, Trash2 } from "lucide-react";
+import { ArrowLeft, Edit, AlertTriangle, Package, DollarSign, History, PlusCircle, MinusCircle, Wrench, ShoppingCart, Trash2, Lightbulb, BarChart } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLanguage } from "@/hooks/use-language";
 import { format } from "date-fns";
@@ -29,6 +28,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import ProductAnalysis from "@/components/products/product-analysis";
 
 
 export default function ProductDetailPage() {
@@ -347,68 +348,83 @@ export default function ProductDetailPage() {
         </div>
 
         <div className="lg:col-span-3">
-            <Card className="shadow-lg h-full">
-                <CardHeader>
-                    <CardTitle className="font-headline text-xl text-primary flex items-center"><History className="mr-2"/> {t('productDetailPage.transactionHistory.title')}</CardTitle>
-                    <CardDescription>{t('productDetailPage.transactionHistory.description')}</CardDescription>
-                </CardHeader>
-                <CardContent className="max-h-[400px] overflow-y-auto">
-                    {transactions.length > 0 ? (
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>{t('productDetailPage.transactionHistory.date')}</TableHead>
-                                    <TableHead>{t('productDetailPage.transactionHistory.type')}</TableHead>
-                                    <TableHead>{t('productDetailPage.transactionHistory.change')}</TableHead>
-                                    <TableHead>{t('productDetailPage.transactionHistory.newStock')}</TableHead>
-                                    <TableHead>{t('productDetailPage.transactionHistory.price')}</TableHead>
-                                    <TableHead>{t('productDetailPage.transactionHistory.notes')}</TableHead>
-                                    <TableHead className="text-right">{t('productsPage.table.actions')}</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {transactions.map(tx => (
-                                    <TableRow key={tx.id}>
-                                        <TableCell className="text-xs">{format(tx.transactionDate.toDate(), "MMM dd, yyyy HH:mm")}</TableCell>
-                                        <TableCell><div className="flex items-center gap-2 capitalize">{getTransactionTypeIcon(tx.type)} {t(`productTransactionType.${tx.type}`)}</div></TableCell>
-                                        <TableCell className={`font-bold ${tx.quantityChange > 0 ? 'text-green-600' : 'text-red-600'}`}>{tx.quantityChange > 0 ? `+${tx.quantityChange}` : tx.quantityChange}</TableCell>
-                                        <TableCell className="font-medium">{tx.newStock}</TableCell>
-                                        <TableCell>
-                                            {tx.transactionPrice !== undefined ? `${tx.transactionPrice.toFixed(2)}` : 'N/A'}
-                                        </TableCell>
-                                        <TableCell className="text-xs">{tx.invoiceId ? <Link href={`/invoices/${tx.invoiceId}`} className="text-primary hover:underline">{t('productDetailPage.transactionHistory.invoiceLink')} #{tx.notes}</Link> : tx.notes}</TableCell>
-                                        <TableCell className="text-right">
-                                            <AlertDialog>
-                                                <AlertDialogTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10">
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
-                                                </AlertDialogTrigger>
-                                                <AlertDialogContent>
-                                                    <AlertDialogHeader>
-                                                        <AlertDialogTitle>{t('productDetailPage.dialog.deleteTitle')}</AlertDialogTitle>
-                                                        <AlertDialogDescription>
-                                                            {t('productDetailPage.dialog.deleteDesc')}
-                                                        </AlertDialogDescription>
-                                                    </AlertDialogHeader>
-                                                    <AlertDialogFooter>
-                                                        <AlertDialogCancel>{t('productsPage.dialog.cancel')}</AlertDialogCancel>
-                                                        <AlertDialogAction onClick={() => handleDeleteTransaction(tx)} className="bg-destructive hover:bg-destructive/90">
-                                                            {t('productsPage.dialog.confirmDelete')}
-                                                        </AlertDialogAction>
-                                                    </AlertDialogFooter>
-                                                </AlertDialogContent>
-                                            </AlertDialog>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    ) : (
-                        <p className="text-muted-foreground text-center py-8">{t('productDetailPage.transactionHistory.noHistory')}</p>
-                    )}
-                </CardContent>
-            </Card>
+             <Tabs defaultValue="history" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="history">
+                        <History className="mr-2 h-4 w-4" /> {t('productDetailPage.transactionHistory.title')}
+                    </TabsTrigger>
+                    <TabsTrigger value="analysis">
+                        <Lightbulb className="mr-2 h-4 w-4" /> {t('productDetailPage.analysis.title')}
+                    </TabsTrigger>
+                </TabsList>
+                <TabsContent value="history">
+                    <Card className="shadow-lg h-full">
+                        <CardHeader>
+                            <CardTitle className="font-headline text-xl text-primary flex items-center"><History className="mr-2"/> {t('productDetailPage.transactionHistory.title')}</CardTitle>
+                            <CardDescription>{t('productDetailPage.transactionHistory.description')}</CardDescription>
+                        </CardHeader>
+                        <CardContent className="max-h-[400px] overflow-y-auto">
+                            {transactions.length > 0 ? (
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>{t('productDetailPage.transactionHistory.date')}</TableHead>
+                                            <TableHead>{t('productDetailPage.transactionHistory.type')}</TableHead>
+                                            <TableHead>{t('productDetailPage.transactionHistory.change')}</TableHead>
+                                            <TableHead>{t('productDetailPage.transactionHistory.newStock')}</TableHead>
+                                            <TableHead>{t('productDetailPage.transactionHistory.price')}</TableHead>
+                                            <TableHead>{t('productDetailPage.transactionHistory.notes')}</TableHead>
+                                            <TableHead className="text-right">{t('productsPage.table.actions')}</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {transactions.map(tx => (
+                                            <TableRow key={tx.id}>
+                                                <TableCell className="text-xs">{format(tx.transactionDate.toDate(), "MMM dd, yyyy HH:mm")}</TableCell>
+                                                <TableCell><div className="flex items-center gap-2 capitalize">{getTransactionTypeIcon(tx.type)} {t(`productTransactionType.${tx.type}`)}</div></TableCell>
+                                                <TableCell className={`font-bold ${tx.quantityChange > 0 ? 'text-green-600' : 'text-red-600'}`}>{tx.quantityChange > 0 ? `+${tx.quantityChange}` : tx.quantityChange}</TableCell>
+                                                <TableCell className="font-medium">{tx.newStock}</TableCell>
+                                                <TableCell>
+                                                    {tx.transactionPrice !== undefined ? `${tx.transactionPrice.toFixed(2)}` : 'N/A'}
+                                                </TableCell>
+                                                <TableCell className="text-xs">{tx.invoiceId ? <Link href={`/invoices/${tx.invoiceId}`} className="text-primary hover:underline">{t('productDetailPage.transactionHistory.invoiceLink')} #{tx.notes}</Link> : tx.notes}</TableCell>
+                                                <TableCell className="text-right">
+                                                    <AlertDialog>
+                                                        <AlertDialogTrigger asChild>
+                                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10">
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        </AlertDialogTrigger>
+                                                        <AlertDialogContent>
+                                                            <AlertDialogHeader>
+                                                                <AlertDialogTitle>{t('productDetailPage.dialog.deleteTitle')}</AlertDialogTitle>
+                                                                <AlertDialogDescription>
+                                                                    {t('productDetailPage.dialog.deleteDesc')}
+                                                                </AlertDialogDescription>
+                                                            </AlertDialogHeader>
+                                                            <AlertDialogFooter>
+                                                                <AlertDialogCancel>{t('productsPage.dialog.cancel')}</AlertDialogCancel>
+                                                                <AlertDialogAction onClick={() => handleDeleteTransaction(tx)} className="bg-destructive hover:bg-destructive/90">
+                                                                    {t('productsPage.dialog.confirmDelete')}
+                                                                </AlertDialogAction>
+                                                            </AlertDialogFooter>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            ) : (
+                                <p className="text-muted-foreground text-center py-8">{t('productDetailPage.transactionHistory.noHistory')}</p>
+                            )}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                <TabsContent value="analysis">
+                    <ProductAnalysis product={product} transactions={transactions} t={t} />
+                </TabsContent>
+            </Tabs>
         </div>
       </div>
 

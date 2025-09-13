@@ -1,4 +1,3 @@
-
 {
   "siteNav": {
     "dashboard": "Dashboard",
@@ -741,7 +740,19 @@
     "stockAdjustedError": "Failed to adjust stock. Please try again.",
     "transactionDeleted": "Transaction Deleted",
     "transactionDeletedDesc": "The transaction has been deleted and stock has been reversed.",
-    "transactionDeletedError": "Failed to delete transaction."
+    "transactionDeletedError": "Failed to delete transaction.",
+    "analysis": {
+      "title": "Analysis & Suggestions",
+      "cardTitle": "Smart Analysis",
+      "cardDescription": "Generate AI-powered insights and suggestions based on transaction history.",
+      "generateButton": "Generate Smart Analysis",
+      "loading": "Analyzing data...",
+      "error": "Failed to generate analysis. Please try again later.",
+      "analysisTitle": "AI Analysis",
+      "suggestionsTitle": "Suggestions",
+      "stockChartTitle": "Stock Level Over Time",
+      "noChartData": "Not enough data for a chart."
+    }
   },
   "productTransactionType": {
     "sale": "Sale",

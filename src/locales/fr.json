@@ -1,4 +1,3 @@
-
 {
   "siteNav": {
     "dashboard": "Tableau de Bord",
@@ -620,7 +619,7 @@
       "prioritySupport": "Support par e-mail prioritaire",
       "maxInvoicesBusiness": "Factures illimitées",
       "maxClientsBusiness": "Clients illimités",
-      "teamCollaboration": "Collaboration d'équipe (bientôt)",
+      "teamCollaboration": "Team collaboration (bientôt)",
       "dedicatedSupport": "Support dédié"
     }
   },
@@ -741,7 +740,19 @@
     "stockAdjustedError": "Échec de l'ajustement du stock. Veuillez réessayer.",
     "transactionDeleted": "Transaction Supprimée",
     "transactionDeletedDesc": "La transaction a été supprimée et le stock a été inversé.",
-    "transactionDeletedError": "Échec de la suppression de la transaction."
+    "transactionDeletedError": "Échec de la suppression de la transaction.",
+    "analysis": {
+      "title": "Analyse & Suggestions",
+      "cardTitle": "Analyse Intelligente",
+      "cardDescription": "Générez des informations et des suggestions basées sur l'IA à partir de l'historique des transactions.",
+      "generateButton": "Générer l'Analyse Intelligente",
+      "loading": "Analyse des données...",
+      "error": "Échec de la génération de l'analyse. Veuillez réessayer plus tard.",
+      "analysisTitle": "Analyse par l'IA",
+      "suggestionsTitle": "Suggestions",
+      "stockChartTitle": "Niveau de Stock au Fil du Temps",
+      "noChartData": "Pas assez de données pour un graphique."
+    }
   },
   "productTransactionType": {
     "sale": "Vente",
