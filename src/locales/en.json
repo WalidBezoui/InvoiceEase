@@ -4,6 +4,7 @@
     "dashboard": "Dashboard",
     "invoices": "Invoices",
     "clients": "Clients",
+    "products": "Products",
     "preferences": "Preferences",
     "login": "Login",
     "signup": "Sign Up",
@@ -322,6 +323,31 @@
       "itemQtyMin": "Quantity must be at least 0.01",
       "itemPriceMin": "Unit price must be positive",
       "oneItemRequired": "At least one item is required"
+    },
+    "addItemDialog": {
+      "title": "Add Item to Invoice",
+      "description": "Select a saved product or enter a custom item.",
+      "tabs": {
+        "selectProduct": "Select Product",
+        "customItem": "Custom Item"
+      },
+      "selectProductTab": {
+        "searchPlaceholder": "Search products...",
+        "noProducts": "No products found.",
+        "addProductCTA": "Add a new product",
+        "name": "Name",
+        "description": "Description",
+        "price": "Price",
+        "select": "Select"
+      },
+      "customItemTab": {
+        "descriptionLabel": "Description",
+        "descriptionPlaceholder": "e.g., Web Design Services",
+        "quantityLabel": "Quantity",
+        "unitPriceLabel": "Unit Price",
+        "addButton": "Add Custom Item"
+      },
+      "loading": "Loading products..."
     }
   },
   "invoiceDetailPage": {
@@ -595,7 +621,72 @@
       "teamCollaboration": "Team collaboration (coming soon)",
       "dedicatedSupport": "Dedicated support"
     }
+  },
+  "productsPage": {
+    "title": "Products & Services",
+    "description": "Manage your reusable products and services here.",
+    "addNewProduct": "Add New Product",
+    "yourProductsCard": {
+      "title": "Your Products",
+      "description": "View and manage your product list.",
+      "searchPlaceholder": "Search products...",
+      "export": "Export"
+    },
+    "table": {
+      "name": "Name",
+      "description": "Description",
+      "unitPrice": "Unit Price",
+      "actions": "Actions"
+    },
+    "actions": {
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "loading": "Loading products...",
+    "error": "Failed to load products. Please try again.",
+    "noProductsMatchSearch": "No products match your search",
+    "noProductsMatchSearchDesc": "Try adjusting your search term.",
+    "noProductsYet": "No products yet",
+    "noProductsYetDesc": "Add your first product to get started.",
+    "addProduct": "Add Product",
+    "dialog": {
+      "deleteTitle": "Are you sure?",
+      "deleteDesc": "This will permanently delete the product '{{productName}}'.",
+      "cancel": "Cancel",
+      "confirmDelete": "Yes, delete"
+    },
+    "toast": {
+      "deleteSuccessTitle": "Product Deleted",
+      "deleteSuccessDesc": "Product '{{productName}}' has been deleted.",
+      "deleteErrorTitle": "Deletion Failed",
+      "deleteErrorDesc": "The product could not be deleted. Please try again."
+    }
+  },
+  "productForm": {
+    "editTitle": "Edit Product",
+    "addTitle": "Add New Product",
+    "editDescription": "Update the product's details below.",
+    "addDescription": "Fill in the details for the new product or service.",
+    "labels": {
+      "name": "Product/Service Name",
+      "description": "Description",
+      "unitPrice": "Unit Price"
+    },
+    "placeholders": {
+      "name": "e.g., Website Maintenance Plan",
+      "description": "e.g., Monthly checkups, backups, and security scans.",
+      "unitPrice": "150.00"
+    },
+    "buttons": {
+      "cancel": "Cancel",
+      "saveChanges": "Save Changes",
+      "addProduct": "Add Product"
+    },
+    "toast": {
+      "authError": "You must be logged in.",
+      "productUpdated": "Product updated successfully.",
+      "productAdded": "Product added successfully.",
+      "errorSaving": "Failed to save product. Please try again."
+    }
   }
 }
-
-    

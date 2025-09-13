@@ -2,7 +2,7 @@
 "use client";
 
 import Link from 'next/link';
-import { Building2, LogIn, LogOut, UserPlus, LayoutDashboard, FileText, Settings, Users, DollarSign, Award, ShoppingCart } from 'lucide-react'; // Added Award, ShoppingCart
+import { Building2, LogIn, LogOut, UserPlus, LayoutDashboard, FileText, Settings, Users, DollarSign, Award, ShoppingCart, Package } from 'lucide-react'; // Added Package
 import { useAuth } from '@/hooks/use-auth';
 import { useLanguage } from '@/hooks/use-language'; 
 import { auth } from '@/lib/firebase';
@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from '@/components/ui/skeleton'; 
-import { Badge } from '@/components/ui/badge'; // Import Badge
+import { Badge } from '@/components/ui/badge';
 
 export default function SiteHeader() {
   const { user, loading: authLoading } = useAuth();
@@ -77,6 +77,11 @@ export default function SiteHeader() {
                   <Users className="mr-2 h-4 w-4" /> {t('siteNav.clients')}
                 </Link>
               </Button>
+               <Button variant="ghost" size="sm" asChild className="text-sm font-medium text-muted-foreground transition-colors hidden md:inline-flex hover:text-accent-foreground">
+                <Link href="/products">
+                  <Package className="mr-2 h-4 w-4" /> {t('siteNav.products', { default: 'Products' })}
+                </Link>
+              </Button>
               <Button variant="ghost" size="sm" asChild className="text-sm font-medium text-muted-foreground transition-colors hidden md:inline-flex hover:text-accent-foreground">
                 <Link href="/preferences">
                   <Settings className="mr-2 h-4 w-4" /> {t('siteNav.preferences')}
@@ -115,6 +120,9 @@ export default function SiteHeader() {
                    </DropdownMenuItem>
                    <DropdownMenuItem asChild className="cursor-pointer md:hidden">
                      <Link href="/clients"><Users className="mr-2 h-4 w-4" />{t('siteNav.clients')}</Link>
+                   </DropdownMenuItem>
+                    <DropdownMenuItem asChild className="cursor-pointer md:hidden">
+                     <Link href="/products"><Package className="mr-2 h-4 w-4" />{t('siteNav.products', { default: 'Products' })}</Link>
                    </DropdownMenuItem>
                    <DropdownMenuItem asChild className="cursor-pointer md:hidden">
                      <Link href="/preferences"><Settings className="mr-2 h-4 w-4" />{t('siteNav.preferences')}</Link>

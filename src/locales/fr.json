@@ -4,6 +4,7 @@
     "dashboard": "Tableau de Bord",
     "invoices": "Factures",
     "clients": "Clients",
+    "products": "Produits",
     "preferences": "Préférences",
     "login": "Connexion",
     "signup": "Inscription",
@@ -322,6 +323,31 @@
       "itemQtyMin": "La quantité doit être d'au moins 0.01",
       "itemPriceMin": "Le prix unitaire doit être positif",
       "oneItemRequired": "Au moins un article est requis"
+    },
+    "addItemDialog": {
+      "title": "Ajouter un Article à la Facture",
+      "description": "Sélectionnez un produit enregistré ou saisissez un article personnalisé.",
+      "tabs": {
+        "selectProduct": "Sélectionner Produit",
+        "customItem": "Article Personnalisé"
+      },
+      "selectProductTab": {
+        "searchPlaceholder": "Rechercher des produits...",
+        "noProducts": "Aucun produit trouvé.",
+        "addProductCTA": "Ajouter un nouveau produit",
+        "name": "Nom",
+        "description": "Description",
+        "price": "Prix",
+        "select": "Sélectionner"
+      },
+      "customItemTab": {
+        "descriptionLabel": "Description",
+        "descriptionPlaceholder": "ex: Services de Conception Web",
+        "quantityLabel": "Quantité",
+        "unitPriceLabel": "Prix Unitaire",
+        "addButton": "Ajouter Article Personnalisé"
+      },
+      "loading": "Chargement des produits..."
     }
   },
   "invoiceDetailPage": {
@@ -595,7 +621,72 @@
       "teamCollaboration": "Collaboration d'équipe (bientôt)",
       "dedicatedSupport": "Support dédié"
     }
+  },
+    "productsPage": {
+    "title": "Produits & Services",
+    "description": "Gérez vos produits et services réutilisables ici.",
+    "addNewProduct": "Ajouter un Nouveau Produit",
+    "yourProductsCard": {
+      "title": "Vos Produits",
+      "description": "Consultez et gérez votre liste de produits.",
+      "searchPlaceholder": "Rechercher des produits...",
+      "export": "Exporter"
+    },
+    "table": {
+      "name": "Nom",
+      "description": "Description",
+      "unitPrice": "Prix Unitaire",
+      "actions": "Actions"
+    },
+    "actions": {
+      "edit": "Modifier",
+      "delete": "Supprimer"
+    },
+    "loading": "Chargement des produits...",
+    "error": "Échec du chargement des produits. Veuillez réessayer.",
+    "noProductsMatchSearch": "Aucun produit ne correspond à votre recherche",
+    "noProductsMatchSearchDesc": "Essayez d'ajuster votre terme de recherche.",
+    "noProductsYet": "Aucun produit pour le moment",
+    "noProductsYetDesc": "Ajoutez votre premier produit pour commencer.",
+    "addProduct": "Ajouter un Produit",
+    "dialog": {
+      "deleteTitle": "Êtes-vous sûr ?",
+      "deleteDesc": "Cela supprimera définitivement le produit '{{productName}}'.",
+      "cancel": "Annuler",
+      "confirmDelete": "Oui, supprimer"
+    },
+    "toast": {
+      "deleteSuccessTitle": "Produit Supprimé",
+      "deleteSuccessDesc": "Le produit '{{productName}}' a été supprimé.",
+      "deleteErrorTitle": "Échec de la Suppression",
+      "deleteErrorDesc": "Le produit n'a pas pu être supprimé. Veuillez réessayer."
+    }
+  },
+  "productForm": {
+    "editTitle": "Modifier le Produit",
+    "addTitle": "Ajouter un Nouveau Produit",
+    "editDescription": "Mettez à jour les détails du produit ci-dessous.",
+    "addDescription": "Remplissez les détails du nouveau produit ou service.",
+    "labels": {
+      "name": "Nom du Produit/Service",
+      "description": "Description",
+      "unitPrice": "Prix Unitaire"
+    },
+    "placeholders": {
+      "name": "ex: Plan de Maintenance de Site Web",
+      "description": "ex: Vérifications mensuelles, sauvegardes et analyses de sécurité.",
+      "unitPrice": "150.00"
+    },
+    "buttons": {
+      "cancel": "Annuler",
+      "saveChanges": "Enregistrer les Modifications",
+      "addProduct": "Ajouter le Produit"
+    },
+    "toast": {
+      "authError": "Vous devez être connecté.",
+      "productUpdated": "Produit mis à jour avec succès.",
+      "productAdded": "Produit ajouté avec succès.",
+      "errorSaving": "Échec de l'enregistrement du produit. Veuillez réessayer."
+    }
   }
 }
-
-    

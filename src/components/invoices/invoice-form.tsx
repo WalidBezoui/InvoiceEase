@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useFieldArray } from "react-hook-form";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription as UiCardDescription } from "@/components/ui/card"; // Renamed CardDescription
+import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription as UiCardDescription } from "@/components/ui/card";
 import { Form, FormControl, FormDescription as UiFormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,24 +18,24 @@ import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp, doc, getDoc, query, where, getDocs, orderBy, updateDoc, type FieldValue } from "firebase/firestore";
-import type { Invoice, InvoiceItem, UserPreferences, Client } from "@/lib/types";
+import type { Invoice, InvoiceItem, UserPreferences, Client, Product } from "@/lib/types";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useLanguage } from "@/hooks/use-language"; // Import useLanguage
+import { useLanguage } from "@/hooks/use-language";
+import AddItemDialog from "./add-item-dialog";
 
 const invoiceItemSchema = z.object({
   id: z.string().optional(),
-  description: z.string().min(1, "Description is required"), // This message will be overridden by Zod if not translated
+  description: z.string().min(1, "Description is required"),
   quantity: z.coerce.number().min(0.01, "Quantity must be at least 0.01"),
-  unitPrice: z.coerce.number().min(0.01, "Unit price must be positive"),
+  unitPrice: z.coerce.number().min(0, "Unit price must be non-negative"),
 });
 
-// Form schema function to allow dynamic error messages from translations
 const getInvoiceFormSchema = (t: Function) => z.object({
   clientId: z.string().optional(),
-  clientName: z.string().min(1, t('invoiceForm.toast.clientNameRequired', { default: "Client name is required (select or fill)"})), // Example of default, ideally key exists
+  clientName: z.string().min(1, t('invoiceForm.toast.clientNameRequired', { default: "Client name is required (select or fill)"})),
   clientEmail: z.string().email(t('invoiceForm.toast.invalidEmail', { default: "Invalid email address"})).or(z.literal("")).optional(),
   clientAddress: z.string().optional(),
   clientCompany: z.string().optional(),
@@ -43,21 +43,12 @@ const getInvoiceFormSchema = (t: Function) => z.object({
   invoiceNumber: z.string().min(1, t('invoiceForm.toast.invoiceNumberRequired', { default: "Invoice number is required"})),
   issueDate: z.date({ required_error: t('invoiceForm.toast.issueDateRequired', { default: "Issue date is required"}) }),
   dueDate: z.date({ required_error: t('invoiceForm.toast.dueDateRequired', { default: "Due date is required"}) }),
-  items: z.array(
-    z.object({
-      id: z.string().optional(),
-      description: z.string().min(1, t('invoiceForm.toast.itemDescRequired', { default: "Description is required"})),
-      quantity: z.coerce.number().min(0.01, t('invoiceForm.toast.itemQtyMin', { default: "Quantity must be at least 0.01"})),
-      unitPrice: z.coerce.number().min(0.01, t('invoiceForm.toast.itemPriceMin', { default: "Unit price must be positive"})),
-    })
-  ).min(1, t('invoiceForm.toast.oneItemRequired', { default: "At least one item is required"})),
+  items: z.array(invoiceItemSchema).min(1, t('invoiceForm.toast.oneItemRequired', { default: "At least one item is required"})),
   notes: z.string().optional(),
   taxRate: z.coerce.number().min(0).max(100).optional().default(0),
 });
 
-
 type InvoiceFormValues = z.infer<ReturnType<typeof getInvoiceFormSchema>>;
-
 
 interface InvoiceFormProps {
   initialData?: Invoice;
@@ -69,51 +60,16 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
   const { toast } = useToast();
   const { user } = useAuth();
   const router = useRouter();
-  const { t, isLoadingLocale: isLoadingLang } = useLanguage(); // Use language hook
+  const { t, isLoadingLocale: isLoadingLang } = useLanguage();
   const [isSaving, setIsSaving] = useState(false);
   const [isPrefsLoading, setIsPrefsLoading] = useState(true);
   const [userPrefs, setUserPrefs] = useState<UserPreferences | null>(null);
   const [clients, setClients] = useState<Client[]>([]);
   const [isClientsLoading, setIsClientsLoading] = useState(true);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isProductsLoading, setIsProductsLoading] = useState(true);
 
   const currentInvoiceFormSchema = getInvoiceFormSchema(t);
-
-
-  useEffect(() => {
-    async function fetchData() {
-      if (user) {
-        setIsPrefsLoading(true);
-        setIsClientsLoading(true);
-        try {
-          const prefDocRef = doc(db, "userPreferences", user.uid);
-          const prefDocSnap = await getDoc(prefDocRef);
-          if (prefDocSnap.exists()) {
-            setUserPrefs(prefDocSnap.data() as UserPreferences);
-          } else {
-            setUserPrefs({ currency: "MAD", language: "fr", defaultTaxRate: 0 });
-          }
-
-          const clientsQuery = query(collection(db, "clients"), where("userId", "==", user.uid), orderBy("name"));
-          const clientsSnapshot = await getDocs(clientsQuery);
-          const fetchedClients: Client[] = [];
-          clientsSnapshot.forEach(doc => fetchedClients.push({ id: doc.id, ...doc.data() } as Client));
-          setClients(fetchedClients);
-
-        } catch (error) {
-          console.error("Error fetching initial data:", error);
-          toast({ title: t('invoiceForm.toast.errorTitle'), description: t('invoiceForm.toast.errorFetchingPrefs'), variant: "destructive" });
-          setUserPrefs({ currency: "MAD", language: "fr", defaultTaxRate: 0 });
-        } finally {
-          setIsPrefsLoading(false);
-          setIsClientsLoading(false);
-        }
-      } else {
-        setIsPrefsLoading(false);
-        setIsClientsLoading(false);
-      }
-    }
-    fetchData();
-  }, [user, toast, t]);
 
   const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(currentInvoiceFormSchema),
@@ -136,26 +92,59 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
       taxRate: initialData?.taxRate ?? userPrefs?.defaultTaxRate ?? 0,
     },
   });
-  
-  // Re-validate with the correct language schema when language changes
+
+  const { fields, append, remove } = useFieldArray({ control: form.control, name: "items" });
+
+  useEffect(() => {
+    async function fetchData() {
+      if (user) {
+        setIsPrefsLoading(true);
+        setIsClientsLoading(true);
+        setIsProductsLoading(true);
+        try {
+          // Fetch Prefs
+          const prefDocRef = doc(db, "userPreferences", user.uid);
+          const prefDocSnap = await getDoc(prefDocRef);
+          if (prefDocSnap.exists()) {
+            setUserPrefs(prefDocSnap.data() as UserPreferences);
+          } else {
+            setUserPrefs({ currency: "MAD", language: "fr", defaultTaxRate: 0 });
+          }
+
+          // Fetch Clients
+          const clientsQuery = query(collection(db, "clients"), where("userId", "==", user.uid), orderBy("name"));
+          const clientsSnapshot = await getDocs(clientsQuery);
+          const fetchedClients: Client[] = [];
+          clientsSnapshot.forEach(doc => fetchedClients.push({ id: doc.id, ...doc.data() } as Client));
+          setClients(fetchedClients);
+
+          // Fetch Products
+          const productsQuery = query(collection(db, "products"), where("userId", "==", user.uid), orderBy("name"));
+          const productsSnapshot = await getDocs(productsQuery);
+          const fetchedProducts: Product[] = [];
+          productsSnapshot.forEach(doc => fetchedProducts.push({ id: doc.id, ...doc.data() } as Product));
+          setProducts(fetchedProducts);
+
+        } catch (error) {
+          console.error("Error fetching initial data:", error);
+          toast({ title: t('invoiceForm.toast.errorTitle'), description: t('invoiceForm.toast.errorFetchingPrefs'), variant: "destructive" });
+        } finally {
+          setIsPrefsLoading(false);
+          setIsClientsLoading(false);
+          setIsProductsLoading(false);
+        }
+      } else {
+        setIsPrefsLoading(false);
+        setIsClientsLoading(false);
+        setIsProductsLoading(false);
+      }
+    }
+    fetchData();
+  }, [user, toast, t]);
+
   useEffect(() => {
     form.trigger();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [t, form.trigger]);
-
-
-  useEffect(() => {
-    if (userPrefs && !initialData) {
-        form.reset({
-            ...form.getValues(),
-            notes: form.getValues().notes || userPrefs.defaultNotes || "",
-            taxRate: userPrefs.defaultTaxRate ?? 0, 
-            invoiceNumber: form.getValues().invoiceNumber.startsWith('INV-') && form.getValues().invoiceNumber.length > 10
-                           ? form.getValues().invoiceNumber
-                           : `INV-${Date.now().toString().slice(-4)}-${user?.uid.slice(0,3) || 'XXX'}`,
-        });
-    }
-  }, [userPrefs, initialData, form, user?.uid]);
 
   useEffect(() => {
     if (!isPrefsLoading) {
@@ -180,16 +169,15 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
             });
         } else if (userPrefs) {
             form.reset({
-              ...form.getValues(), 
-              notes: userPrefs.defaultNotes || "", // Explicitly set from userPrefs for new invoice
-              taxRate: userPrefs.defaultTaxRate ?? 0, // Explicitly set for new invoice
+              ...form.getValues(),
+              notes: userPrefs.defaultNotes || "",
+              taxRate: userPrefs.defaultTaxRate ?? 0,
+              invoiceNumber: `INV-${Date.now().toString().slice(-4)}-${user?.uid.slice(0,3) || 'XXX'}`,
             });
         }
     }
-  }, [initialData, form, isPrefsLoading, userPrefs]);
+  }, [initialData, form, isPrefsLoading, userPrefs, user?.uid]);
 
-
-  const { fields, append, remove } = useFieldArray({ control: form.control, name: "items" });
   const watchItems = form.watch("items");
   const watchTaxRate = form.watch("taxRate");
   const watchClientId = form.watch("clientId");
@@ -204,7 +192,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
         form.setValue("clientCompany", selectedClient.clientCompany || "");
         form.setValue("clientICE", selectedClient.ice || "");
       }
-    } else if (watchClientId === MANUAL_ENTRY_CLIENT_ID && !initialData) { 
+    } else if (watchClientId === MANUAL_ENTRY_CLIENT_ID && !initialData) {
         form.setValue("clientName", "");
         form.setValue("clientEmail", "");
         form.setValue("clientAddress", "");
@@ -212,7 +200,6 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
         form.setValue("clientICE", "");
     }
   }, [watchClientId, clients, form, initialData]);
-
 
   const calculateSubtotal = () => watchItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice || 0), 0);
   const calculateTaxAmount = (subtotalValue: number) => subtotalValue * ((watchTaxRate || 0) / 100);
@@ -240,7 +227,6 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
 
     const finalClientId = values.clientId === MANUAL_ENTRY_CLIENT_ID ? null : (values.clientId || null);
 
-    // Fields that are specific to the invoice instance and not global branding
     const coreInvoiceData = {
       invoiceNumber: values.invoiceNumber,
       clientId: finalClientId,
@@ -257,7 +243,6 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
       taxAmount,
       totalAmount,
       notes: values.notes || "",
-      // Currency and language are set at creation and remain with the invoice
       currency: initialData?.currency || userPrefs?.currency || "MAD",
       language: initialData?.language || userPrefs?.language || "fr",
       appliedDefaultNotes: initialData ? initialData.appliedDefaultNotes : (values.notes === (userPrefs?.defaultNotes || "") ? userPrefs?.defaultNotes : ""),
@@ -267,20 +252,17 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     try {
       if (initialData?.id) {
         const invoiceRef = doc(db, "invoices", initialData.id);
-        // For updates, only update core data + updatedAt. Status and other specific fields are handled elsewhere.
         await updateDoc(invoiceRef, {
           ...coreInvoiceData,
-          // Only update status if it was draft, otherwise preserve it, status changes are handled in detail page
           status: initialData.status === 'draft' ? 'draft' : initialData.status,
           updatedAt: serverTimestamp() as FieldValue,
         });
         toast({ title: t('invoiceForm.toast.invoiceUpdatedTitle'), description: t('invoiceForm.toast.invoiceUpdatedDesc', {invoiceNumber: values.invoiceNumber}) });
         router.push(`/invoices/${initialData.id}`);
       } else {
-        // For new invoices, set initial status and creation/update timestamps
         const invoiceDataToCreate = {
           userId: user.uid,
-          status: 'draft', // New invoices always start as draft
+          status: 'draft',
           ...coreInvoiceData,
           createdAt: serverTimestamp() as FieldValue,
           updatedAt: serverTimestamp() as FieldValue,
@@ -297,12 +279,19 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     }
   }
 
+  const handleAddItem = (item: { description: string; quantity: number; unitPrice: number; }) => {
+    // If the first item is the default empty one, remove it
+    if (fields.length === 1 && fields[0].description === "" && fields[0].unitPrice === 0) {
+      remove(0);
+    }
+    append(item);
+  };
+
   const isClientSelectedReadOnly = !!(watchClientId && watchClientId !== MANUAL_ENTRY_CLIENT_ID);
   
-  if (isLoadingLang || isPrefsLoading || isClientsLoading && !initialData) { // Show loader if language or critical data is loading for a new form
+  if ((isLoadingLang || isPrefsLoading || isClientsLoading) && !initialData) {
       return <div className="flex justify-center items-center min-h-[60vh]"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
   }
-
 
   return (
     <Form {...form}>
@@ -395,7 +384,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
              <UiCardDescription>{t('invoiceForm.invoiceDetailsCard.description')}</UiCardDescription>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
- <FormField control={form.control} name="invoiceNumber" render={({ field }) => (
+            <FormField control={form.control} name="invoiceNumber" render={({ field }) => (
               <FormItem>
                 <FormLabel>{t('invoiceForm.formFields.invoiceNumber')}</FormLabel>
                 <FormControl><Input placeholder={t('invoiceForm.placeholders.invoiceNumber')} {...field} /></FormControl>
@@ -447,7 +436,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
           <CardHeader>
             <CardTitle className="font-headline text-xl text-primary">{t('invoiceForm.invoiceItemsCard.title')}</CardTitle>
             <UiCardDescription>{t('invoiceForm.invoiceItemsCard.description')}</UiCardDescription>
-          </CardHeader> 
+          </CardHeader>
           <CardContent className="space-y-4">
             {fields.map((item, index) => (
               <div key={item.id || `item-${index}`} className="flex flex-col md:flex-row gap-4 items-start p-4 border rounded-md bg-secondary/30">
@@ -486,9 +475,13 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
                 </Button>
               </div>
             ))}
-            <Button type="button" variant="outline" onClick={() => append({ description: "", quantity: 1, unitPrice: 0 })}>
-              <PlusCircle className="mr-2 h-4 w-4" /> {t('invoiceForm.buttons.addItem')}
-            </Button>
+             <AddItemDialog 
+                products={products}
+                isLoading={isProductsLoading}
+                onAddItem={handleAddItem} 
+                currency={userPrefs?.currency || 'MAD'}
+                t={t}
+            />
           </CardContent>
         </Card>
 

@@ -37,6 +37,18 @@ export interface Client {
 
 export type ClientFormData = Omit<Client, 'id' | 'userId' | 'createdAt' | 'updatedAt'>;
 
+export interface Product {
+  id?: string;
+  userId: string;
+  name: string;
+  description: string;
+  unitPrice: number;
+  createdAt?: Timestamp;
+  updatedAt?: Timestamp;
+}
+
+export type ProductFormData = Omit<Product, 'id' | 'userId' | 'createdAt' | 'updatedAt'>;
+
 export interface InvoiceItem {
   id?: string; 
   description: string;
@@ -69,11 +81,6 @@ export interface Invoice {
 
   currency: string; 
   language: string; 
-  // Branding elements removed from here, will be sourced from UserPreferences dynamically
-  // logoDataUrl?: string | null;
-  // watermarkLogoDataUrl?: string | null; 
-  // companyInvoiceHeader?: string;
-  // companyInvoiceFooter?: string;
   appliedDefaultNotes?: string; 
   appliedDefaultPaymentTerms?: string;
   
@@ -98,4 +105,3 @@ export interface PricingPlan {
   ctaKey: string; // Translation key for Call to Action button
   isPopular?: boolean;
 }
-
