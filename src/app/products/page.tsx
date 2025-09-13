@@ -196,10 +196,10 @@ export default function ProductsPage() {
 
   const getTipIcon = (type: ProductTipOutput['type']) => {
     switch (type) {
-      case 'warning': return <AlertTriangle className="h-4 w-4 text-orange-500" />;
-      case 'suggestion': return <Lightbulb className="h-4 w-4 text-blue-500" />;
-      case 'info': return <Info className="h-4 w-4 text-gray-500" />;
-      default: return null;
+      case 'warning': return <AlertTriangle className="h-5 w-5 text-orange-500" />;
+      case 'suggestion': return <Lightbulb className="h-5 w-5 text-blue-500" />;
+      case 'info': return <Info className="h-5 w-5 text-gray-500" />;
+      default: return <Info className="h-5 w-5 text-gray-500" />;
     }
   };
 
@@ -291,17 +291,17 @@ export default function ProductsPage() {
                   <TableRow>
                     <TableHead>{t('productsPage.table.name')}</TableHead>
                     <TableHead className="hidden md:table-cell">{t('productsPage.table.reference')}</TableHead>
-                    <TableHead>
-                        <div className="flex items-center gap-1">
+                    <TableHead className="hidden sm:table-cell text-right">{t('productsPage.table.sellingPrice')}</TableHead>
+                    <TableHead className="text-right">{t('productsPage.table.stock')}</TableHead>
+                    <TableHead className="text-center">
+                        <div className="flex items-center justify-center gap-1">
                             {t('productsPage.table.healthTip')}
                             <Tooltip>
-                                <TooltipTrigger><Info className="h-3 w-3 text-muted-foreground"/></TooltipTrigger>
+                                <TooltipTrigger><Info className="h-3 w-3 text-muted-foreground cursor-help"/></TooltipTrigger>
                                 <TooltipContent><p>{t('productsPage.table.aiGeneratedTip')}</p></TooltipContent>
                             </Tooltip>
                         </div>
                     </TableHead>
-                    <TableHead className="text-right hidden sm:table-cell">{t('productsPage.table.sellingPrice')}</TableHead>
-                    <TableHead className="text-right">{t('productsPage.table.stock')}</TableHead>
                     <TableHead className="text-right">{t('productsPage.table.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -310,18 +310,24 @@ export default function ProductsPage() {
                     <TableRow key={product.id}>
                       <TableCell className="font-medium">{product.name}</TableCell>
                       <TableCell className="hidden md:table-cell">{product.reference || 'N/A'}</TableCell>
-                      <TableCell>
-                        {tips[product.id!] ? (
-                            <div className="flex items-center gap-1.5">
-                                {getTipIcon(tips[product.id!].type)}
-                                <span className="text-muted-foreground text-xs italic hidden sm:inline">{tips[product.id!].tip}</span>
-                            </div>
-                        ) : (
-                          <span className="text-muted-foreground text-xs italic">{t('productsPage.loading')}</span>
-                        )}
-                      </TableCell>
                       <TableCell className="text-right hidden sm:table-cell">{product.sellingPrice.toFixed(2)}</TableCell>
                       <TableCell className="text-right font-medium">{product.stock !== undefined ? product.stock : 'N/A'}</TableCell>
+                      <TableCell className="text-center">
+                        {tips[product.id!] ? (
+                            <Tooltip>
+                                <TooltipTrigger>
+                                    <div className="flex justify-center">
+                                      {getTipIcon(tips[product.id!].type)}
+                                    </div>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p className="text-sm">{tips[product.id!].tip}</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        ) : (
+                          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground mx-auto"/>
+                        )}
+                      </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
                           <Tooltip><TooltipTrigger asChild>
@@ -398,7 +404,3 @@ export default function ProductsPage() {
     </div>
   );
 }
-
-    
-
-    

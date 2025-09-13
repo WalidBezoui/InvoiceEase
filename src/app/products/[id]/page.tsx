@@ -33,6 +33,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProductAnalysis from "@/components/products/product-analysis";
 import { getProductTip } from "@/ai/flows/product-analysis-flow";
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 
 export default function ProductDetailPage() {
@@ -241,12 +242,13 @@ export default function ProductDetailPage() {
     }
   }
 
-  const getTipIcon = (type: ProductTipOutput['type']) => {
+  const getTipStyling = (type: ProductTipOutput['type']) => {
     switch (type) {
-      case 'warning': return <AlertTriangle className="h-5 w-5 text-orange-500" />;
-      case 'suggestion': return <Lightbulb className="h-5 w-5 text-blue-500" />;
-      case 'info': return <Info className="h-5 w-5 text-gray-500" />;
-      default: return null;
+      case 'warning': return { icon: <AlertTriangle className="h-6 w-6 text-orange-600" />, cardClass: 'bg-orange-50 border-orange-200', textClass: 'text-orange-800' };
+      case 'suggestion': return { icon: <Lightbulb className="h-6 w-6 text-blue-600" />, cardClass: 'bg-blue-50 border-blue-200', textClass: 'text-blue-800' };
+      case 'info':
+      default:
+        return { icon: <Info className="h-6 w-6 text-gray-600" />, cardClass: 'bg-gray-50 border-gray-200', textClass: 'text-gray-800' };
     }
   };
 
@@ -289,6 +291,8 @@ export default function ProductDetailPage() {
       </div>
     );
   }
+  
+  const tipStyling = tip ? getTipStyling(tip.type) : getTipStyling('info');
 
   return (
     <TooltipProvider>
@@ -313,7 +317,7 @@ export default function ProductDetailPage() {
         </Button>
       </div>
 
-       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="shadow-md">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{t('productDetailPage.currentStock')}</CardTitle>
@@ -344,28 +348,29 @@ export default function ProductDetailPage() {
              <p className="text-xs text-muted-foreground">{userPrefs?.currency || 'MAD'}</p>
           </CardContent>
         </Card>
+        <Card className={cn("shadow-md border-2", tipStyling.cardClass)}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className={cn("text-sm font-medium", tipStyling.textClass)}>{t('productsPage.table.healthTip')}</CardTitle>
+                {isTipLoading ? <Loader2 className="h-4 w-4 animate-spin text-primary" /> : tipStyling.icon}
+            </CardHeader>
+            <CardContent>
+                {isTipLoading ? (
+                    <Skeleton className="h-5 w-3/4" />
+                ) : (
+                    <div className={cn("text-lg font-bold", tipStyling.textClass)}>{tip?.tip || t('productsPage.loading')}</div>
+                )}
+                 <p className="text-xs text-muted-foreground">{t('productsPage.table.aiGeneratedTip')}</p>
+            </CardContent>
+        </Card>
       </div>
 
-       { (product.description || tip) &&
+       {product.description &&
         <Card className="shadow-lg">
             <CardHeader>
                 <CardTitle className="font-headline text-xl text-primary">{t('productDetailPage.productDetails')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-                {product.description && <p className="text-sm text-muted-foreground">{product.description}</p>}
-                
-                {tip && (
-                    <div className="p-3 bg-secondary/30 rounded-lg flex items-start gap-4">
-                         {isTipLoading ? <Loader2 className="h-5 w-5 animate-spin text-primary mt-1" /> : getTipIcon(tip.type)}
-                         <div>
-                            <h4 className="font-semibold text-primary">{t('productsPage.table.healthTip')}</h4>
-                            {isTipLoading 
-                                ? <p className="text-sm text-muted-foreground">{t('productsPage.loading')}</p>
-                                : <p className="text-sm text-muted-foreground">{tip.tip}</p>
-                            }
-                         </div>
-                    </div>
-                )}
+                <p className="text-sm text-muted-foreground">{product.description}</p>
             </CardContent>
         </Card>
        }
@@ -493,5 +498,3 @@ export default function ProductDetailPage() {
     </TooltipProvider>
   );
 }
-
-    
