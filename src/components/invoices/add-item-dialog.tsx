@@ -26,7 +26,7 @@ import Link from 'next/link';
 interface AddItemDialogProps {
   products: Product[];
   isLoading: boolean;
-  onAddItem: (item: Pick<InvoiceItem, 'productId' | 'description' | 'quantity' | 'unitPrice'>) => void;
+  onAddItem: (item: Pick<InvoiceItem, 'productId' | 'reference' | 'description' | 'quantity' | 'unitPrice'>) => void;
   currency: string;
   t: (key: string, params?: Record<string, any>) => string;
 }
@@ -65,6 +65,7 @@ export default function AddItemDialog({ products, isLoading, onAddItem, currency
     onAddItem({
       productId: product.id,
       description: product.name,
+      reference: product.reference,
       quantity: 1,
       unitPrice: product.sellingPrice,
     });

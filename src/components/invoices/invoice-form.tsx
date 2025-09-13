@@ -29,6 +29,7 @@ import AddItemDialog from "./add-item-dialog";
 const invoiceItemSchema = z.object({
   id: z.string().optional(),
   productId: z.string().optional(),
+  reference: z.string().optional(),
   description: z.string().min(1, "Description is required"),
   quantity: z.coerce.number().min(0.01, "Quantity must be at least 0.01"),
   unitPrice: z.coerce.number().min(0, "Unit price must be non-negative"),
@@ -213,6 +214,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
 
     const invoiceItemsToSave: InvoiceItem[] = values.items.map(item => ({
       productId: item.productId,
+      reference: item.reference,
       description: item.description,
       quantity: item.quantity,
       unitPrice: item.unitPrice,
@@ -274,7 +276,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     }
   }
 
-  const handleAddItem = (item: Pick<InvoiceItem, 'productId' | 'description' | 'quantity' | 'unitPrice'>) => {
+  const handleAddItem = (item: Pick<InvoiceItem, 'productId' | 'reference' | 'description' | 'quantity' | 'unitPrice'>) => {
     // If the first item is the default empty one, remove it
     if (fields.length === 1 && fields[0].description === "" && fields[0].unitPrice === 0) {
       remove(0);

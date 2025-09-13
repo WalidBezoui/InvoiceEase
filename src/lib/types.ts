@@ -73,6 +73,7 @@ export interface ProductTransaction {
 export interface InvoiceItem {
   id?: string;
   productId?: string; // Link to the product
+  reference?: string; // Denormalized from product for display
   description: string;
   quantity: number;
   unitPrice: number;
