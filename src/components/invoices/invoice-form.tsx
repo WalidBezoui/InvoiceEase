@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -215,6 +216,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     setIsSaving(true);
 
     const invoiceItemsToSave: InvoiceItem[] = values.items.map(item => ({
+      id: item.id || undefined,
       productId: item.productId || null,
       reference: item.reference || null,
       description: item.description,
@@ -243,27 +245,31 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
       taxAmount: isNaN(calculatedTaxAmount) ? 0 : calculatedTaxAmount,
       totalAmount,
       notes: values.notes || "",
-      currency: initialData?.currency || userPrefs?.currency || "MAD",
-      language: initialData?.language || userPrefs?.language || "fr",
       appliedDefaultNotes: values.notes ? "" : (initialData?.appliedDefaultNotes || userPrefs?.defaultNotes || ""),
       appliedDefaultPaymentTerms: initialData?.appliedDefaultPaymentTerms || userPrefs?.defaultPaymentTerms || "",
-      stockUpdated: initialData?.stockUpdated || false,
     };
 
     try {
       if (initialData?.id) {
         const invoiceRef = doc(db, "invoices", initialData.id);
-        await updateDoc(invoiceRef, {
-          ...coreInvoiceData,
-          status: initialData.status, // Keep existing status on update
-          updatedAt: serverTimestamp(),
-        });
+        const updateData = {
+            ...coreInvoiceData,
+            currency: initialData.currency,
+            language: initialData.language,
+            status: initialData.status,
+            stockUpdated: initialData.stockUpdated || false,
+            updatedAt: serverTimestamp(),
+        };
+        await updateDoc(invoiceRef, updateData);
         toast({ title: t('invoiceForm.toast.invoiceUpdatedTitle'), description: t('invoiceForm.toast.invoiceUpdatedDesc', {invoiceNumber: values.invoiceNumber}) });
         router.push(`/invoices/${initialData.id}`);
       } else {
         const invoiceDataToCreate = {
           userId: user.uid,
           status: 'draft' as const,
+          currency: userPrefs?.currency || "MAD",
+          language: userPrefs?.language || "fr",
+          stockUpdated: false,
           ...coreInvoiceData,
           createdAt: serverTimestamp() as FieldValue,
           updatedAt: serverTimestamp() as FieldValue,
