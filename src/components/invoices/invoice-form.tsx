@@ -223,6 +223,8 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
 
     const finalClientId = values.clientId === MANUAL_ENTRY_CLIENT_ID ? null : (values.clientId || null);
 
+    const calculatedTaxAmount = calculateTaxAmount(subtotal);
+
     const coreInvoiceData = {
       invoiceNumber: values.invoiceNumber,
       clientId: finalClientId,
@@ -236,7 +238,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
       items: invoiceItemsToSave,
       subtotal,
       taxRate: values.taxRate,
-      taxAmount,
+      taxAmount: isNaN(calculatedTaxAmount) ? 0 : calculatedTaxAmount,
       totalAmount,
       notes: values.notes || "",
       currency: initialData?.currency || userPrefs?.currency || "MAD",
@@ -535,5 +537,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     </Form>
   );
 }
+
+    
 
     
