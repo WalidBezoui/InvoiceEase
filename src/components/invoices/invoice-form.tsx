@@ -215,8 +215,8 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     setIsSaving(true);
 
     const invoiceItemsToSave: InvoiceItem[] = values.items.map(item => ({
-      productId: item.productId,
-      reference: item.reference,
+      productId: item.productId || null,
+      reference: item.reference || null,
       description: item.description,
       quantity: item.quantity,
       unitPrice: item.unitPrice,
@@ -245,8 +245,8 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
       notes: values.notes || "",
       currency: initialData?.currency || userPrefs?.currency || "MAD",
       language: initialData?.language || userPrefs?.language || "fr",
-      appliedDefaultNotes: initialData ? (initialData.appliedDefaultNotes || "") : (values.notes === (userPrefs?.defaultNotes || "") ? (userPrefs?.defaultNotes || "") : ""),
-      appliedDefaultPaymentTerms: initialData ? (initialData.appliedDefaultPaymentTerms || "") : (userPrefs?.defaultPaymentTerms || ""),
+      appliedDefaultNotes: initialData?.appliedDefaultNotes || "",
+      appliedDefaultPaymentTerms: initialData?.appliedDefaultPaymentTerms || "",
       stockUpdated: initialData?.stockUpdated || false,
     };
 
