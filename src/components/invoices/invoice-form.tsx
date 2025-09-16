@@ -26,8 +26,10 @@ import Link from "next/link";
 import { useLanguage } from "@/hooks/use-language";
 import AddItemDialog from "./add-item-dialog";
 
+// Schema for an item within the form
 const invoiceItemSchema = z.object({
-  id: z.string().optional(), // This is the ID from the database, present only for existing items
+  // This is the database ID, used for tracking updates. It's not for display or direct user editing.
+  databaseId: z.string().optional(),
   productId: z.string().optional(),
   reference: z.string().optional(),
   description: z.string().min(1, "Description is required"),
@@ -93,7 +95,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     },
   });
 
-  const { fields, append, remove } = useFieldArray({ control: form.control, name: "items" });
+  const { fields, append, remove, replace } = useFieldArray({ control: form.control, name: "items" });
 
   useEffect(() => {
     async function fetchData() {
@@ -150,39 +152,45 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
 
   useEffect(() => {
     if (!isPrefsLoading && !isClientsLoading) {
-        if (initialData) {
-            const hasExistingClient = initialData.clientId && clients.some(c => c.id === initialData.clientId);
-            form.reset({
-                clientId: hasExistingClient ? initialData.clientId : MANUAL_ENTRY_CLIENT_ID,
-                clientName: initialData.clientName,
-                clientEmail: initialData.clientEmail || "",
-                clientAddress: initialData.clientAddress || "",
-                clientCompany: initialData.clientCompany || "",
-                clientICE: initialData.clientICE || "",
-                invoiceNumber: initialData.invoiceNumber,
-                issueDate: new Date(initialData.issueDate),
-                dueDate: new Date(initialData.dueDate),
-                items: initialData.items.map(item => ({ 
-                    id: item.id, // Preserve ID for existing items
-                    productId: item.productId,
-                    reference: item.reference || '', 
-                    description: item.description,
-                    quantity: item.quantity,
-                    unitPrice: item.unitPrice
-                })),
-                notes: initialData.notes || "",
-                taxRate: initialData.taxRate ?? userPrefs?.defaultTaxRate ?? 0,
-            });
-        } else if (userPrefs) {
-            form.reset({
-              ...form.getValues(),
-              notes: userPrefs.defaultNotes || "",
-              taxRate: userPrefs.defaultTaxRate ?? 0,
-              invoiceNumber: `INV-${Date.now().toString().slice(-4)}-${user?.uid.slice(0,3) || 'XXX'}`,
-            });
-        }
+      if (initialData) {
+        const hasExistingClient = initialData.clientId && clients.some(c => c.id === initialData.clientId);
+        
+        // Map initial items to form items, preserving their original database ID.
+        const formItems = initialData.items.map(item => ({
+          databaseId: item.id || doc(collection(db, 'invoices')).id, // Use existing ID or generate a placeholder
+          productId: item.productId,
+          reference: item.reference || '',
+          description: item.description,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+        }));
+        
+        form.reset({
+          clientId: hasExistingClient ? initialData.clientId : MANUAL_ENTRY_CLIENT_ID,
+          clientName: initialData.clientName,
+          clientEmail: initialData.clientEmail || "",
+          clientAddress: initialData.clientAddress || "",
+          clientCompany: initialData.clientCompany || "",
+          clientICE: initialData.clientICE || "",
+          invoiceNumber: initialData.invoiceNumber,
+          issueDate: new Date(initialData.issueDate),
+          dueDate: new Date(initialData.dueDate),
+          items: formItems,
+          notes: initialData.notes || "",
+          taxRate: initialData.taxRate ?? userPrefs?.defaultTaxRate ?? 0,
+        });
+
+      } else if (userPrefs) {
+        form.reset({
+          ...form.getValues(),
+          notes: userPrefs.defaultNotes || "",
+          taxRate: userPrefs.defaultTaxRate ?? 0,
+          invoiceNumber: `INV-${Date.now().toString().slice(-4)}-${user?.uid.slice(0,3) || 'XXX'}`,
+        });
+      }
     }
   }, [initialData, form, isPrefsLoading, userPrefs, user?.uid, clients, isClientsLoading]);
+
 
   const watchItems = form.watch("items");
   const watchTaxRate = form.watch("taxRate");
@@ -219,14 +227,28 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
         return;
     }
     setIsSaving(true);
+    
+    // START: Robust Data Preparation from Scratch
 
     const subtotal = values.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice || 0), 0);
     const taxAmount = subtotal * ((values.taxRate || 0) / 100);
     const totalAmount = subtotal + taxAmount;
+    
+    // This function ensures all items have a valid structure for Firestore.
+    const prepareItemsForFirestore = (items: typeof values.items): InvoiceItem[] => {
+        return items.map(item => ({
+            id: item.databaseId || doc(collection(db, 'invoices')).id, // Use existing ID or generate new one
+            productId: item.productId || null,
+            reference: item.reference || null,
+            description: item.description,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            total: (item.quantity || 0) * (item.unitPrice || 0),
+        }));
+    };
 
-    // This is the object that will be saved to Firestore.
-    // We explicitly set optional fields to null if they are empty.
-    const dataToSave: Omit<Invoice, 'id' | 'createdAt' | 'updatedAt' | 'items'> & { items: any[] } = {
+    // Construct the core data object, ensuring no 'undefined' values.
+    const dataToSave = {
         userId: user.uid,
         invoiceNumber: values.invoiceNumber,
         clientId: values.clientId === MANUAL_ENTRY_CLIENT_ID ? null : (values.clientId || null),
@@ -237,20 +259,13 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
         clientICE: values.clientICE || null,
         issueDate: format(values.issueDate, "yyyy-MM-dd"),
         dueDate: format(values.dueDate, "yyyy-MM-dd"),
-        items: values.items.map(item => ({
-            id: item.id || doc(collection(db, 'invoices')).id,
-            productId: item.productId || null,
-            reference: item.reference || null,
-            description: item.description,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            total: (item.quantity || 0) * (item.unitPrice || 0),
-        })),
+        items: prepareItemsForFirestore(values.items),
         subtotal: subtotal,
         taxRate: values.taxRate ?? 0,
         taxAmount: taxAmount,
         totalAmount: totalAmount,
         notes: values.notes || null,
+        // Preserve existing fields or set sensible defaults
         status: initialData?.status || 'draft',
         currency: initialData?.currency || userPrefs?.currency || 'MAD',
         language: initialData?.language || userPrefs?.language || 'fr',
@@ -260,26 +275,28 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
         sentDate: initialData?.sentDate || null,
         paidDate: initialData?.paidDate || null,
     };
+    
+    // END: Robust Data Preparation
 
     try {
         if (initialData?.id) {
-            const finalUpdateData = {
+            // This is an UPDATE
+            const invoiceRef = doc(db, "invoices", initialData.id);
+            // Merge with existing data to preserve fields like 'createdAt'
+            await updateDoc(invoiceRef, {
                 ...dataToSave,
                 updatedAt: serverTimestamp(),
-            };
-
-            const invoiceRef = doc(db, "invoices", initialData.id);
-            await updateDoc(invoiceRef, finalUpdateData);
+            });
             toast({ title: t('invoiceForm.toast.invoiceUpdatedTitle'), description: t('invoiceForm.toast.invoiceUpdatedDesc', { invoiceNumber: values.invoiceNumber }) });
             router.push(`/invoices/${initialData.id}`);
 
         } else {
-            const finalCreateData = {
+            // This is a CREATE
+            const docRef = await addDoc(collection(db, "invoices"), {
                 ...dataToSave,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
-            };
-            const docRef = await addDoc(collection(db, "invoices"), finalCreateData);
+            });
             toast({ title: t('invoiceForm.toast.invoiceSavedTitle'), description: t('invoiceForm.toast.invoiceSavedDesc', { invoiceNumber: values.invoiceNumber }) });
             router.push(`/invoices/${docRef.id}`);
         }
@@ -300,7 +317,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     append({ ...item, reference: item.reference || '' });
   };
 
-  const isClientSelectedReadOnly = !!(watchClientId && watchClientId !== MANUAL_ENTRY_CLIENT_ID);
+  const isClientSelected = !!(watchClientId && watchClientId !== MANUAL_ENTRY_CLIENT_ID);
   
   if ((isLoadingLang || isPrefsLoading || isClientsLoading) && !initialData) {
       return <div className="flex justify-center items-center min-h-[60vh]"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
@@ -356,35 +373,35 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
             <FormField control={form.control} name="clientName" render={({ field }) => (
               <FormItem>
                 <FormLabel>{t('invoiceForm.labels.clientName')}</FormLabel>
-                <FormControl><Input placeholder={t('invoiceForm.placeholders.clientName')} {...field} readOnly={isClientSelectedReadOnly} /></FormControl>
+                <FormControl><Input placeholder={t('invoiceForm.placeholders.clientName')} {...field} readOnly={isClientSelected} /></FormControl>
                 <FormMessage />
               </FormItem>
             )} />
              <FormField control={form.control} name="clientCompany" render={({ field }) => (
               <FormItem>
                 <FormLabel>{t('invoiceForm.labels.clientCompany')}</FormLabel>
-                <FormControl><Input placeholder={t('invoiceForm.placeholders.clientCompany')} {...field} readOnly={isClientSelectedReadOnly} /></FormControl>
+                <FormControl><Input placeholder={t('invoiceForm.placeholders.clientCompany')} {...field} readOnly={isClientSelected} /></FormControl>
                 <FormMessage />
               </FormItem>
             )} />
             <FormField control={form.control} name="clientEmail" render={({ field }) => (
               <FormItem>
                 <FormLabel>{t('invoiceForm.labels.clientEmail')}</FormLabel>
-                <FormControl><Input type="email" placeholder={t('invoiceForm.placeholders.clientEmail')} {...field} value={field.value ?? ""} readOnly={isClientSelectedReadOnly} /></FormControl>
+                <FormControl><Input type="email" placeholder={t('invoiceForm.placeholders.clientEmail')} {...field} value={field.value ?? ""} readOnly={isClientSelected} /></FormControl>
                 <FormMessage />
               </FormItem>
             )} />
             <FormField control={form.control} name="clientICE" render={({ field }) => (
               <FormItem>
                 <FormLabel>{t('invoiceForm.labels.clientICE')}</FormLabel>
-                <FormControl><Input placeholder={t('invoiceForm.placeholders.clientICE')} {...field} value={field.value ?? ""} readOnly={isClientSelectedReadOnly} /></FormControl>
+                <FormControl><Input placeholder={t('invoiceForm.placeholders.clientICE')} {...field} value={field.value ?? ""} readOnly={isClientSelected} /></FormControl>
                 <FormMessage />
               </FormItem>
             )} />
             <FormField control={form.control} name="clientAddress" render={({ field }) => (
               <FormItem className="md:col-span-2">
                 <FormLabel>{t('invoiceForm.labels.clientAddress')}</FormLabel>
-                <FormControl><Textarea placeholder={t('invoiceForm.placeholders.clientAddress')} {...field} value={field.value ?? ""} readOnly={isClientSelectedReadOnly} /></FormControl>
+                <FormControl><Textarea placeholder={t('invoiceForm.placeholders.clientAddress')} {...field} value={field.value ?? ""} readOnly={isClientSelected} /></FormControl>
                 <FormMessage />
               </FormItem>
             )} />
@@ -551,3 +568,5 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     </Form>
   );
 }
+
+    
