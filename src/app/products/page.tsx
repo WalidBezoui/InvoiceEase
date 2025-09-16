@@ -4,7 +4,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
-import { Package, Search, Loader2, Edit, Trash2, Eye, Lightbulb, AlertTriangle, Info, ChevronDown, FilterX, ArrowUpDown, Wrench } from "lucide-react"; 
+import { Package, Search, Loader2, Edit, Trash2, Eye, Lightbulb, AlertTriangle, Info, ChevronDown, FilterX, ArrowUpDown, ArrowRightLeft } from "lucide-react"; 
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuth } from "@/hooks/use-auth";
@@ -234,6 +234,7 @@ export default function ProductsPage() {
   
   const onTransactionSuccess = () => {
     fetchProductsAndTips();
+    setIsQuickTransactionOpen(false);
   };
 
 
@@ -381,75 +382,75 @@ export default function ProductsPage() {
                         )}
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <Dialog open={selectedProduct?.id === product.id && isQuickTransactionOpen} onOpenChange={(open) => {
+                        <Dialog open={selectedProduct?.id === product.id && isQuickTransactionOpen} onOpenChange={(open) => {
                               if (!open) {
                                   setSelectedProduct(null);
                               }
                               setIsQuickTransactionOpen(open);
                           }}>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <DialogTrigger asChild>
+                          <div className="flex items-center justify-end gap-1">
+                            <Tooltip>
+                                <DialogTrigger asChild>
+                                  <TooltipTrigger asChild>
                                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleQuickTransactionClick(product)}>
-                                      <Wrench className="h-4 w-4" />
+                                      <ArrowRightLeft className="h-4 w-4" />
                                       <span className="sr-only">{t('productsPage.actions.quickTransaction', { default: 'Quick Transaction'})}</span>
                                     </Button>
-                                  </DialogTrigger>
-                                </TooltipTrigger>
-                                <TooltipContent><p>{t('productsPage.actions.quickTransaction', { default: 'Quick Transaction'})}</p></TooltipContent>
-                              </Tooltip>
-                              {selectedProduct?.id === product.id && (
-                                <QuickTransactionDialog 
-                                    product={selectedProduct} 
-                                    onTransactionSuccess={onTransactionSuccess}
-                                />
-                              )}
-                          </Dialog>
+                                  </TooltipTrigger>
+                                </DialogTrigger>
+                              <TooltipContent><p>{t('productsPage.actions.quickTransaction', { default: 'Quick Transaction'})}</p></TooltipContent>
+                            </Tooltip>
+                            
+                            <Tooltip><TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" asChild className="h-8 w-8">
+                              <Link href={`/products/${product.id}`}>
+                                <Eye className="h-4 w-4" />
+                                <span className="sr-only">{t('productsPage.actions.view')}</span>
+                              </Link> 
+                            </Button>
+                            </TooltipTrigger><TooltipContent><p>{t('productsPage.actions.view')}</p></TooltipContent></Tooltip>
+                            
+                            <Tooltip><TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" asChild className="h-8 w-8">
+                              <Link href={`/products/${product.id}/edit`}>
+                                <Edit className="h-4 w-4" />
+                                <span className="sr-only">{t('productsPage.actions.edit')}</span>
+                              </Link> 
+                            </Button>
+                            </TooltipTrigger><TooltipContent><p>{t('productsPage.actions.edit')}</p></TooltipContent></Tooltip>
 
-                          <Tooltip><TooltipTrigger asChild>
-                          <Button variant="ghost" size="icon" asChild className="h-8 w-8">
-                            <Link href={`/products/${product.id}`}>
-                              <Eye className="h-4 w-4" />
-                              <span className="sr-only">{t('productsPage.actions.view')}</span>
-                            </Link> 
-                          </Button>
-                          </TooltipTrigger><TooltipContent><p>{t('productsPage.actions.view')}</p></TooltipContent></Tooltip>
-                          
-                          <Tooltip><TooltipTrigger asChild>
-                          <Button variant="ghost" size="icon" asChild className="h-8 w-8">
-                            <Link href={`/products/${product.id}/edit`}>
-                              <Edit className="h-4 w-4" />
-                               <span className="sr-only">{t('productsPage.actions.edit')}</span>
-                            </Link> 
-                          </Button>
-                          </TooltipTrigger><TooltipContent><p>{t('productsPage.actions.edit')}</p></TooltipContent></Tooltip>
-
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                               <Tooltip><TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10">
-                                  <Trash2 className="h-4 w-4" />
-                                  <span className="sr-only">{t('productsPage.actions.delete')}</span>
-                                </Button>
-                             </TooltipTrigger><TooltipContent><p>{t('productsPage.actions.delete')}</p></TooltipContent></Tooltip>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>{t('productsPage.dialog.deleteTitle')}</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  {t('productsPage.dialog.deleteDesc', { productName: product.name })}
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>{t('productsPage.dialog.cancel')}</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDelete(product.id!)} className="bg-destructive hover:bg-destructive/90">
-                                  {t('productsPage.dialog.confirmDelete')}
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Tooltip><TooltipTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10">
+                                    <Trash2 className="h-4 w-4" />
+                                    <span className="sr-only">{t('productsPage.actions.delete')}</span>
+                                  </Button>
+                              </TooltipTrigger><TooltipContent><p>{t('productsPage.actions.delete')}</p></TooltipContent></Tooltip>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>{t('productsPage.dialog.deleteTitle')}</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    {t('productsPage.dialog.deleteDesc', { productName: product.name })}
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>{t('productsPage.dialog.cancel')}</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDelete(product.id!)} className="bg-destructive hover:bg-destructive/90">
+                                    {t('productsPage.dialog.confirmDelete')}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                          {selectedProduct?.id === product.id && (
+                            <QuickTransactionDialog 
+                                product={selectedProduct} 
+                                onTransactionSuccess={onTransactionSuccess}
+                            />
+                          )}
+                        </Dialog>
                       </TableCell>
                     </TableRow>
                   )})}
