@@ -89,3 +89,23 @@
     @apply bg-background text-foreground;
   }
 }
+
+@media print {
+  body {
+    background-color: white;
+  }
+  header, footer, .no-print {
+    display: none !important;
+  }
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  .invoice-page-container {
+    padding: 0;
+  }
+  .invoice-card-on-screen {
+    box-shadow: none;
+    border: none;
+  }
+}

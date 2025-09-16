@@ -389,7 +389,7 @@ export default function InvoiceDetailPage() {
 
   return (
     <div className="invoice-page-container">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 no-print">
         <div className="flex items-center gap-4">
             <Button variant="outline" size="icon" asChild>
             <Link href="/invoices">
@@ -520,6 +520,10 @@ export default function InvoiceDetailPage() {
           <Button variant="outline" onClick={handleDownloadPdf} disabled={isGeneratingPdf}>
             {isGeneratingPdf ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
             {t('invoiceDetailPage.downloadPdf')}
+          </Button>
+
+          <Button variant="outline" onClick={printInvoice}>
+            <Printer className="mr-2 h-4 w-4" /> {t('invoiceDetailPage.printPdf', { default: 'Print' })}
           </Button>
 
           { (invoice.status === 'draft' || invoice.status === 'sent') && !isUpdatingStatus ? (
