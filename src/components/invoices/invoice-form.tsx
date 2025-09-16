@@ -247,6 +247,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
       language: initialData?.language || userPrefs?.language || "fr",
       appliedDefaultNotes: values.notes ? "" : (initialData?.appliedDefaultNotes || userPrefs?.defaultNotes || ""),
       appliedDefaultPaymentTerms: initialData?.appliedDefaultPaymentTerms || userPrefs?.defaultPaymentTerms || "",
+      stockUpdated: initialData?.stockUpdated || false,
     };
 
     try {
@@ -254,8 +255,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
         const invoiceRef = doc(db, "invoices", initialData.id);
         await updateDoc(invoiceRef, {
           ...coreInvoiceData,
-          status: initialData.status,
-          stockUpdated: initialData.stockUpdated || false,
+          status: initialData.status, // Keep existing status on update
           updatedAt: serverTimestamp(),
         });
         toast({ title: t('invoiceForm.toast.invoiceUpdatedTitle'), description: t('invoiceForm.toast.invoiceUpdatedDesc', {invoiceNumber: values.invoiceNumber}) });
@@ -265,7 +265,6 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
           userId: user.uid,
           status: 'draft' as const,
           ...coreInvoiceData,
-          stockUpdated: false, // Explicitly set on creation
           createdAt: serverTimestamp() as FieldValue,
           updatedAt: serverTimestamp() as FieldValue,
         };
@@ -540,5 +539,3 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     </Form>
   );
 }
-
-    
