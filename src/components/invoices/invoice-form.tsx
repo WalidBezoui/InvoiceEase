@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, PlusCircle, Trash2, Save, Loader2, UserPlus } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/componentsui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -27,9 +26,8 @@ import Link from "next/link";
 import { useLanguage } from "@/hooks/use-language";
 import AddItemDialog from "./add-item-dialog";
 
-// The 'id' here is the temporary ID from useFieldArray, NOT the database ID.
 const invoiceItemSchema = z.object({
-  id: z.string().optional(),
+  id: z.string().optional(), // This is the ID from the database, present only for existing items
   productId: z.string().optional(),
   reference: z.string().optional(),
   description: z.string().min(1, "Description is required"),
@@ -165,7 +163,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
                 issueDate: new Date(initialData.issueDate),
                 dueDate: new Date(initialData.dueDate),
                 items: initialData.items.map(item => ({ 
-                    id: item.id, // This is the crucial part for preserving the ID
+                    id: item.id, // Preserve ID for existing items
                     productId: item.productId,
                     reference: item.reference || '', 
                     description: item.description,
@@ -217,17 +215,18 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
 
   async function onSubmit(values: InvoiceFormValues) {
     if (!user) {
-      toast({ title: t('invoiceForm.toast.authErrorTitle'), description: t('invoiceForm.toast.authErrorDesc'), variant: "destructive" });
-      return;
-    }
-    if (isPrefsLoading || isClientsLoading || isLoadingLang) {
-      toast({ title: t('invoiceForm.toast.pleaseWait'), description: t('invoiceForm.toast.dataLoading'), variant: "default" });
-      return;
+        toast({ title: "Authentication Error", description: "You must be logged in.", variant: "destructive" });
+        return;
     }
     setIsSaving(true);
-    
-    // This is the data structure for both new and updated invoices.
-    const dataToSave = {
+
+    const subtotal = values.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice || 0), 0);
+    const taxAmount = subtotal * ((values.taxRate || 0) / 100);
+    const totalAmount = subtotal + taxAmount;
+
+    // This is the object that will be saved to Firestore.
+    // We explicitly set optional fields to null if they are empty.
+    const dataToSave: Omit<Invoice, 'id' | 'createdAt' | 'updatedAt' | 'items'> & { items: any[] } = {
         userId: user.uid,
         invoiceNumber: values.invoiceNumber,
         clientId: values.clientId === MANUAL_ENTRY_CLIENT_ID ? null : (values.clientId || null),
@@ -239,67 +238,59 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
         issueDate: format(values.issueDate, "yyyy-MM-dd"),
         dueDate: format(values.dueDate, "yyyy-MM-dd"),
         items: values.items.map(item => ({
-            id: item.id || doc(collection(db, 'invoices')).id, // For existing items, use their ID. For new, generate one.
+            id: item.id || doc(collection(db, 'invoices')).id,
             productId: item.productId || null,
             reference: item.reference || null,
             description: item.description,
             quantity: item.quantity,
             unitPrice: item.unitPrice,
-            total: item.quantity * item.unitPrice,
+            total: (item.quantity || 0) * (item.unitPrice || 0),
         })),
         subtotal: subtotal,
         taxRate: values.taxRate ?? 0,
         taxAmount: taxAmount,
         totalAmount: totalAmount,
         notes: values.notes || null,
+        status: initialData?.status || 'draft',
+        currency: initialData?.currency || userPrefs?.currency || 'MAD',
+        language: initialData?.language || userPrefs?.language || 'fr',
+        stockUpdated: initialData?.stockUpdated || false,
+        appliedDefaultNotes: initialData?.appliedDefaultNotes || null,
+        appliedDefaultPaymentTerms: initialData?.appliedDefaultPaymentTerms || null,
+        sentDate: initialData?.sentDate || null,
+        paidDate: initialData?.paidDate || null,
     };
 
     try {
-      if (initialData?.id) {
-        // UPDATE LOGIC
-        const updateData = {
-          ...dataToSave,
-          // Preserve fields that are not in the form
-          status: initialData.status,
-          currency: initialData.currency,
-          language: initialData.language,
-          appliedDefaultNotes: initialData.appliedDefaultNotes || null,
-          appliedDefaultPaymentTerms: initialData.appliedDefaultPaymentTerms || null,
-          stockUpdated: initialData.stockUpdated || false,
-          sentDate: initialData.sentDate || null,
-          paidDate: initialData.paidDate || null,
-          updatedAt: serverTimestamp(),
-        };
+        if (initialData?.id) {
+            const finalUpdateData = {
+                ...dataToSave,
+                updatedAt: serverTimestamp(),
+            };
 
-        const invoiceRef = doc(db, "invoices", initialData.id);
-        await updateDoc(invoiceRef, updateData);
-        toast({ title: t('invoiceForm.toast.invoiceUpdatedTitle'), description: t('invoiceForm.toast.invoiceUpdatedDesc', {invoiceNumber: values.invoiceNumber}) });
-        router.push(`/invoices/${initialData.id}`);
+            const invoiceRef = doc(db, "invoices", initialData.id);
+            await updateDoc(invoiceRef, finalUpdateData);
+            toast({ title: t('invoiceForm.toast.invoiceUpdatedTitle'), description: t('invoiceForm.toast.invoiceUpdatedDesc', { invoiceNumber: values.invoiceNumber }) });
+            router.push(`/invoices/${initialData.id}`);
 
-      } else {
-        // CREATE LOGIC
-        const createData = {
-          ...dataToSave,
-          status: 'draft' as const,
-          currency: userPrefs?.currency || "MAD",
-          language: userPrefs?.language || "fr",
-          stockUpdated: false,
-          appliedDefaultNotes: values.notes ? null : (userPrefs?.defaultNotes || null),
-          appliedDefaultPaymentTerms: userPrefs?.defaultPaymentTerms || null,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        };
-        const docRef = await addDoc(collection(db, "invoices"), createData);
-        toast({ title: t('invoiceForm.toast.invoiceSavedTitle'), description: t('invoiceForm.toast.invoiceSavedDesc', {invoiceNumber: values.invoiceNumber}) });
-        router.push(`/invoices/${docRef.id}`);
-      }
+        } else {
+            const finalCreateData = {
+                ...dataToSave,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            };
+            const docRef = await addDoc(collection(db, "invoices"), finalCreateData);
+            toast({ title: t('invoiceForm.toast.invoiceSavedTitle'), description: t('invoiceForm.toast.invoiceSavedDesc', { invoiceNumber: values.invoiceNumber }) });
+            router.push(`/invoices/${docRef.id}`);
+        }
     } catch (error) {
-      console.error("Error saving invoice:", error);
-      toast({ title: t('invoiceForm.toast.errorSavingTitle'), description: `An unexpected error occurred: ${(error as Error).message}`, variant: "destructive" });
+        console.error("Error saving invoice:", error);
+        toast({ title: t('invoiceForm.toast.errorSavingTitle'), description: `An unexpected error occurred: ${(error as Error).message}`, variant: "destructive" });
     } finally {
-      setIsSaving(false);
+        setIsSaving(false);
     }
-  }
+}
+
 
   const handleAddItem = (item: Pick<InvoiceItem, 'productId' | 'reference' | 'description' | 'quantity' | 'unitPrice'>) => {
     // If the first item is the default empty one, remove it
