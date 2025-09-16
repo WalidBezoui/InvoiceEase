@@ -69,13 +69,11 @@ export default function AddItemDialog({ products, isLoading, onAddItem, currency
       quantity: 1,
       unitPrice: product.sellingPrice,
     });
-    setOpen(false);
   };
   
   const onCustomSubmit: SubmitHandler<CustomItemFormValues> = (data) => {
     onAddItem(data);
     form.reset();
-    setOpen(false);
   };
 
   return (
