@@ -387,7 +387,7 @@
     "currency": "Currency:",
     "invoiceStatus": "Invoice Status",
     "backToInvoices": "Back to Invoices",
-    "printPdf": "Print / PDF",
+    "printPdf": "Print",
     "downloadPdf": "Download PDF",
     "edit": "Edit",
     "errorLoadingInvoice": "Error Loading Invoice",
@@ -665,7 +665,8 @@
     "actions": {
       "edit": "Edit",
       "delete": "Delete",
-      "view": "View"
+      "view": "View",
+      "quickTransaction": "Quick Transaction"
     },
     "loading": "Loading...",
     "error": "Failed to load parts. Please try again.",
@@ -719,7 +720,9 @@
       "authError": "You must be logged in.",
       "productUpdated": "Part updated successfully.",
       "productAdded": "Part added successfully.",
-      "errorSaving": "Failed to save part. Please try again."
+      "errorSaving": "Failed to save part. Please try again.",
+      "initialStockNote": "Initial stock",
+      "stockCorrectionNote": "Stock correction from edit form"
     }
   },
   "productDetailPage": {
@@ -732,6 +735,7 @@
     "productDetails": "Part Details",
     "stockAdjustment": {
       "title": "Adjust Stock",
+      "quickTransactionFor": "Quick transaction for",
       "description": "Manually add or remove stock for purchases, returns, or corrections.",
       "quantityLabel": "Quantity",
       "quantityPlaceholder": "e.g., 50 or -5",
@@ -791,5 +795,3 @@
     "info": "Info"
   }
 }
-
-    

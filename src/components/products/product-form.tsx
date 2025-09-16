@@ -18,6 +18,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
 import { Loader2, Save } from "lucide-react";
 import { useLanguage } from "@/hooks/use-language";
+import { handleStockAdjustment } from "@/lib/stock-management";
 
 const productFormSchema = z.object({
   name: z.string().min(2, "Product/Service name must be at least 2 characters."),
@@ -73,43 +74,52 @@ export default function ProductForm({ initialData, onSave }: ProductFormProps) {
       description: values.description || "",
       sellingPrice: values.sellingPrice,
       purchasePrice: values.purchasePrice,
-      stock: values.stock,
+      stock: initialData ? values.stock : 0, // When creating, initial stock is handled separately
       updatedAt: serverTimestamp(),
     };
 
     try {
       if (initialData?.id) {
+        // This is an update
         const productRef = doc(db, "products", initialData.id);
+        const stockDifference = (values.stock ?? 0) - (initialData.stock ?? 0);
+        
+        if (stockDifference !== 0) {
+            await handleStockAdjustment(
+                initialData.id, 
+                stockDifference, 
+                t('productForm.toast.stockCorrectionNote', { default: 'Stock correction from edit form'}),
+                user.uid,
+                values.purchasePrice // Assume correction is at purchase price
+            );
+        }
         await updateDoc(productRef, productData);
         toast({ title: t('productForm.toast.productUpdated') });
         if (onSave) onSave(initialData.id); else router.push(`/products/${initialData.id}`);
-      } else {
-        const batch = writeBatch(db);
-        const productRef = doc(collection(db, "products"));
-        
-        batch.set(productRef, {
-          ...productData,
-          createdAt: serverTimestamp(),
-        });
-        
-        if (values.stock !== undefined && values.stock > 0) {
-            const transactionRef = doc(collection(db, "productTransactions"));
-            batch.set(transactionRef, {
-                userId: user.uid,
-                productId: productRef.id,
-                type: 'initial',
-                quantityChange: values.stock,
-                newStock: values.stock,
-                notes: 'Initial stock',
-                transactionDate: serverTimestamp(),
-            });
-        }
 
-        await batch.commit();
+      } else {
+        // This is a new product creation
+        const productRef = doc(collection(db, "products"));
+        await writeBatch(db).set(productRef, {
+            ...productData,
+            stock: values.stock ?? 0, // Set initial stock directly on the product
+            createdAt: serverTimestamp(),
+        }).commit();
+
+        // If there was an initial stock, create the transaction log for it
+        if (values.stock && values.stock > 0) {
+            await handleStockAdjustment(
+                productRef.id,
+                values.stock,
+                t('productForm.toast.initialStockNote', { default: 'Initial stock'}),
+                user.uid,
+                values.purchasePrice,
+                'initial'
+            );
+        }
         
         toast({ title: t('productForm.toast.productAdded') });
-        if (onSave) onSave(productRef.id);
-        else router.push("/products");
+        if (onSave) onSave(productRef.id); else router.push("/products");
       }
     } catch (error) {
       console.error("Error saving product:", error);

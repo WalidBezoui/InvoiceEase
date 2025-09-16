@@ -4,14 +4,14 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
-import { Package, Search, Loader2, Edit, Trash2, Eye, Lightbulb, AlertTriangle, Info, ChevronDown, FilterX, ArrowUpDown } from "lucide-react"; 
+import { Package, Search, Loader2, Edit, Trash2, Eye, Lightbulb, AlertTriangle, Info, ChevronDown, FilterX, ArrowUpDown, Wrench } from "lucide-react"; 
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuth } from "@/hooks/use-auth";
 import { db } from "@/lib/firebase";
 import type { Product, ProductTipOutput } from "@/lib/types";
 import { collection, query, where, getDocs, orderBy, doc, deleteDoc, limit } from "firebase/firestore";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useLanguage } from "@/hooks/use-language";
 import {
   AlertDialog,
@@ -39,6 +39,7 @@ import {
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import QuickTransactionDialog from "@/components/products/quick-transaction-dialog";
 
 
 const ALL_TIP_TYPES: ProductTipOutput['type'][] = ['warning', 'suggestion', 'info'];
@@ -57,88 +58,79 @@ export default function ProductsPage() {
 
 
   const isLoading = authLoading || isLoadingLocale || isLoadingData;
+  
+  const fetchProductsAndTips = useCallback(async () => {
+    if (!user || isLoadingLocale) return;
 
-  useEffect(() => {
-    async function fetchProductsAndTips() {
-      if (!user) {
-        setIsLoadingData(false);
-        setAllProducts([]);
-        return;
-      }
-      setIsLoadingData(true);
-      setError(null);
-      try {
-        const productsRef = collection(db, "products");
-        const q = query(productsRef, where("userId", "==", user.uid), orderBy("name", "asc"));
-        const querySnapshot = await getDocs(q);
-        const fetchedProducts: Product[] = [];
-        const dataPromises: Promise<any>[] = [];
+    setIsLoadingData(true);
+    setError(null);
+    try {
+      const productsRef = collection(db, "products");
+      const q = query(productsRef, where("userId", "==", user.uid), orderBy("name", "asc"));
+      const querySnapshot = await getDocs(q);
+      
+      const productsWithTips = await Promise.all(querySnapshot.docs.map(async (doc) => {
+        const product = { id: doc.id, ...doc.data() } as Product;
+        
+        const transactionsQuery = query(
+          collection(db, "productTransactions"),
+          where("productId", "==", product.id),
+          orderBy("transactionDate", "desc"),
+          where("userId", "==", user.uid),
+          limit(50) 
+        );
 
-        querySnapshot.forEach((doc) => {
-          const product = { id: doc.id, ...doc.data() } as Product;
-          
-          const dataPromise = async () => {
-            const transactionsQuery = query(
-              collection(db, "productTransactions"),
-              where("productId", "==", product.id),
-              orderBy("transactionDate", "desc"),
-              where("userId", "==", user.uid),
-              limit(50) 
-            );
-
-            const transSnap = await getDocs(transactionsQuery);
-            const transactionSummary = transSnap.docs.map(d => {
-                const data = d.data();
-                return {
-                    type: data.type,
-                    quantityChange: data.quantityChange,
-                    transactionDate: data.transactionDate.toDate().toISOString(),
-                    transactionPrice: data.transactionPrice
-                }
-            });
-
-            const tip = await getProductTip({
-              stockLevel: product.stock ?? 0,
-              transactions: transactionSummary,
-              language: locale
-            }).catch(err => {
-              console.warn(`Could not fetch tip for product ${product.id}:`, err);
-              return {tip: 'N/A', type: 'info'};
-            });
-
+        const transSnap = await getDocs(transactionsQuery);
+        const transactionSummary = transSnap.docs.map(d => {
+            const data = d.data();
             return {
-                product: {
-                    ...product,
-                    lastTransactionDate: transSnap.docs[0]?.data().transactionDate.toDate()
-                },
-                tip
-            };
-          };
-          dataPromises.push(dataPromise());
-        });
-
-        const results = await Promise.all(dataPromises);
-        const productsWithLastTx: Product[] = [];
-        const tipsMap: Record<string, ProductTipOutput> = {};
-
-        results.forEach(result => {
-            productsWithLastTx.push(result.product);
-            if(result.product.id) {
-                tipsMap[result.product.id] = result.tip;
+                type: data.type,
+                quantityChange: data.quantityChange,
+                transactionDate: data.transactionDate.toDate().toISOString(),
+                transactionPrice: data.transactionPrice
             }
         });
 
-        setAllProducts(productsWithLastTx);
-        setTips(tipsMap);
+        const tip = await getProductTip({
+          stockLevel: product.stock ?? 0,
+          transactions: transactionSummary,
+          language: locale
+        }).catch(err => {
+          console.warn(`Could not fetch tip for product ${product.id}:`, err);
+          return {tip: t('productsPage.error', { default: 'N/A' }), type: 'info'};
+        });
 
-      } catch (err) {
-        console.error("Error fetching products:", err);
-        setError(t('productsPage.error'));
-      } finally {
-        setIsLoadingData(false);
-      }
+        return {
+            product: {
+                ...product,
+                lastTransactionDate: transSnap.docs[0]?.data().transactionDate.toDate()
+            },
+            tip
+        };
+      }));
+
+      const newProducts: Product[] = [];
+      const newTips: Record<string, ProductTipOutput> = {};
+      productsWithTips.forEach(item => {
+        newProducts.push(item.product);
+        if (item.product.id) {
+          newTips[item.product.id] = item.tip;
+        }
+      });
+      
+      setAllProducts(newProducts);
+      setTips(newTips);
+
+    } catch (err) {
+      console.error("Error fetching products:", err);
+      setError(t('productsPage.error'));
+    } finally {
+      setIsLoadingData(false);
     }
+  }, [user, locale, isLoadingLocale, t]);
 
+
+  useEffect(() => {
     if (user && !isLoadingLocale) {
       fetchProductsAndTips();
     } else if (!authLoading && !user) {
@@ -146,7 +138,8 @@ export default function ProductsPage() {
       setAllProducts([]);
       setError(null);
     }
-  }, [user, authLoading, t, locale, isLoadingLocale]);
+  }, [user, authLoading, isLoadingLocale, fetchProductsAndTips]);
+  
   
   const handleRequestSort = (key: keyof Product) => {
     let direction: 'asc' | 'desc' = 'asc';
@@ -212,7 +205,7 @@ export default function ProductsPage() {
 
   const handleDelete = async (productId: string) => {
     if (!user) {
-      toast({ title: t('productForm.toast.authError'), variant: 'destructive' });
+      toast({ title: t('productForm.toast.authError', { default: "Authentication Error"}), variant: 'destructive' });
       return;
     }
     const productToDelete = allProducts.find(p => p.id === productId);
@@ -220,6 +213,7 @@ export default function ProductsPage() {
 
     try {
       await deleteDoc(doc(db, "products", productId));
+      // Note: This doesn't delete associated transactions, which might be desired for historical data.
       setAllProducts(prev => prev.filter(p => p.id !== productId));
       toast({
         title: t('productsPage.toast.deleteSuccessTitle'),
@@ -234,6 +228,11 @@ export default function ProductsPage() {
       });
     }
   };
+  
+  const onTransactionSuccess = () => {
+    fetchProductsAndTips();
+  };
+
 
   const getTipStyling = (type?: ProductTipOutput['type']) => {
     switch (type) {
@@ -375,6 +374,18 @@ export default function ProductsPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
+                          <QuickTransactionDialog product={product} onTransactionSuccess={onTransactionSuccess}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <Wrench className="h-4 w-4" />
+                                  <span className="sr-only">{t('productsPage.actions.quickTransaction', { default: 'Quick Transaction'})}</span>
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent><p>{t('productsPage.actions.quickTransaction', { default: 'Quick Transaction'})}</p></TooltipContent>
+                            </Tooltip>
+                          </QuickTransactionDialog>
+
                           <Tooltip><TooltipTrigger asChild>
                           <Button variant="ghost" size="icon" asChild className="h-8 w-8">
                             <Link href={`/products/${product.id}`}>
@@ -450,4 +461,3 @@ export default function ProductsPage() {
     </div>
   );
 }
-

@@ -387,7 +387,7 @@
     "currency": "Devise :",
     "invoiceStatus": "Statut de la facture",
     "backToInvoices": "Retour aux factures",
-    "printPdf": "Imprimer / PDF",
+    "printPdf": "Imprimer",
     "downloadPdf": "Télécharger PDF",
     "edit": "Modifier",
     "errorLoadingInvoice": "Erreur de chargement de la facture",
@@ -665,7 +665,8 @@
     "actions": {
       "edit": "Modifier",
       "delete": "Supprimer",
-      "view": "Voir"
+      "view": "Voir",
+      "quickTransaction": "Transaction Rapide"
     },
     "loading": "Chargement...",
     "error": "Échec du chargement des pièces. Veuillez réessayer.",
@@ -719,7 +720,9 @@
       "authError": "Vous devez être connecté.",
       "productUpdated": "Pièce mise à jour avec succès.",
       "productAdded": "Pièce ajoutée avec succès.",
-      "errorSaving": "Échec de l'enregistrement de la pièce. Veuillez réessayer."
+      "errorSaving": "Échec de l'enregistrement de la pièce. Veuillez réessayer.",
+      "initialStockNote": "Stock initial",
+      "stockCorrectionNote": "Correction de stock depuis le formulaire"
     }
   },
   "productDetailPage": {
@@ -732,6 +735,7 @@
     "productDetails": "Détails de la Pièce",
     "stockAdjustment": {
       "title": "Ajuster le Stock",
+      "quickTransactionFor": "Transaction rapide pour",
       "description": "Ajoutez ou retirez manuellement du stock pour les achats, retours ou corrections.",
       "quantityLabel": "Quantité",
       "quantityPlaceholder": "ex: 50 ou -5",
@@ -791,5 +795,3 @@
     "info": "Info"
   }
 }
-
-    
