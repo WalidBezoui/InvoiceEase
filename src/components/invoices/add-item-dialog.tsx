@@ -76,6 +76,12 @@ export default function AddItemDialog({ products, isLoading, onAddItem, currency
     form.reset();
   };
 
+  const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    form.handleSubmit(onCustomSubmit)();
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -152,7 +158,7 @@ export default function AddItemDialog({ products, isLoading, onAddItem, currency
           </TabsContent>
           <TabsContent value="custom-item">
             <Form {...form}>
-                <form onSubmit={form.handleSubmit(onCustomSubmit)} className="p-4 space-y-4">
+                <form onSubmit={handleFormSubmit} className="p-4 space-y-4">
                     <FormField control={form.control} name="description" render={({ field }) => (
                         <FormItem>
                             <FormLabel>{t('invoiceForm.addItemDialog.customItemTab.descriptionLabel')}</FormLabel>
