@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, PlusCircle, Trash2, Save, Loader2, UserPlus } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/componentsui/select";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -27,7 +27,9 @@ import Link from "next/link";
 import { useLanguage } from "@/hooks/use-language";
 import AddItemDialog from "./add-item-dialog";
 
+// The 'id' here is the temporary ID from useFieldArray, NOT the database ID.
 const invoiceItemSchema = z.object({
+  id: z.string().optional(),
   productId: z.string().optional(),
   reference: z.string().optional(),
   description: z.string().min(1, "Description is required"),
@@ -149,7 +151,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
   }, [t, form, isLoadingLang]);
 
   useEffect(() => {
-    if (!isPrefsLoading) {
+    if (!isPrefsLoading && !isClientsLoading) {
         if (initialData) {
             const hasExistingClient = initialData.clientId && clients.some(c => c.id === initialData.clientId);
             form.reset({
@@ -163,6 +165,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
                 issueDate: new Date(initialData.issueDate),
                 dueDate: new Date(initialData.dueDate),
                 items: initialData.items.map(item => ({ 
+                    id: item.id, // This is the crucial part for preserving the ID
                     productId: item.productId,
                     reference: item.reference || '', 
                     description: item.description,
@@ -181,7 +184,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
             });
         }
     }
-  }, [initialData, form, isPrefsLoading, userPrefs, user?.uid, clients]);
+  }, [initialData, form, isPrefsLoading, userPrefs, user?.uid, clients, isClientsLoading]);
 
   const watchItems = form.watch("items");
   const watchTaxRate = form.watch("taxRate");
@@ -222,25 +225,12 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
       return;
     }
     setIsSaving(true);
-
-    const invoiceItemsToSave = values.items.map((item, index) => {
-        // For existing invoices, we need to preserve the ID of each item if it exists.
-        const originalItem = initialData?.items[index];
-        return {
-            id: originalItem?.id || undefined, // Keep existing ID
-            productId: item.productId || null,
-            reference: item.reference || null,
-            description: item.description,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            total: item.quantity * item.unitPrice,
-        };
-    });
-
-    const invoiceData = {
+    
+    // This is the data structure for both new and updated invoices.
+    const dataToSave = {
         userId: user.uid,
         invoiceNumber: values.invoiceNumber,
-        clientId: values.clientId === MANUAL_ENTRY_CLIENT_ID ? null : values.clientId || null,
+        clientId: values.clientId === MANUAL_ENTRY_CLIENT_ID ? null : (values.clientId || null),
         clientName: values.clientName,
         clientEmail: values.clientEmail || null,
         clientAddress: values.clientAddress || null,
@@ -248,36 +238,48 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
         clientICE: values.clientICE || null,
         issueDate: format(values.issueDate, "yyyy-MM-dd"),
         dueDate: format(values.dueDate, "yyyy-MM-dd"),
-        items: invoiceItemsToSave.map(item => ({
-            id: item.id,
-            productId: item.productId,
-            reference: item.reference,
+        items: values.items.map(item => ({
+            id: item.id || doc(collection(db, 'invoices')).id, // For existing items, use their ID. For new, generate one.
+            productId: item.productId || null,
+            reference: item.reference || null,
             description: item.description,
             quantity: item.quantity,
             unitPrice: item.unitPrice,
-            total: item.total
+            total: item.quantity * item.unitPrice,
         })),
         subtotal: subtotal,
-        taxRate: values.taxRate,
+        taxRate: values.taxRate ?? 0,
         taxAmount: taxAmount,
         totalAmount: totalAmount,
         notes: values.notes || null,
     };
-    
+
     try {
       if (initialData?.id) {
+        // UPDATE LOGIC
         const updateData = {
-          ...initialData,
-          ...invoiceData,
+          ...dataToSave,
+          // Preserve fields that are not in the form
+          status: initialData.status,
+          currency: initialData.currency,
+          language: initialData.language,
+          appliedDefaultNotes: initialData.appliedDefaultNotes || null,
+          appliedDefaultPaymentTerms: initialData.appliedDefaultPaymentTerms || null,
+          stockUpdated: initialData.stockUpdated || false,
+          sentDate: initialData.sentDate || null,
+          paidDate: initialData.paidDate || null,
           updatedAt: serverTimestamp(),
         };
+
         const invoiceRef = doc(db, "invoices", initialData.id);
         await updateDoc(invoiceRef, updateData);
         toast({ title: t('invoiceForm.toast.invoiceUpdatedTitle'), description: t('invoiceForm.toast.invoiceUpdatedDesc', {invoiceNumber: values.invoiceNumber}) });
         router.push(`/invoices/${initialData.id}`);
+
       } else {
+        // CREATE LOGIC
         const createData = {
-          ...invoiceData,
+          ...dataToSave,
           status: 'draft' as const,
           currency: userPrefs?.currency || "MAD",
           language: userPrefs?.language || "fr",
@@ -286,7 +288,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
           appliedDefaultPaymentTerms: userPrefs?.defaultPaymentTerms || null,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
-        }
+        };
         const docRef = await addDoc(collection(db, "invoices"), createData);
         toast({ title: t('invoiceForm.toast.invoiceSavedTitle'), description: t('invoiceForm.toast.invoiceSavedDesc', {invoiceNumber: values.invoiceNumber}) });
         router.push(`/invoices/${docRef.id}`);
