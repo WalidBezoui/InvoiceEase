@@ -204,7 +204,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
         form.setValue("clientCompany", selectedClient.clientCompany || "");
         form.setValue("clientICE", selectedClient.ice || "");
       }
-    } else if (watchClientId === MANUAL_ENTRY_CLIENT_ID && !initialData) {
+    } else if (watchClientId === MANUAL_ENTRY_CLIENT_ID && !initialData?.clientId) {
         form.setValue("clientName", "");
         form.setValue("clientEmail", "");
         form.setValue("clientAddress", "");
@@ -230,18 +230,25 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     const taxAmount = subtotal * ((values.taxRate || 0) / 100);
     const totalAmount = subtotal + taxAmount;
 
-    const itemsToSave = values.items.map(item => ({
-        id: item.id || doc(collection(db, 'invoices')).id,
-        productId: item.productId || null,
-        reference: item.reference || null,
-        description: item.description,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        total: item.quantity * item.unitPrice,
-    }));
+    // This is the definitive fix:
+    // 1. Map over the items from the form state (`values.items`).
+    // 2. For each item, use its existing `id` if it has one (meaning it came from initialData).
+    // 3. If it does not have an `id`, it's a new item, so we generate a new unique ID for it.
+    // This ensures every item in the array has a valid string ID.
+    const itemsToSave = values.items.map(item => {
+        const originalItem = initialData?.items.find(initItem => initItem.id === item.id);
+        return {
+            id: item.id || doc(collection(db, 'invoices')).id, // Generate new ID if missing
+            productId: item.productId || null,
+            reference: item.reference || null,
+            description: item.description,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            total: item.quantity * item.unitPrice,
+        }
+    });
 
-    // Build a clean data object from scratch, ensuring no undefined values
-    const dataToSave: Omit<Invoice, 'id' | 'createdAt' | 'updatedAt'> & { [key: string]: any } = {
+    const dataToSave: Omit<Invoice, 'id'> & { [key: string]: any } = {
         userId: user.uid,
         invoiceNumber: values.invoiceNumber,
         clientId: (values.clientId === MANUAL_ENTRY_CLIENT_ID ? null : values.clientId) || null,
@@ -266,24 +273,26 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
         stockUpdated: initialData?.stockUpdated ?? false,
         sentDate: initialData?.sentDate || null,
         paidDate: initialData?.paidDate || null,
+        createdAt: initialData?.createdAt || serverTimestamp(),
+        updatedAt: serverTimestamp(),
     };
+    
+    // Final sanitization to be absolutely sure
+    Object.keys(dataToSave).forEach(key => {
+        if (dataToSave[key] === undefined) {
+            dataToSave[key] = null;
+        }
+    });
 
     try {
         if (initialData?.id) {
             const invoiceRef = doc(db, "invoices", initialData.id);
-            await updateDoc(invoiceRef, {
-                ...dataToSave,
-                updatedAt: serverTimestamp(),
-            });
+            await updateDoc(invoiceRef, dataToSave);
             toast({ title: t('invoiceForm.toast.invoiceUpdatedTitle'), description: t('invoiceForm.toast.invoiceUpdatedDesc', { invoiceNumber: values.invoiceNumber }) });
             router.push(`/invoices/${initialData.id}`);
 
         } else {
-            const docRef = await addDoc(collection(db, "invoices"), {
-                ...dataToSave,
-                createdAt: serverTimestamp(),
-                updatedAt: serverTimestamp(),
-            });
+            const docRef = await addDoc(collection(db, "invoices"), dataToSave);
             toast({ title: t('invoiceForm.toast.invoiceSavedTitle'), description: t('invoiceForm.toast.invoiceSavedDesc', { invoiceNumber: values.invoiceNumber }) });
             router.push(`/invoices/${docRef.id}`);
         }
@@ -304,7 +313,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     append({ ...item, reference: item.reference || '' });
   };
 
-  const isClientSelected = !!(watchClientId && watchClientId !== MANUAL_ENTRY_CLIENT_ID);
+  const isClientReadOnly = !!(watchClientId && watchClientId !== MANUAL_ENTRY_CLIENT_ID);
   
   if ((isLoadingLang || isPrefsLoading || isClientsLoading) && !initialData) {
       return <div className="flex justify-center items-center min-h-[60vh]"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
@@ -360,35 +369,35 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
             <FormField control={form.control} name="clientName" render={({ field }) => (
               <FormItem>
                 <FormLabel>{t('invoiceForm.labels.clientName')}</FormLabel>
-                <FormControl><Input placeholder={t('invoiceForm.placeholders.clientName')} {...field} readOnly={isClientSelected} /></FormControl>
+                <FormControl><Input placeholder={t('invoiceForm.placeholders.clientName')} {...field} readOnly={isClientReadOnly} /></FormControl>
                 <FormMessage />
               </FormItem>
             )} />
              <FormField control={form.control} name="clientCompany" render={({ field }) => (
               <FormItem>
                 <FormLabel>{t('invoiceForm.labels.clientCompany')}</FormLabel>
-                <FormControl><Input placeholder={t('invoiceForm.placeholders.clientCompany')} {...field} readOnly={isClientSelected} /></FormControl>
+                <FormControl><Input placeholder={t('invoiceForm.placeholders.clientCompany')} {...field} readOnly={isClientReadOnly} /></FormControl>
                 <FormMessage />
               </FormItem>
             )} />
             <FormField control={form.control} name="clientEmail" render={({ field }) => (
               <FormItem>
                 <FormLabel>{t('invoiceForm.labels.clientEmail')}</FormLabel>
-                <FormControl><Input type="email" placeholder={t('invoiceForm.placeholders.clientEmail')} {...field} value={field.value ?? ""} readOnly={isClientSelected} /></FormControl>
+                <FormControl><Input type="email" placeholder={t('invoiceForm.placeholders.clientEmail')} {...field} value={field.value ?? ""} readOnly={isClientReadOnly} /></FormControl>
                 <FormMessage />
               </FormItem>
             )} />
             <FormField control={form.control} name="clientICE" render={({ field }) => (
               <FormItem>
                 <FormLabel>{t('invoiceForm.labels.clientICE')}</FormLabel>
-                <FormControl><Input placeholder={t('invoiceForm.placeholders.clientICE')} {...field} value={field.value ?? ""} readOnly={isClientSelected} /></FormControl>
+                <FormControl><Input placeholder={t('invoiceForm.placeholders.clientICE')} {...field} value={field.value ?? ""} readOnly={isClientReadOnly} /></FormControl>
                 <FormMessage />
               </FormItem>
             )} />
             <FormField control={form.control} name="clientAddress" render={({ field }) => (
               <FormItem className="md:col-span-2">
                 <FormLabel>{t('invoiceForm.labels.clientAddress')}</FormLabel>
-                <FormControl><Textarea placeholder={t('invoiceForm.placeholders.clientAddress')} {...field} value={field.value ?? ""} readOnly={isClientSelected} /></FormControl>
+                <FormControl><Textarea placeholder={t('invoiceForm.placeholders.clientAddress')} {...field} value={field.value ?? ""} readOnly={isClientReadOnly} /></FormControl>
                 <FormMessage />
               </FormItem>
             )} />
@@ -555,5 +564,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     </Form>
   );
 }
+
+    
 
     
