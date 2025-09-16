@@ -255,8 +255,8 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
         const invoiceRef = doc(db, "invoices", initialData.id);
         await updateDoc(invoiceRef, {
           ...coreInvoiceData,
-          status: initialData.status,
-          updatedAt: serverTimestamp() as FieldValue,
+          status: initialData.status, // Preserve the existing status on update
+          updatedAt: serverTimestamp(),
         });
         toast({ title: t('invoiceForm.toast.invoiceUpdatedTitle'), description: t('invoiceForm.toast.invoiceUpdatedDesc', {invoiceNumber: values.invoiceNumber}) });
         router.push(`/invoices/${initialData.id}`);
@@ -539,5 +539,3 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     </Form>
   );
 }
-
-    
