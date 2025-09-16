@@ -186,7 +186,9 @@ export default function AddItemDialog({ products, isLoading, onAddItem, currency
                          <DialogClose asChild>
                             <Button type="button" variant="ghost">{t('productForm.buttons.cancel')}</Button>
                          </DialogClose>
-                        <Button type="submit">{t('invoiceForm.addItemDialog.customItemTab.addButton')}</Button>
+                         <DialogClose asChild>
+                            <Button type="submit">{t('invoiceForm.addItemDialog.customItemTab.addButton')}</Button>
+                         </DialogClose>
                     </div>
                 </form>
             </Form>
