@@ -225,7 +225,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
         description: item.description,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
-        total: item.quantity * item.unitPrice,
+        total: item.quantity * item.unitPrice || 0,
     }));
 
     const calculatedTaxAmount = calculateTaxAmount(subtotal);
@@ -253,8 +253,8 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
         const invoiceRef = doc(db, "invoices", initialData.id);
         const updateData = {
             ...dataToSave,
-            currency: initialData.currency,
-            language: initialData.language,
+            currency: initialData.currency || userPrefs?.currency || "MAD",
+            language: initialData.language || userPrefs?.language || "fr",
             status: initialData.status,
             stockUpdated: initialData.stockUpdated || false,
             updatedAt: serverTimestamp(),
@@ -548,5 +548,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     </Form>
   );
 }
+
+    
 
     
