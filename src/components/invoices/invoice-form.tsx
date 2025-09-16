@@ -63,7 +63,7 @@ const MANUAL_ENTRY_CLIENT_ID = "_manual_entry_";
 // Deep sanitization utility to prevent 'undefined' values from reaching Firestore
 const sanitizeDataForFirestore = (data: any): any => {
     if (data === undefined) {
-        return null;
+        return null; // Convert top-level undefined to null
     }
     if (data === null || typeof data !== 'object' || data instanceof Date || data.hasOwnProperty('seconds')) {
         return data;
@@ -74,7 +74,8 @@ const sanitizeDataForFirestore = (data: any): any => {
     const cleanData: any = {};
     for (const key in data) {
         if (data.hasOwnProperty(key)) {
-            cleanData[key] = sanitizeDataForFirestore(data[key]);
+            const value = data[key];
+            cleanData[key] = sanitizeDataForFirestore(value);
         }
     }
     return cleanData;
@@ -244,68 +245,37 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     }
     setIsSaving(true);
     
-    let dataToSave;
+    // Construct the full data object first
+    const fullInvoiceData = {
+        ...(initialData || {}),
+        ...values,
+        userId: user.uid,
+        subtotal: subtotal,
+        taxAmount: taxAmount,
+        totalAmount: totalAmount,
+        issueDate: format(values.issueDate, "yyyy-MM-dd"),
+        dueDate: format(values.dueDate, "yyyy-MM-dd"),
+        items: values.items.map((item, index) => ({
+            id: item.databaseId || initialData?.items[index]?.id || undefined,
+            productId: item.productId,
+            reference: item.reference,
+            description: item.description,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            total: (item.quantity || 0) * (item.unitPrice || 0),
+        })),
+        status: initialData ? initialData.status : 'draft',
+        currency: initialData ? initialData.currency : userPrefs?.currency,
+        language: initialData ? initialData.language : userPrefs?.language,
+        stockUpdated: initialData ? initialData.stockUpdated : false,
+        appliedDefaultNotes: initialData ? initialData.appliedDefaultNotes : (values.notes ? null : userPrefs?.defaultNotes),
+        appliedDefaultPaymentTerms: initialData ? initialData.appliedDefaultPaymentTerms : userPrefs?.defaultPaymentTerms,
+        createdAt: initialData ? initialData.createdAt : serverTimestamp(),
+        updatedAt: serverTimestamp(),
+    };
 
-    if (initialData?.id) {
-        // PREPARE DATA FOR UPDATE
-        dataToSave = {
-            ...values,
-            userId: user.uid,
-            subtotal: subtotal,
-            taxAmount: taxAmount,
-            totalAmount: totalAmount,
-            issueDate: format(values.issueDate, "yyyy-MM-dd"),
-            dueDate: format(values.dueDate, "yyyy-MM-dd"),
-            items: values.items.map(item => ({
-                id: item.databaseId,
-                productId: item.productId,
-                reference: item.reference,
-                description: item.description,
-                quantity: item.quantity,
-                unitPrice: item.unitPrice,
-                total: (item.quantity || 0) * (item.unitPrice || 0),
-            })),
-            status: initialData.status,
-            currency: initialData.currency,
-            language: initialData.language,
-            stockUpdated: initialData.stockUpdated,
-            appliedDefaultNotes: initialData.appliedDefaultNotes,
-            appliedDefaultPaymentTerms: initialData.appliedDefaultPaymentTerms,
-            createdAt: initialData.createdAt,
-            updatedAt: serverTimestamp(),
-        };
-    } else {
-        // PREPARE DATA FOR CREATE
-        dataToSave = {
-            ...values,
-            userId: user.uid,
-            subtotal: subtotal,
-            taxAmount: taxAmount,
-            totalAmount: totalAmount,
-            issueDate: format(values.issueDate, "yyyy-MM-dd"),
-            dueDate: format(values.dueDate, "yyyy-MM-dd"),
-            items: values.items.map(item => ({
-                id: item.databaseId,
-                productId: item.productId,
-                reference: item.reference,
-                description: item.description,
-                quantity: item.quantity,
-                unitPrice: item.unitPrice,
-                total: (item.quantity || 0) * (item.unitPrice || 0),
-            })),
-            status: 'draft' as const,
-            currency: userPrefs?.currency,
-            language: userPrefs?.language,
-            stockUpdated: false,
-            appliedDefaultNotes: values.notes ? null : userPrefs?.defaultNotes,
-            appliedDefaultPaymentTerms: userPrefs?.defaultPaymentTerms,
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
-        };
-    }
-    
     // Sanitize the final object before sending to Firestore
-    const cleanData = sanitizeDataForFirestore(dataToSave);
+    const cleanData = sanitizeDataForFirestore(fullInvoiceData);
 
     try {
       if (initialData?.id) {
@@ -585,3 +555,5 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     </Form>
   );
 }
+
+    
