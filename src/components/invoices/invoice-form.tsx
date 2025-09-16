@@ -28,7 +28,7 @@ import AddItemDialog from "./add-item-dialog";
 
 // Schema for an item within the form
 const invoiceItemSchema = z.object({
-  id: z.string().optional(), // This is the database ID, used for tracking updates.
+  id: z.string().optional(),
   productId: z.string().optional(),
   reference: z.string().optional(),
   description: z.string().min(1, "Description is required"),
@@ -155,7 +155,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
         const hasExistingClient = initialData.clientId && clients.some(c => c.id === initialData.clientId);
         
         const formItems = initialData.items.map(item => ({
-          id: item.id || doc(collection(db, 'invoices')).id, // Ensure ID exists for mapping
+          id: item.id || doc(collection(db, 'invoices')).id,
           productId: item.productId,
           reference: item.reference || '',
           description: item.description,
@@ -226,7 +226,6 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     }
     setIsSaving(true);
     
-    // Create a pristine data object to send to Firestore, ensuring no 'undefined' values.
     const subtotal = values.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice || 0), 0);
     const taxAmount = subtotal * ((values.taxRate || 0) / 100);
     const totalAmount = subtotal + taxAmount;
@@ -241,7 +240,8 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
         total: item.quantity * item.unitPrice,
     }));
 
-    const dataToSave = {
+    // Build a clean data object from scratch, ensuring no undefined values
+    const dataToSave: Omit<Invoice, 'id' | 'createdAt' | 'updatedAt'> & { [key: string]: any } = {
         userId: user.uid,
         invoiceNumber: values.invoiceNumber,
         clientId: (values.clientId === MANUAL_ENTRY_CLIENT_ID ? null : values.clientId) || null,
@@ -261,7 +261,6 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
         status: initialData?.status || 'draft',
         currency: initialData?.currency || userPrefs?.currency || 'MAD',
         language: initialData?.language || userPrefs?.language || 'fr',
-        // Preserve existing values for fields not in the form during an update
         appliedDefaultNotes: initialData?.appliedDefaultNotes || null,
         appliedDefaultPaymentTerms: initialData?.appliedDefaultPaymentTerms || null,
         stockUpdated: initialData?.stockUpdated ?? false,
