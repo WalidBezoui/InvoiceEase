@@ -245,8 +245,8 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
       notes: values.notes || "",
       currency: initialData?.currency || userPrefs?.currency || "MAD",
       language: initialData?.language || userPrefs?.language || "fr",
-      appliedDefaultNotes: initialData?.appliedDefaultNotes || "",
-      appliedDefaultPaymentTerms: initialData?.appliedDefaultPaymentTerms || "",
+      appliedDefaultNotes: initialData?.appliedDefaultNotes || userPrefs?.defaultNotes || "",
+      appliedDefaultPaymentTerms: initialData?.appliedDefaultPaymentTerms || userPrefs?.defaultPaymentTerms || "",
       stockUpdated: initialData?.stockUpdated || false,
     };
 
@@ -255,7 +255,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
         const invoiceRef = doc(db, "invoices", initialData.id);
         await updateDoc(invoiceRef, {
           ...coreInvoiceData,
-          status: initialData.status === 'draft' ? 'draft' : initialData.status,
+          status: initialData.status,
           updatedAt: serverTimestamp() as FieldValue,
         });
         toast({ title: t('invoiceForm.toast.invoiceUpdatedTitle'), description: t('invoiceForm.toast.invoiceUpdatedDesc', {invoiceNumber: values.invoiceNumber}) });
@@ -452,7 +452,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
                      <FormField control={form.control} name={`items.${index}.reference`} render={({ field: itemField }) => (
                         <FormItem>
                             <FormLabel>{t('invoiceForm.addItemDialog.selectProductTab.reference')}</FormLabel>
-                            <FormControl><Input placeholder="SKU-123" {...itemField} /></FormControl>
+                            <FormControl><Input placeholder="SKU-123" {...itemField} value={itemField.value || ''} /></FormControl>
                             <FormMessage />
                         </FormItem>
                     )} />
