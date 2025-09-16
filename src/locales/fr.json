@@ -4,7 +4,7 @@
     "dashboard": "Tableau de Bord",
     "invoices": "Factures",
     "clients": "Clients",
-    "products": "Produits",
+    "products": "Pièces",
     "preferences": "Préférences",
     "login": "Connexion",
     "signup": "Inscription",
@@ -25,8 +25,8 @@
     "draftInvoices": "Factures Brouillons",
     "invoicesPendingCompletion": "Factures en attente de finalisation",
     "totalClients": "Total Clients",
-    "managedClients": "Clients gérés",
-    "totalProducts": "Total Produits",
+    "managedClients": "Clients et garages gérés",
+    "totalProducts": "Total Pièces",
     "productInventoryDesc": "Pièces uniques en inventaire",
     "totalStockValue": "Valeur Totale du Stock",
     "stockValueDesc": "Basé sur le prix d'achat",
@@ -46,19 +46,24 @@
     },
     "noRecentInvoiceActivity": "Aucune activité de facture récente à afficher.",
     "createInvoiceToStart": "Créez une facture pour commencer !",
-    "productsToWatchTitle": "Produits à Surveiller",
+    "productsToWatchTitle": "Pièces à Surveiller",
     "productsToWatchDesc": "Pièces qui peuvent nécessiter votre attention.",
-    "noProductsToWatch": "Tous les produits semblent corrects !",
-    "productsLookingGood": "Aucune pièce ne nécessite actuellement d'attention."
+    "noProductsToWatch": "Toutes les pièces semblent correctes !",
+    "productsLookingGood": "Aucune pièce ne nécessite actuellement d'attention.",
+    "invoiceStatusOverview": {
+      "title": "Statut des Factures",
+      "description": "Une répartition visuelle de vos factures.",
+      "noData": "Aucune donnée de facture disponible pour afficher le graphique."
+    }
   },
   "clientsPage": {
     "title": "Clients",
-    "description": "Gérez les informations de vos clients ici.",
+    "description": "Gérez les informations de vos clients et garages ici.",
     "addNewClient": "Ajouter Nouveau Client",
     "yourClientsCard": {
       "title": "Vos Clients",
       "description": "Consultez et gérez votre liste de clients.",
-      "searchPlaceholder": "Rechercher des clients...",
+      "searchPlaceholder": "Rechercher clients, garages...",
       "export": "Exporter"
     },
     "table": {
@@ -77,12 +82,12 @@
     "noClientsMatchSearch": "Aucun client ne correspond à votre recherche",
     "noClientsMatchSearchDesc": "Essayez d'ajuster votre terme de recherche.",
     "noClientsYet": "Aucun client pour le moment",
-    "noClientsYetDesc": "Ajoutez votre premier client pour commencer.",
+    "noClientsYetDesc": "Ajoutez votre premier client ou garage pour commencer.",
     "addClient": "Ajouter Client"
   },
   "newClientPage": {
     "title": "Ajouter Nouveau Client",
-    "description": "Saisissez les détails de votre nouveau client.",
+    "description": "Saisissez les détails de votre nouveau client ou garage.",
     "backToClients": "Retour aux Clients"
   },
   "editClientPage": {
@@ -104,7 +109,7 @@
     "editDescription": "Mettez à jour les informations du client ci-dessous.",
     "addDescription": "Remplissez les informations pour le nouveau client.",
     "labels": {
-      "clientName": "Nom du Client / Nom de l'Entreprise",
+      "clientName": "Nom du Client / Nom du Garage",
       "clientCompany": "Raison Sociale (Optionnel)",
       "ice": "ICE (Identifiant Commun de l'Entreprise - 15 chiffres)",
       "email": "E-mail (Optionnel)",
@@ -112,8 +117,8 @@
       "address": "Adresse (Optionnel)"
     },
     "placeholders": {
-      "clientName": "Acme Corp ou Jean Dupont",
-      "clientCompany": "Acme Corp SARL",
+      "clientName": "Garage Auto-Rapide ou Jean Dupont",
+      "clientCompany": "Auto-Rapide SARL",
       "ice": "001234567000089",
       "email": "contact@example.com",
       "phone": "+212 600 000000",
@@ -218,16 +223,16 @@
     "createInvoice": "Créer Facture",
     "exportNoData": "Aucune donnée à exporter.",
     "dialog": {
-        "deleteTitle": "Êtes-vous absolument sûr ?",
-        "deleteDesc": "Cette action ne peut pas être annulée. Cela supprimera définitivement la facture {{invoiceNumber}}.",
-        "cancel": "Annuler",
-        "confirmDelete": "Oui, supprimer la facture"
+      "deleteTitle": "Êtes-vous absolument sûr ?",
+      "deleteDesc": "Cette action ne peut pas être annulée. Cela supprimera définitivement la facture {{invoiceNumber}}.",
+      "cancel": "Annuler",
+      "confirmDelete": "Oui, supprimer la facture"
     },
     "toast": {
-        "deleteSuccessTitle": "Facture Supprimée",
-        "deleteSuccessDesc": "La facture {{invoiceNumber}} a été supprimée définitivement.",
-        "deleteErrorTitle": "Échec de la Suppression",
-        "deleteErrorDesc": "La facture n'a pas pu être supprimée. Veuillez réessayer."
+      "deleteSuccessTitle": "Facture Supprimée",
+      "deleteSuccessDesc": "La facture {{invoiceNumber}} a été supprimée définitivement.",
+      "deleteErrorTitle": "Échec de la Suppression",
+      "deleteErrorDesc": "La facture n'a pas pu être supprimée. Veuillez réessayer."
     }
   },
   "newInvoicePage": {
@@ -272,7 +277,7 @@
       "clientAddress": "Adresse de facturation du client",
       "invoiceNumber": "FAC-2023-001",
       "pickDate": "Choisir une date",
-      "itemDescription": "Nom du Service ou Produit",
+      "itemDescription": "Nom de la pièce ou du service",
       "itemQuantity": "1",
       "itemUnitPrice": "100.00",
       "notes": "Conditions de paiement, mot de remerciement, instructions spécifiques pour cette facture...",
@@ -284,7 +289,7 @@
     },
     "invoiceItemsCard": {
       "title": "Lignes de la Facture",
-      "description": "Ajoutez les produits ou services fournis."
+      "description": "Ajoutez les pièces ou services fournis."
     },
     "summaryNotesCard": {
       "title": "Résumé & Notes"
@@ -339,17 +344,17 @@
     },
     "addItemDialog": {
       "title": "Ajouter un Article à la Facture",
-      "description": "Sélectionnez un produit enregistré ou saisissez un article personnalisé.",
+      "description": "Sélectionnez une pièce enregistrée ou saisissez un article personnalisé.",
       "tabs": {
-        "selectProduct": "Sélectionner Produit",
+        "selectProduct": "Sélectionner Pièce",
         "customItem": "Article Personnalisé"
       },
       "selectProductTab": {
         "searchPlaceholder": "Rechercher par nom ou référence...",
-        "noProducts": "Aucun produit trouvé.",
-        "addProductCTA": "Ajouter un nouveau produit",
+        "noProducts": "Aucune pièce trouvée.",
+        "addProductCTA": "Ajouter une nouvelle pièce",
         "name": "Nom",
-        "reference": "Réf.",
+        "reference": "Réf. Pièce",
         "description": "Description",
         "price": "Prix",
         "stock": "Stock",
@@ -357,12 +362,12 @@
       },
       "customItemTab": {
         "descriptionLabel": "Description",
-        "descriptionPlaceholder": "ex: Services de Conception Web",
+        "descriptionPlaceholder": "ex: Service de Vidange",
         "quantityLabel": "Quantité",
         "unitPriceLabel": "Prix Unitaire",
         "addButton": "Ajouter Article Personnalisé"
       },
-      "loading": "Chargement des produits..."
+      "loading": "Chargement des pièces..."
     }
   },
   "invoiceDetailPage": {
@@ -398,7 +403,7 @@
     "revertToSent": "Revenir à Envoyée",
     "reopenAsDraft": "Réouvrir comme Brouillon",
     "confirmPaidTitle": "Confirmer le Paiement",
-    "confirmPaidDescription": "Ceci marquera la facture comme payée et mettra à jour les niveaux de stock des produits si applicable. Cette action ne peut pas être facilement annulée.",
+    "confirmPaidDescription": "Ceci marquera la facture comme payée et mettra à jour les niveaux de stock des pièces si applicable. Cette action ne peut pas être facilement annulée.",
     "confirmPaidAction": "Confirmer Payée",
     "confirmPaidCancel": "Annuler",
     "confirmCancelTitle": "Confirmer l'Annulation",
@@ -427,11 +432,11 @@
   },
   "loginPage": {
     "title": "Content de vous revoir",
-    "description": "Connectez-vous pour accéder à votre compte InvoiceEase."
+    "description": "Connectez-vous pour accéder à votre compte AutoPart-Express."
   },
   "signupPage": {
     "title": "Créer un Compte",
-    "description": "Rejoignez InvoiceEase pour commencer à gérer vos factures sans effort."
+    "description": "Rejoignez AutoPart-Express pour commencer à gérer vos factures sans effort."
   },
   "loginForm": {
     "emailLabel": "E-mail",
@@ -463,7 +468,7 @@
     "loginLink": "Se connecter",
     "toast": {
       "successTitle": "Compte Créé",
-      "successDesc": "Bienvenue sur InvoiceEase ! Vous êtes maintenant connecté.",
+      "successDesc": "Bienvenue sur AutoPart-Express ! Vous êtes maintenant connecté.",
       "failTitle": "Échec de l'Inscription",
       "errorEmailInUse": "Cette adresse e-mail est déjà utilisée.",
       "errorInvalidEmail": "L'adresse e-mail n'est pas valide.",
@@ -473,22 +478,22 @@
     }
   },
   "homePage": {
-    "heroTitle": "Simplifiez Votre Facturation avec <1>InvoiceEase</1>",
-    "heroSubtitle": "Créez des factures professionnelles en quelques minutes, gérez vos clients et soyez payé plus rapidement. Concentrez-vous sur votre activité, nous nous occupons de la paperasse.",
+    "heroTitle": "Dynamisez Votre Commerce de Pièces avec <1>AutoPart-Express</1>",
+    "heroSubtitle": "Créez des factures professionnelles en quelques minutes, gérez votre inventaire de pièces et soyez payé plus rapidement. Concentrez-vous sur votre métier, nous nous occupons de la paperasse.",
     "getStartedButton": "Commencer Gratuitement",
-    "loginButton": "Se Connecter à Votre Compte",
-    "featuresTitle": "Fonctionnalités Conçues pour Vous",
-    "featureEasyCreationTitle": "Création Facile de Factures",
+    "loginButton": "Se Connecter",
+    "featuresTitle": "Fonctionnalités Conçues pour Votre Garage",
+    "featureEasyCreationTitle": "Facturation Sans Effort",
     "featureEasyCreationDesc": "Générez de belles factures professionnelles en quelques clics grâce à notre éditeur intuitif.",
-    "featureCustomizationTitle": "Options de Personnalisation",
-    "featureCustomizationDesc": "Ajoutez votre logo, personnalisez les couleurs et adaptez les factures à votre identité de marque.",
+    "featureCustomizationTitle": "Gestion d'Inventaire",
+    "featureCustomizationDesc": "Suivez votre stock de pièces en temps réel, ajoutez de nouvelles références et ne soyez jamais à court.",
     "featureSecureTitle": "Sécurisé & Fiable",
     "featureSecureDesc": "Vos données sont en sécurité avec nous. Construit sur une technologie robuste pour assurer fiabilité et sécurité.",
     "manageEverythingTitle": "Gérez Tout en Un Seul Endroit",
-    "manageEverythingSubtitle": "Suivez les statuts des factures, gérez les informations clients et obtenez des informations sur vos cycles de facturation. InvoiceEase fournit un tableau de bord complet pour vous maintenir organisé.",
+    "manageEverythingSubtitle": "Suivez les statuts des factures, gérez les informations clients et obtenez des informations sur vos cycles de facturation. AutoPart-Express fournit un tableau de bord complet pour vous maintenir organisé.",
     "manageEverythingFeature1": "Gestion des Clients",
     "manageEverythingFeature2": "Suivi des Factures",
-    "manageEverythingFeature3": "Modèles Personnalisables",
+    "manageEverythingFeature3": "Gestion Pièces & Stock",
     "manageEverythingFeature4": "Stockage Cloud Sécurisé"
   },
   "preferencesPage": {
@@ -596,7 +601,7 @@
     }
   },
   "siteFooter": {
-    "copyright": "&copy; {{year}} InvoiceEase. Tous droits réservés."
+    "copyright": "&copy; {{year}} AutoPart-Express. Tous droits réservés."
   },
   "pricingPage": {
     "title": "Choisissez Votre Plan",
@@ -625,7 +630,7 @@
       "maxClients": "Jusqu'à {{limit}} clients",
       "basicCustomization": "Personnalisation de base des factures",
       "emailSupport": "Support par e-mail",
-      "removeBranding": "Supprimer la marque InvoiceEase",
+      "removeBranding": "Supprimer la marque AutoPart-Express",
       "paymentReminders": "Rappels de paiement automatisés",
       "maxInvoicesPro": "Jusqu'à {{limit}} factures / mois",
       "maxClientsPro": "Jusqu'à {{limit}} clients",
@@ -637,19 +642,19 @@
       "dedicatedSupport": "Support dédié"
     }
   },
-    "productsPage": {
-    "title": "Produits & Services",
-    "description": "Gérez vos produits et services réutilisables ici.",
-    "addNewProduct": "Ajouter un Nouveau Produit",
+  "productsPage": {
+    "title": "Pièces & Services",
+    "description": "Gérez vos pièces et services réutilisables ici.",
+    "addNewProduct": "Ajouter Nouvelle Pièce",
     "yourProductsCard": {
-      "title": "Vos Produits",
-      "description": "Consultez et gérez votre liste de produits.",
+      "title": "Vos Pièces",
+      "description": "Consultez et gérez votre liste de pièces.",
       "searchPlaceholder": "Rechercher par nom ou référence...",
       "filterByTip": "Filtrer par Conseil"
     },
     "table": {
       "name": "Nom",
-      "reference": "Référence",
+      "reference": "Référence Pièce",
       "sellingPrice": "Prix de Vente",
       "stock": "Stock",
       "lastActivity": "Dernière Activité",
@@ -663,68 +668,68 @@
       "view": "Voir"
     },
     "loading": "Chargement...",
-    "error": "Échec du chargement des produits. Veuillez réessayer.",
-    "noProductsMatchSearch": "Aucun produit ne correspond à votre recherche",
+    "error": "Échec du chargement des pièces. Veuillez réessayer.",
+    "noProductsMatchSearch": "Aucune pièce ne correspond à votre recherche",
     "noProductsMatchSearchDesc": "Essayez d'ajuster votre terme de recherche.",
-    "noProductsMatchFilter": "Aucun produit ne correspond à vos critères de filtre",
+    "noProductsMatchFilter": "Aucune pièce ne correspond à vos critères de filtre",
     "noProductsMatchFilterDesc": "Essayez d'ajuster votre recherche ou vos filtres.",
-    "noProductsYet": "Aucun produit pour le moment",
-    "noProductsYetDesc": "Ajoutez votre premier produit pour commencer.",
-    "addProduct": "Ajouter un Produit",
+    "noProductsYet": "Aucune pièce pour le moment",
+    "noProductsYetDesc": "Ajoutez votre première pièce pour commencer.",
+    "addProduct": "Ajouter Pièce",
     "dialog": {
       "deleteTitle": "Êtes-vous sûr ?",
-      "deleteDesc": "Cela supprimera définitivement le produit '{{productName}}'.",
+      "deleteDesc": "Cela supprimera définitivement la pièce '{{productName}}'.",
       "cancel": "Annuler",
       "confirmDelete": "Oui, supprimer"
     },
     "toast": {
-      "deleteSuccessTitle": "Produit Supprimé",
-      "deleteSuccessDesc": "Le produit '{{productName}}' a été supprimé.",
+      "deleteSuccessTitle": "Pièce Supprimée",
+      "deleteSuccessDesc": "La pièce '{{productName}}' a été supprimée.",
       "deleteErrorTitle": "Échec de la Suppression",
-      "deleteErrorDesc": "Le produit n'a pas pu être supprimé. Veuillez réessayer."
+      "deleteErrorDesc": "La pièce n'a pas pu être supprimée. Veuillez réessayer."
     }
   },
   "productForm": {
-    "editTitle": "Modifier le Produit",
-    "addTitle": "Ajouter un Nouveau Produit",
-    "editDescription": "Mettez à jour les détails du produit ci-dessous.",
-    "addDescription": "Remplissez les détails du nouveau produit ou service.",
+    "editTitle": "Modifier la Pièce",
+    "addTitle": "Ajouter une Nouvelle Pièce",
+    "editDescription": "Mettez à jour les détails de la pièce ci-dessous.",
+    "addDescription": "Remplissez les détails de la nouvelle pièce ou du nouveau service.",
     "labels": {
-      "name": "Nom du Produit/Service",
-      "reference": "Référence / SKU",
-      "description": "Description",
+      "name": "Nom de la Pièce/Service",
+      "reference": "Numéro de Pièce / SKU",
+      "description": "Description (Optionnel)",
       "sellingPrice": "Prix de Vente",
       "purchasePrice": "Prix d'Achat (Optionnel)",
       "stock": "Quantité en Stock (Optionnel)"
     },
     "placeholders": {
-      "name": "ex: Plan de Maintenance de Site Web",
-      "reference": "ex: SKU-12345",
-      "description": "ex: Vérifications mensuelles, sauvegardes et analyses de sécurité.",
+      "name": "ex: Alternateur pour Ford Focus 2018",
+      "reference": "ex: F-150-ALT-OEM",
+      "description": "ex: Spéc. OEM, 150 Amp, pour moteur 2.0L.",
       "sellingPrice": "199.99",
       "purchasePrice": "120.00",
-      "stock": "100"
+      "stock": "25"
     },
     "buttons": {
       "cancel": "Annuler",
       "saveChanges": "Enregistrer les Modifications",
-      "addProduct": "Ajouter le Produit"
+      "addProduct": "Ajouter la Pièce"
     },
     "toast": {
       "authError": "Vous devez être connecté.",
-      "productUpdated": "Produit mis à jour avec succès.",
-      "productAdded": "Produit ajouté avec succès.",
-      "errorSaving": "Échec de l'enregistrement du produit. Veuillez réessayer."
+      "productUpdated": "Pièce mise à jour avec succès.",
+      "productAdded": "Pièce ajoutée avec succès.",
+      "errorSaving": "Échec de l'enregistrement de la pièce. Veuillez réessayer."
     }
   },
   "productDetailPage": {
-    "backToProducts": "Retour aux Produits",
-    "editProduct": "Modifier le Produit",
+    "backToProducts": "Retour aux Pièces",
+    "editProduct": "Modifier la Pièce",
     "currentStock": "Stock Actuel",
     "unitsAvailable": "unités disponibles",
     "sellingPrice": "Prix de Vente",
     "purchasePrice": "Prix d'Achat",
-    "productDetails": "Détails du Produit",
+    "productDetails": "Détails de la Pièce",
     "stockAdjustment": {
       "title": "Ajuster le Stock",
       "description": "Ajoutez ou retirez manuellement du stock pour les achats, retours ou corrections.",
@@ -741,7 +746,7 @@
     },
     "transactionHistory": {
       "title": "Historique des Transactions",
-      "description": "Un journal complet de tous les mouvements de stock pour ce produit.",
+      "description": "Un journal complet de tous les mouvements de stock pour cette pièce.",
       "date": "Date",
       "type": "Type",
       "change": "Changement",
@@ -749,7 +754,7 @@
       "price": "Prix",
       "notes": "Notes",
       "invoiceLink": "Facture",
-      "noHistory": "Aucun historique de transaction trouvé pour ce produit."
+      "noHistory": "Aucun historique de transaction trouvé pour cette pièce."
     },
     "dialog": {
       "deleteTitle": "Supprimer la Transaction ?",
@@ -780,7 +785,7 @@
     "initial": "Initial",
     "adjustment": "Ajustement"
   },
-   "productTipType": {
+  "productTipType": {
     "warning": "Avertissement",
     "suggestion": "Suggestion",
     "info": "Info"

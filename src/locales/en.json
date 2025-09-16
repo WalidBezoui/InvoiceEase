@@ -4,7 +4,7 @@
     "dashboard": "Dashboard",
     "invoices": "Invoices",
     "clients": "Clients",
-    "products": "Products",
+    "products": "Parts",
     "preferences": "Preferences",
     "login": "Login",
     "signup": "Sign Up",
@@ -25,8 +25,8 @@
     "draftInvoices": "Draft Invoices",
     "invoicesPendingCompletion": "Invoices pending completion",
     "totalClients": "Total Clients",
-    "managedClients": "Managed clients",
-    "totalProducts": "Total Products",
+    "managedClients": "Managed clients & garages",
+    "totalProducts": "Total Parts",
     "productInventoryDesc": "Unique parts in inventory",
     "totalStockValue": "Total Stock Value",
     "stockValueDesc": "Based on purchase price",
@@ -46,19 +46,24 @@
     },
     "noRecentInvoiceActivity": "No recent invoice activity to display.",
     "createInvoiceToStart": "Create an invoice to get started!",
-    "productsToWatchTitle": "Products to Watch",
+    "productsToWatchTitle": "Parts to Watch",
     "productsToWatchDesc": "Parts that may require your attention.",
-    "noProductsToWatch": "All products look good!",
-    "productsLookingGood": "No parts currently require attention."
+    "noProductsToWatch": "All parts look good!",
+    "productsLookingGood": "No parts currently require attention.",
+    "invoiceStatusOverview": {
+      "title": "Invoice Status",
+      "description": "A visual breakdown of your invoices.",
+      "noData": "No invoice data available to display chart."
+    }
   },
   "clientsPage": {
     "title": "Clients",
-    "description": "Manage your customer information here.",
+    "description": "Manage your customer and garage information here.",
     "addNewClient": "Add New Client",
     "yourClientsCard": {
       "title": "Your Clients",
       "description": "View and manage your client list.",
-      "searchPlaceholder": "Search clients...",
+      "searchPlaceholder": "Search clients, garages...",
       "export": "Export"
     },
     "table": {
@@ -77,12 +82,12 @@
     "noClientsMatchSearch": "No clients match your search",
     "noClientsMatchSearchDesc": "Try adjusting your search term.",
     "noClientsYet": "No clients yet",
-    "noClientsYetDesc": "Add your first client to get started.",
+    "noClientsYetDesc": "Add your first client or garage to get started.",
     "addClient": "Add Client"
   },
   "newClientPage": {
     "title": "Add New Client",
-    "description": "Enter the details for your new client.",
+    "description": "Enter the details for your new client or garage.",
     "backToClients": "Back to Clients"
   },
   "editClientPage": {
@@ -104,7 +109,7 @@
     "editDescription": "Update the client's details below.",
     "addDescription": "Fill in the details for the new client.",
     "labels": {
-      "clientName": "Client Name / Company Name",
+      "clientName": "Client Name / Garage Name",
       "clientCompany": "Legal Company Name (Optional)",
       "ice": "ICE (Identifiant Commun de l'Entreprise - 15 digits)",
       "email": "Email (Optional)",
@@ -112,8 +117,8 @@
       "address": "Address (Optional)"
     },
     "placeholders": {
-      "clientName": "Acme Corp or John Doe",
-      "clientCompany": "Acme Corp SARL",
+      "clientName": "Garage Auto-Rapide or John Doe",
+      "clientCompany": "Auto-Rapide SARL",
       "ice": "001234567000089",
       "email": "contact@example.com",
       "phone": "+212 600 000000",
@@ -218,16 +223,16 @@
     "createInvoice": "Create Invoice",
     "exportNoData": "No data to export.",
     "dialog": {
-        "deleteTitle": "Are you absolutely sure?",
-        "deleteDesc": "This action cannot be undone. This will permanently delete invoice {{invoiceNumber}}.",
-        "cancel": "Cancel",
-        "confirmDelete": "Yes, delete invoice"
+      "deleteTitle": "Are you absolutely sure?",
+      "deleteDesc": "This action cannot be undone. This will permanently delete invoice {{invoiceNumber}}.",
+      "cancel": "Cancel",
+      "confirmDelete": "Yes, delete invoice"
     },
     "toast": {
-        "deleteSuccessTitle": "Invoice Deleted",
-        "deleteSuccessDesc": "Invoice {{invoiceNumber}} has been permanently deleted.",
-        "deleteErrorTitle": "Deletion Failed",
-        "deleteErrorDesc": "The invoice could not be deleted. Please try again."
+      "deleteSuccessTitle": "Invoice Deleted",
+      "deleteSuccessDesc": "Invoice {{invoiceNumber}} has been permanently deleted.",
+      "deleteErrorTitle": "Deletion Failed",
+      "deleteErrorDesc": "The invoice could not be deleted. Please try again."
     }
   },
   "newInvoicePage": {
@@ -272,7 +277,7 @@
       "clientAddress": "Client's billing address",
       "invoiceNumber": "INV-2023-001",
       "pickDate": "Pick a date",
-      "itemDescription": "Service or Product Name",
+      "itemDescription": "Part or Service Name",
       "itemQuantity": "1",
       "itemUnitPrice": "100.00",
       "notes": "Payment terms, thank you note, specific instructions for this invoice...",
@@ -284,7 +289,7 @@
     },
     "invoiceItemsCard": {
       "title": "Invoice Items",
-      "description": "Add products or services provided."
+      "description": "Add parts or services provided."
     },
     "summaryNotesCard": {
       "title": "Summary & Notes"
@@ -339,17 +344,17 @@
     },
     "addItemDialog": {
       "title": "Add Item to Invoice",
-      "description": "Select a saved product or enter a custom item.",
+      "description": "Select a saved part or enter a custom item.",
       "tabs": {
-        "selectProduct": "Select Product",
+        "selectProduct": "Select Part",
         "customItem": "Custom Item"
       },
       "selectProductTab": {
-        "searchPlaceholder": "Search products by name or reference...",
-        "noProducts": "No products found.",
-        "addProductCTA": "Add a new product",
+        "searchPlaceholder": "Search parts by name or reference...",
+        "noProducts": "No parts found.",
+        "addProductCTA": "Add a new part",
         "name": "Name",
-        "reference": "Ref.",
+        "reference": "Part No.",
         "description": "Description",
         "price": "Price",
         "stock": "Stock",
@@ -357,12 +362,12 @@
       },
       "customItemTab": {
         "descriptionLabel": "Description",
-        "descriptionPlaceholder": "e.g., Web Design Services",
+        "descriptionPlaceholder": "e.g., Oil Change Service",
         "quantityLabel": "Quantity",
         "unitPriceLabel": "Unit Price",
         "addButton": "Add Custom Item"
       },
-      "loading": "Loading products..."
+      "loading": "Loading parts..."
     }
   },
   "invoiceDetailPage": {
@@ -398,7 +403,7 @@
     "revertToSent": "Revert to Sent",
     "reopenAsDraft": "Re-open as Draft",
     "confirmPaidTitle": "Confirm Payment",
-    "confirmPaidDescription": "This will mark the invoice as paid and update product stock levels if applicable. This action cannot be easily undone.",
+    "confirmPaidDescription": "This will mark the invoice as paid and update part stock levels if applicable. This action cannot be easily undone.",
     "confirmPaidAction": "Confirm Paid",
     "confirmPaidCancel": "Cancel",
     "confirmCancelTitle": "Confirm Cancellation",
@@ -427,11 +432,11 @@
   },
   "loginPage": {
     "title": "Welcome Back",
-    "description": "Sign in to access your InvoiceEase account."
+    "description": "Sign in to access your AutoPart-Express account."
   },
   "signupPage": {
     "title": "Create an Account",
-    "description": "Join InvoiceEase to start managing your invoices effortlessly."
+    "description": "Join AutoPart-Express to start managing your invoices effortlessly."
   },
   "loginForm": {
     "emailLabel": "Email",
@@ -463,7 +468,7 @@
     "loginLink": "Login",
     "toast": {
       "successTitle": "Account Created",
-      "successDesc": "Welcome to InvoiceEase! You are now logged in.",
+      "successDesc": "Welcome to AutoPart-Express! You are now logged in.",
       "failTitle": "Signup Failed",
       "errorEmailInUse": "This email address is already in use.",
       "errorInvalidEmail": "The email address is not valid.",
@@ -473,22 +478,22 @@
     }
   },
   "homePage": {
-    "heroTitle": "Simplify Your Invoicing with <1>InvoiceEase</1>",
-    "heroSubtitle": "Create professional invoices in minutes, manage your clients, and get paid faster. Focus on your business, let us handle the paperwork.",
+    "heroTitle": "Power Your Parts Business with <1>AutoPart-Express</1>",
+    "heroSubtitle": "Create professional invoices in minutes, manage your parts inventory, and get paid faster. Focus on your business, let us handle the paperwork.",
     "getStartedButton": "Get Started for Free",
     "loginButton": "Login to Your Account",
-    "featuresTitle": "Features Designed for You",
-    "featureEasyCreationTitle": "Easy Invoice Creation",
+    "featuresTitle": "Features Designed for Your Garage",
+    "featureEasyCreationTitle": "Effortless Invoicing",
     "featureEasyCreationDesc": "Generate beautiful, professional invoices with just a few clicks using our intuitive editor.",
-    "featureCustomizationTitle": "Customization Options",
+    "featureCustomizationTitle": "Inventory Management",
     "featureCustomizationDesc": "Add your logo, customize colors, and tailor invoices to match your brand identity.",
     "featureSecureTitle": "Secure & Reliable",
     "featureSecureDesc": "Your data is safe with us. Built on robust technology to ensure reliability and security.",
     "manageEverythingTitle": "Manage Everything in One Place",
-    "manageEverythingSubtitle": "Track invoice statuses, manage client information, and get insights into your billing cycles. InvoiceEase provides a comprehensive dashboard to keep you organized.",
+    "manageEverythingSubtitle": "Track invoice statuses, manage client information, and get insights into your billing cycles. AutoPart-Express provides a comprehensive dashboard to keep you organized.",
     "manageEverythingFeature1": "Client Management",
     "manageEverythingFeature2": "Invoice Tracking",
-    "manageEverythingFeature3": "Customizable Templates",
+    "manageEverythingFeature3": "Part & Stock Management",
     "manageEverythingFeature4": "Secure Cloud Storage"
   },
   "preferencesPage": {
@@ -596,7 +601,7 @@
     }
   },
   "siteFooter": {
-    "copyright": "&copy; {{year}} InvoiceEase. All rights reserved."
+    "copyright": "&copy; {{year}} AutoPart-Express. All rights reserved."
   },
   "pricingPage": {
     "title": "Choose Your Plan",
@@ -625,7 +630,7 @@
       "maxClients": "Up to {{limit}} clients",
       "basicCustomization": "Basic invoice customization",
       "emailSupport": "Email support",
-      "removeBranding": "Remove InvoiceEase branding",
+      "removeBranding": "Remove AutoPart-Express branding",
       "paymentReminders": "Automated payment reminders",
       "maxInvoicesPro": "Up to {{limit}} invoices / month",
       "maxClientsPro": "Up to {{limit}} clients",
@@ -638,18 +643,18 @@
     }
   },
   "productsPage": {
-    "title": "Products & Services",
-    "description": "Manage your reusable products and services here.",
-    "addNewProduct": "Add New Product",
+    "title": "Parts & Services",
+    "description": "Manage your reusable parts and services here.",
+    "addNewProduct": "Add New Part",
     "yourProductsCard": {
-      "title": "Your Products",
-      "description": "View and manage your product list.",
+      "title": "Your Parts",
+      "description": "View and manage your parts list.",
       "searchPlaceholder": "Search by name or reference...",
       "filterByTip": "Filter by Tip"
     },
     "table": {
       "name": "Name",
-      "reference": "Reference",
+      "reference": "Part Number",
       "sellingPrice": "Selling Price",
       "stock": "Stock",
       "lastActivity": "Last Activity",
@@ -663,68 +668,68 @@
       "view": "View"
     },
     "loading": "Loading...",
-    "error": "Failed to load products. Please try again.",
-    "noProductsMatchSearch": "No products match your search",
+    "error": "Failed to load parts. Please try again.",
+    "noProductsMatchSearch": "No parts match your search",
     "noProductsMatchSearchDesc": "Try adjusting your search term.",
-    "noProductsMatchFilter": "No products match your filter criteria",
+    "noProductsMatchFilter": "No parts match your filter criteria",
     "noProductsMatchFilterDesc": "Try adjusting your search or filters.",
-    "noProductsYet": "No products yet",
-    "noProductsYetDesc": "Add your first product to get started.",
-    "addProduct": "Add Product",
+    "noProductsYet": "No parts yet",
+    "noProductsYetDesc": "Add your first part to get started.",
+    "addProduct": "Add Part",
     "dialog": {
       "deleteTitle": "Are you sure?",
-      "deleteDesc": "This will permanently delete the product '{{productName}}'.",
+      "deleteDesc": "This will permanently delete the part '{{productName}}'.",
       "cancel": "Cancel",
       "confirmDelete": "Yes, delete"
     },
     "toast": {
-      "deleteSuccessTitle": "Product Deleted",
-      "deleteSuccessDesc": "Product '{{productName}}' has been deleted.",
+      "deleteSuccessTitle": "Part Deleted",
+      "deleteSuccessDesc": "Part '{{productName}}' has been deleted.",
       "deleteErrorTitle": "Deletion Failed",
-      "deleteErrorDesc": "The product could not be deleted. Please try again."
+      "deleteErrorDesc": "The part could not be deleted. Please try again."
     }
   },
   "productForm": {
-    "editTitle": "Edit Product",
-    "addTitle": "Add New Product",
-    "editDescription": "Update the product's details below.",
-    "addDescription": "Fill in the details for the new product or service.",
+    "editTitle": "Edit Part",
+    "addTitle": "Add New Part",
+    "editDescription": "Update the part's details below.",
+    "addDescription": "Fill in the details for the new part or service.",
     "labels": {
-      "name": "Product/Service Name",
-      "reference": "Reference / SKU",
-      "description": "Description",
+      "name": "Part/Service Name",
+      "reference": "Part Number / SKU",
+      "description": "Description (Optional)",
       "sellingPrice": "Selling Price",
       "purchasePrice": "Purchase Price (Optional)",
       "stock": "Stock Quantity (Optional)"
     },
     "placeholders": {
-      "name": "e.g., Website Maintenance Plan",
-      "reference": "e.g., SKU-12345",
-      "description": "e.g., Monthly checkups, backups, and security scans.",
+      "name": "e.g., Alternator for Ford Focus 2018",
+      "reference": "e.g., F-150-ALT-OEM",
+      "description": "e.g., OEM Spec, 150 Amp, fits 2.0L engine.",
       "sellingPrice": "199.99",
       "purchasePrice": "120.00",
-      "stock": "100"
+      "stock": "25"
     },
     "buttons": {
       "cancel": "Cancel",
       "saveChanges": "Save Changes",
-      "addProduct": "Add Product"
+      "addProduct": "Add Part"
     },
     "toast": {
       "authError": "You must be logged in.",
-      "productUpdated": "Product updated successfully.",
-      "productAdded": "Product added successfully.",
-      "errorSaving": "Failed to save product. Please try again."
+      "productUpdated": "Part updated successfully.",
+      "productAdded": "Part added successfully.",
+      "errorSaving": "Failed to save part. Please try again."
     }
   },
-   "productDetailPage": {
-    "backToProducts": "Back to Products",
-    "editProduct": "Edit Product",
+  "productDetailPage": {
+    "backToProducts": "Back to Parts",
+    "editProduct": "Edit Part",
     "currentStock": "Current Stock",
     "unitsAvailable": "units available",
     "sellingPrice": "Selling Price",
     "purchasePrice": "Purchase Price",
-    "productDetails": "Product Details",
+    "productDetails": "Part Details",
     "stockAdjustment": {
       "title": "Adjust Stock",
       "description": "Manually add or remove stock for purchases, returns, or corrections.",
@@ -741,7 +746,7 @@
     },
     "transactionHistory": {
       "title": "Transaction History",
-      "description": "A complete log of all stock movements for this product.",
+      "description": "A complete log of all stock movements for this part.",
       "date": "Date",
       "type": "Type",
       "change": "Change",
@@ -749,7 +754,7 @@
       "price": "Price",
       "notes": "Notes",
       "invoiceLink": "Invoice",
-      "noHistory": "No transaction history found for this product."
+      "noHistory": "No transaction history found for this part."
     },
     "dialog": {
       "deleteTitle": "Delete Transaction?",
