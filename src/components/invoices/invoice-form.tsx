@@ -28,13 +28,14 @@ import { useLanguage } from "@/hooks/use-language";
 import AddItemDialog from "./add-item-dialog";
 
 const invoiceItemSchema = z.object({
-  id: z.string().optional(),
+  // The database ID ('id') is handled separately and not part of the form validation
   productId: z.string().optional(),
   reference: z.string().optional(),
   description: z.string().min(1, "Description is required"),
   quantity: z.coerce.number().min(0.01, "Quantity must be at least 0.01"),
   unitPrice: z.coerce.number().min(0, "Unit price must be non-negative"),
 });
+
 
 const getInvoiceFormSchema = (t: Function) => z.object({
   clientId: z.string().optional(),
@@ -214,16 +215,29 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
       return;
     }
     setIsSaving(true);
+    
+    const findItemInInitialData = (item: z.infer<typeof invoiceItemSchema>) => {
+      // Find based on description and price, as that's the most stable identifier
+      // during edits if no ID is present.
+      return initialData?.items.find(
+        (initialItem) =>
+          initialItem.description === item.description &&
+          initialItem.unitPrice === item.unitPrice
+      );
+    };
 
-    const invoiceItemsToSave: InvoiceItem[] = values.items.map(item => ({
-      id: item.id || undefined,
-      productId: item.productId || null,
-      reference: item.reference || null,
-      description: item.description,
-      quantity: item.quantity,
-      unitPrice: item.unitPrice,
-      total: item.quantity * item.unitPrice,
-    }));
+    const invoiceItemsToSave: InvoiceItem[] = values.items.map((item, index) => {
+      const initialItem = findItemInInitialData(item);
+      return {
+        id: initialItem?.id, // Preserve original ID if it exists
+        productId: item.productId || null,
+        reference: item.reference || null,
+        description: item.description,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        total: item.quantity * item.unitPrice,
+      };
+    });
 
     const finalClientId = values.clientId === MANUAL_ENTRY_CLIENT_ID ? null : (values.clientId || null);
 
