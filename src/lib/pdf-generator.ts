@@ -284,7 +284,25 @@ export const generateInvoicePdf = async (
   // --- FINAL ACTION ---
   if (action === 'print') {
     doc.autoPrint();
-    window.open(doc.output('bloburl'), '_blank');
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'absolute';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    iframe.src = doc.output('bloburl');
+    
+    document.body.appendChild(iframe);
+
+    iframe.onload = () => {
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      } catch (e) {
+        console.error("Failed to trigger print dialog.", e);
+        // Fallback for browsers that block this
+        window.open(doc.output('bloburl'), '_blank');
+      }
+    };
   } else {
     doc.save(`invoice-${invoice.invoiceNumber}.pdf`);
   }
