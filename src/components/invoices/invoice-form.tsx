@@ -29,7 +29,7 @@ import AddItemDialog from "./add-item-dialog";
 // Schema for an item within the form
 const invoiceItemSchema = z.object({
   // This is the database ID, used for tracking updates. It's not for display or direct user editing.
-  databaseId: z.string().optional(),
+  id: z.string().optional(),
   productId: z.string().optional(),
   reference: z.string().optional(),
   description: z.string().min(1, "Description is required"),
@@ -145,19 +145,18 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
   }, [user, toast, t]);
 
   useEffect(() => {
-    if (!isLoadingLang) {
+    if (!isLoadingLocale) {
         form.trigger();
     }
-  }, [t, form, isLoadingLang]);
+  }, [t, form, isLoadingLocale]);
 
   useEffect(() => {
     if (!isPrefsLoading && !isClientsLoading) {
       if (initialData) {
         const hasExistingClient = initialData.clientId && clients.some(c => c.id === initialData.clientId);
         
-        // Map initial items to form items, preserving their original database ID.
         const formItems = initialData.items.map(item => ({
-          databaseId: item.id || doc(collection(db, 'invoices')).id, // Use existing ID or generate a placeholder
+          id: item.id || doc(collection(db, 'invoices')).id,
           productId: item.productId,
           reference: item.reference || '',
           description: item.description,
@@ -228,26 +227,24 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     }
     setIsSaving(true);
     
-    // START: Robust Data Preparation from Scratch
+    // --- START: New Robust Data Preparation ---
 
     const subtotal = values.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice || 0), 0);
     const taxAmount = subtotal * ((values.taxRate || 0) / 100);
     const totalAmount = subtotal + taxAmount;
-    
-    // This function ensures all items have a valid structure for Firestore.
-    const prepareItemsForFirestore = (items: typeof values.items): InvoiceItem[] => {
-        return items.map(item => ({
-            id: item.databaseId || doc(collection(db, 'invoices')).id, // Use existing ID or generate new one
-            productId: item.productId || null,
-            reference: item.reference || null,
-            description: item.description,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            total: (item.quantity || 0) * (item.unitPrice || 0),
-        }));
-    };
 
-    // Construct the core data object, ensuring no 'undefined' values.
+    // Prepare items, ensuring every item has a unique ID and valid structure.
+    const itemsToSave = values.items.map(item => ({
+        id: item.id || doc(collection(db, 'invoices')).id, // Ensure ID exists
+        productId: item.productId || null,
+        reference: item.reference || null,
+        description: item.description,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        total: (item.quantity || 0) * (item.unitPrice || 0),
+    }));
+
+    // Build the final data object, explicitly converting any falsy/undefined values to null.
     const dataToSave = {
         userId: user.uid,
         invoiceNumber: values.invoiceNumber,
@@ -259,41 +256,37 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
         clientICE: values.clientICE || null,
         issueDate: format(values.issueDate, "yyyy-MM-dd"),
         dueDate: format(values.dueDate, "yyyy-MM-dd"),
-        items: prepareItemsForFirestore(values.items),
+        items: itemsToSave,
         subtotal: subtotal,
         taxRate: values.taxRate ?? 0,
         taxAmount: taxAmount,
         totalAmount: totalAmount,
         notes: values.notes || null,
-        // Preserve existing fields or set sensible defaults
         status: initialData?.status || 'draft',
         currency: initialData?.currency || userPrefs?.currency || 'MAD',
         language: initialData?.language || userPrefs?.language || 'fr',
         stockUpdated: initialData?.stockUpdated || false,
-        appliedDefaultNotes: initialData?.appliedDefaultNotes || null,
-        appliedDefaultPaymentTerms: initialData?.appliedDefaultPaymentTerms || null,
         sentDate: initialData?.sentDate || null,
         paidDate: initialData?.paidDate || null,
+        appliedDefaultNotes: initialData?.appliedDefaultNotes || null,
+        appliedDefaultPaymentTerms: initialData?.appliedDefaultPaymentTerms || null,
     };
     
-    // END: Robust Data Preparation
+    // --- END: New Robust Data Preparation ---
 
     try {
         if (initialData?.id) {
-            // This is an UPDATE
             const invoiceRef = doc(db, "invoices", initialData.id);
-            // Merge with existing data to preserve fields like 'createdAt'
             await updateDoc(invoiceRef, {
-                ...dataToSave,
+                ...dataToSave, // The clean object is used directly
                 updatedAt: serverTimestamp(),
             });
             toast({ title: t('invoiceForm.toast.invoiceUpdatedTitle'), description: t('invoiceForm.toast.invoiceUpdatedDesc', { invoiceNumber: values.invoiceNumber }) });
             router.push(`/invoices/${initialData.id}`);
 
         } else {
-            // This is a CREATE
             const docRef = await addDoc(collection(db, "invoices"), {
-                ...dataToSave,
+                ...dataToSave, // The clean object is used directly
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
             });
@@ -569,4 +562,5 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
   );
 }
 
+    
     
