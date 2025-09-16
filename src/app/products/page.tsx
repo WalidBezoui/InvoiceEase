@@ -24,6 +24,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { getProductTip } from "@/ai/flows/product-analysis-flow";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -55,6 +56,8 @@ export default function ProductsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTipTypes, setSelectedTipTypes] = useState<Set<ProductTipOutput['type']>>(new Set());
   const [sortConfig, setSortConfig] = useState<{ key: keyof Product; direction: 'asc' | 'desc' } | null>(null);
+  const [isQuickTransactionOpen, setIsQuickTransactionOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
 
   const isLoading = authLoading || isLoadingLocale || isLoadingData;
@@ -244,6 +247,11 @@ export default function ProductsPage() {
     }
   };
 
+  const handleQuickTransactionClick = (product: Product) => {
+    setSelectedProduct(product);
+    setIsQuickTransactionOpen(true);
+  };
+
 
   if (isLoading) {
     return (
@@ -374,17 +382,17 @@ export default function ProductsPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <QuickTransactionDialog product={product} onTransactionSuccess={onTransactionSuccess}>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                  <Wrench className="h-4 w-4" />
-                                  <span className="sr-only">{t('productsPage.actions.quickTransaction', { default: 'Quick Transaction'})}</span>
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent><p>{t('productsPage.actions.quickTransaction', { default: 'Quick Transaction'})}</p></TooltipContent>
-                            </Tooltip>
-                          </QuickTransactionDialog>
+                          <Tooltip>
+                              <DialogTrigger asChild>
+                                <TooltipTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleQuickTransactionClick(product)}>
+                                      <Wrench className="h-4 w-4" />
+                                      <span className="sr-only">{t('productsPage.actions.quickTransaction', { default: 'Quick Transaction'})}</span>
+                                  </Button>
+                                </TooltipTrigger>
+                              </DialogTrigger>
+                            <TooltipContent><p>{t('productsPage.actions.quickTransaction', { default: 'Quick Transaction'})}</p></TooltipContent>
+                          </Tooltip>
 
                           <Tooltip><TooltipTrigger asChild>
                           <Button variant="ghost" size="icon" asChild className="h-8 w-8">
@@ -435,6 +443,14 @@ export default function ProductsPage() {
                 </TableBody>
               </Table>
               </div>
+              {selectedProduct && (
+                <QuickTransactionDialog 
+                    product={selectedProduct} 
+                    open={isQuickTransactionOpen}
+                    onOpenChange={setIsQuickTransactionOpen}
+                    onTransactionSuccess={onTransactionSuccess}
+                />
+              )}
             </TooltipProvider>
           ) : (
             <div className="text-center py-12">

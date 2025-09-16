@@ -1,14 +1,13 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
   DialogDescription,
   DialogClose,
@@ -25,15 +24,15 @@ import { handleStockAdjustment } from '@/lib/stock-management';
 
 interface QuickTransactionDialogProps {
   product: Product;
-  children: React.ReactNode;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   onTransactionSuccess?: () => void;
 }
 
-export default function QuickTransactionDialog({ product, children, onTransactionSuccess }: QuickTransactionDialogProps) {
+export default function QuickTransactionDialog({ product, open, onOpenChange, onTransactionSuccess }: QuickTransactionDialogProps) {
   const { user } = useAuth();
   const { t } = useLanguage();
   const { toast } = useToast();
-  const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [adjustment, setAdjustment] = useState<{ quantity: number, notes: string, price: number }>({ quantity: 0, notes: '', price: product.sellingPrice });
 
@@ -42,7 +41,7 @@ export default function QuickTransactionDialog({ product, children, onTransactio
       // Reset state when closing
       setAdjustment({ quantity: 0, notes: '', price: product.sellingPrice });
     }
-    setOpen(isOpen);
+    onOpenChange(isOpen);
   };
 
   const handleQuantityChange = (newQuantity: number) => {
@@ -82,9 +81,6 @@ export default function QuickTransactionDialog({ product, children, onTransactio
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        {children}
-      </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="flex items-center"><Wrench className="mr-2 h-5 w-5"/> {t('productDetailPage.stockAdjustment.title')}</DialogTitle>
