@@ -28,7 +28,7 @@ import { useLanguage } from "@/hooks/use-language";
 import AddItemDialog from "./add-item-dialog";
 
 const invoiceItemSchema = z.object({
-  databaseId: z.string().optional(), // Hidden field to track original DB item ID
+  databaseId: z.string().optional(),
   productId: z.string().optional(),
   reference: z.string().optional(),
   description: z.string().min(1, "Description is required"),
@@ -59,6 +59,25 @@ interface InvoiceFormProps {
 }
 
 const MANUAL_ENTRY_CLIENT_ID = "_manual_entry_";
+
+// Deep sanitization utility to prevent 'undefined' values from reaching Firestore
+const sanitizeDataForFirestore = (data: any) => {
+    const cleanData: any = {};
+    for (const key in data) {
+        const value = data[key];
+        if (value === undefined) {
+            cleanData[key] = null;
+        } else if (Array.isArray(value)) {
+            cleanData[key] = value.map(item => typeof item === 'object' && item !== null ? sanitizeDataForFirestore(item) : item);
+        } else if (typeof value === 'object' && value !== null && !(value instanceof Date) && !value.hasOwnProperty('seconds')) {
+            cleanData[key] = sanitizeDataForFirestore(value);
+        } else {
+            cleanData[key] = value;
+        }
+    }
+    return cleanData;
+};
+
 
 export default function InvoiceForm({ initialData }: InvoiceFormProps) {
   const { toast } = useToast();
@@ -161,7 +180,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
                 invoiceNumber: initialData.invoiceNumber,
                 issueDate: new Date(initialData.issueDate),
                 dueDate: new Date(initialData.dueDate),
-                items: initialData.items.map(item => ({ ...item, databaseId: item.id, reference: item.reference || '' })),
+                items: initialData.items.map(item => ({ ...item, databaseId: item.id || undefined, reference: item.reference || '' })),
                 notes: initialData.notes || "",
                 taxRate: initialData.taxRate ?? userPrefs?.defaultTaxRate ?? 0,
             });
@@ -215,69 +234,94 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
       return;
     }
     setIsSaving(true);
+
+    const invoiceItemsToSave = values.items.map(item => {
+        const total = item.quantity * item.unitPrice || 0;
+        return {
+            id: item.databaseId, // This might be undefined for new items, which is fine
+            productId: item.productId || null,
+            reference: item.reference || null,
+            description: item.description,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            total: total,
+        };
+    });
+
+    const calculatedSubtotal = invoiceItemsToSave.reduce((sum, item) => sum + item.total, 0);
+    const calculatedTaxAmount = calculatedSubtotal * ((values.taxRate || 0) / 100);
+    const calculatedTotalAmount = calculatedSubtotal + calculatedTaxAmount;
     
-    const finalClientId = values.clientId === MANUAL_ENTRY_CLIENT_ID ? null : (values.clientId || null);
+    let fullData;
 
-    const invoiceItemsToSave: InvoiceItem[] = values.items.map((item) => ({
-        id: item.databaseId,
-        productId: item.productId || null,
-        reference: item.reference || null,
-        description: item.description,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        total: item.quantity * item.unitPrice || 0,
-    }));
-
-    const calculatedTaxAmount = calculateTaxAmount(subtotal);
-
-    const dataToSave = {
-      invoiceNumber: values.invoiceNumber,
-      clientId: finalClientId,
-      clientName: values.clientName,
-      clientEmail: values.clientEmail || null,
-      clientAddress: values.clientAddress || null,
-      clientCompany: values.clientCompany || null,
-      clientICE: values.clientICE || null,
-      issueDate: format(values.issueDate, "yyyy-MM-dd"),
-      dueDate: format(values.dueDate, "yyyy-MM-dd"),
-      items: invoiceItemsToSave,
-      subtotal,
-      taxRate: values.taxRate || 0,
-      taxAmount: isNaN(calculatedTaxAmount) ? 0 : calculatedTaxAmount,
-      totalAmount,
-      notes: values.notes || null,
-    };
+    if (initialData?.id) {
+        // PREPARE DATA FOR UPDATE
+        fullData = {
+            invoiceNumber: values.invoiceNumber,
+            clientId: values.clientId === MANUAL_ENTRY_CLIENT_ID ? null : values.clientId,
+            clientName: values.clientName,
+            clientEmail: values.clientEmail,
+            clientAddress: values.clientAddress,
+            clientCompany: values.clientCompany,
+            clientICE: values.clientICE,
+            issueDate: format(values.issueDate, "yyyy-MM-dd"),
+            dueDate: format(values.dueDate, "yyyy-MM-dd"),
+            items: invoiceItemsToSave,
+            subtotal: calculatedSubtotal,
+            taxRate: values.taxRate,
+            taxAmount: calculatedTaxAmount,
+            totalAmount: calculatedTotalAmount,
+            notes: values.notes,
+            // Carry over existing fields
+            currency: initialData.currency,
+            language: initialData.language,
+            status: initialData.status,
+            stockUpdated: initialData.stockUpdated,
+            appliedDefaultNotes: initialData.appliedDefaultNotes,
+            appliedDefaultPaymentTerms: initialData.appliedDefaultPaymentTerms,
+            updatedAt: serverTimestamp(),
+        };
+    } else {
+        // PREPARE DATA FOR CREATE
+        fullData = {
+            userId: user.uid,
+            invoiceNumber: values.invoiceNumber,
+            clientId: values.clientId === MANUAL_ENTRY_CLIENT_ID ? null : values.clientId,
+            clientName: values.clientName,
+            clientEmail: values.clientEmail,
+            clientAddress: values.clientAddress,
+            clientCompany: values.clientCompany,
+            clientICE: values.clientICE,
+            issueDate: format(values.issueDate, "yyyy-MM-dd"),
+            dueDate: format(values.dueDate, "yyyy-MM-dd"),
+            items: invoiceItemsToSave,
+            subtotal: calculatedSubtotal,
+            taxRate: values.taxRate,
+            taxAmount: calculatedTaxAmount,
+            totalAmount: calculatedTotalAmount,
+            notes: values.notes,
+            status: 'draft' as const,
+            currency: userPrefs?.currency,
+            language: userPrefs?.language,
+            stockUpdated: false,
+            appliedDefaultNotes: values.notes ? null : userPrefs?.defaultNotes,
+            appliedDefaultPaymentTerms: userPrefs?.defaultPaymentTerms,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+        };
+    }
+    
+    // Sanitize the final object before sending to Firestore
+    const cleanData = sanitizeDataForFirestore(fullData);
 
     try {
       if (initialData?.id) {
         const invoiceRef = doc(db, "invoices", initialData.id);
-        const updateData = {
-            ...dataToSave,
-            currency: initialData.currency || userPrefs?.currency || "MAD",
-            language: initialData.language || userPrefs?.language || "fr",
-            status: initialData.status,
-            stockUpdated: initialData.stockUpdated || false,
-            updatedAt: serverTimestamp(),
-            appliedDefaultNotes: initialData.appliedDefaultNotes || null,
-            appliedDefaultPaymentTerms: initialData.appliedDefaultPaymentTerms || null,
-        };
-        await updateDoc(invoiceRef, updateData);
+        await updateDoc(invoiceRef, cleanData);
         toast({ title: t('invoiceForm.toast.invoiceUpdatedTitle'), description: t('invoiceForm.toast.invoiceUpdatedDesc', {invoiceNumber: values.invoiceNumber}) });
         router.push(`/invoices/${initialData.id}`);
       } else {
-        const createData = {
-          ...dataToSave,
-          userId: user.uid,
-          status: 'draft' as const,
-          currency: userPrefs?.currency || "MAD",
-          language: userPrefs?.language || "fr",
-          stockUpdated: false,
-          appliedDefaultNotes: values.notes ? null : (userPrefs?.defaultNotes || null),
-          appliedDefaultPaymentTerms: userPrefs?.defaultPaymentTerms || null,
-          createdAt: serverTimestamp() as FieldValue,
-          updatedAt: serverTimestamp() as FieldValue,
-        };
-        const docRef = await addDoc(collection(db, "invoices"), createData);
+        const docRef = await addDoc(collection(db, "invoices"), cleanData);
         toast({ title: t('invoiceForm.toast.invoiceSavedTitle'), description: t('invoiceForm.toast.invoiceSavedDesc', {invoiceNumber: values.invoiceNumber}) });
         router.push(`/invoices/${docRef.id}`);
       }
