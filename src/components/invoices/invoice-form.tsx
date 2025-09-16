@@ -28,7 +28,7 @@ import AddItemDialog from "./add-item-dialog";
 
 // Schema for an item within the form
 const invoiceItemSchema = z.object({
-  id: z.string().optional(),
+  id: z.string().optional(), // This will hold the database ID for existing items
   productId: z.string().optional(),
   reference: z.string().optional(),
   description: z.string().min(1, "Description is required"),
@@ -155,7 +155,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
         const hasExistingClient = initialData.clientId && clients.some(c => c.id === initialData.clientId);
         
         const formItems = initialData.items.map(item => ({
-          id: item.id || doc(collection(db, 'invoices')).id,
+          id: item.id || doc(collection(db, 'invoices')).id, // Ensure every item has an ID for the form state
           productId: item.productId,
           reference: item.reference || '',
           description: item.description,
@@ -226,37 +226,37 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     }
     setIsSaving(true);
     
+    // --- START: NEW, ROBUST DATA PREPARATION ---
+    
+    // 1. Calculate totals
     const subtotal = values.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice || 0), 0);
     const taxAmount = subtotal * ((values.taxRate || 0) / 100);
     const totalAmount = subtotal + taxAmount;
 
-    // This is the definitive fix:
-    // 1. Map over the items from the form state (`values.items`).
-    // 2. For each item, use its existing `id` if it has one (meaning it came from initialData).
-    // 3. If it does not have an `id`, it's a new item, so we generate a new unique ID for it.
-    // This ensures every item in the array has a valid string ID.
-    const itemsToSave = values.items.map(item => {
-        const originalItem = initialData?.items.find(initItem => initItem.id === item.id);
-        return {
-            id: item.id || doc(collection(db, 'invoices')).id, // Generate new ID if missing
-            productId: item.productId || null,
-            reference: item.reference || null,
-            description: item.description,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            total: item.quantity * item.unitPrice,
-        }
-    });
+    // 2. Build the clean items array
+    const itemsToSave = values.items.map(item => ({
+        id: item.id || doc(collection(db, 'invoices')).id, // Generate new ID only if it's a new item
+        productId: item.productId || null,
+        reference: item.reference || null,
+        description: item.description,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        total: (item.quantity || 0) * (item.unitPrice || 0),
+    }));
 
+    // 3. Build the final, sanitized data object from scratch
     const dataToSave: Omit<Invoice, 'id'> & { [key: string]: any } = {
         userId: user.uid,
         invoiceNumber: values.invoiceNumber,
+        
+        // Sanitize all client fields
         clientId: (values.clientId === MANUAL_ENTRY_CLIENT_ID ? null : values.clientId) || null,
         clientName: values.clientName,
         clientEmail: values.clientEmail || null,
         clientAddress: values.clientAddress || null,
         clientCompany: values.clientCompany || null,
         clientICE: values.clientICE || null,
+
         issueDate: format(values.issueDate, "yyyy-MM-dd"),
         dueDate: format(values.dueDate, "yyyy-MM-dd"),
         items: itemsToSave,
@@ -265,24 +265,23 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
         taxAmount: taxAmount,
         totalAmount: totalAmount,
         notes: values.notes || null,
-        status: initialData?.status || 'draft',
+
+        // Carry over non-form fields from initialData or set defaults
         currency: initialData?.currency || userPrefs?.currency || 'MAD',
         language: initialData?.language || userPrefs?.language || 'fr',
-        appliedDefaultNotes: initialData?.appliedDefaultNotes || null,
-        appliedDefaultPaymentTerms: initialData?.appliedDefaultPaymentTerms || null,
-        stockUpdated: initialData?.stockUpdated ?? false,
-        sentDate: initialData?.sentDate || null,
-        paidDate: initialData?.paidDate || null,
+        status: initialData?.status || 'draft',
+        
+        // Safely carry over metadata
         createdAt: initialData?.createdAt || serverTimestamp(),
         updatedAt: serverTimestamp(),
+        sentDate: initialData?.sentDate || null,
+        paidDate: initialData?.paidDate || null,
+        stockUpdated: initialData?.stockUpdated ?? false,
+        appliedDefaultNotes: initialData?.appliedDefaultNotes || null,
+        appliedDefaultPaymentTerms: initialData?.appliedDefaultPaymentTerms || null,
     };
     
-    // Final sanitization to be absolutely sure
-    Object.keys(dataToSave).forEach(key => {
-        if (dataToSave[key] === undefined) {
-            dataToSave[key] = null;
-        }
-    });
+    // --- END: NEW, ROBUST DATA PREPARATION ---
 
     try {
         if (initialData?.id) {
@@ -290,7 +289,6 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
             await updateDoc(invoiceRef, dataToSave);
             toast({ title: t('invoiceForm.toast.invoiceUpdatedTitle'), description: t('invoiceForm.toast.invoiceUpdatedDesc', { invoiceNumber: values.invoiceNumber }) });
             router.push(`/invoices/${initialData.id}`);
-
         } else {
             const docRef = await addDoc(collection(db, "invoices"), dataToSave);
             toast({ title: t('invoiceForm.toast.invoiceSavedTitle'), description: t('invoiceForm.toast.invoiceSavedDesc', { invoiceNumber: values.invoiceNumber }) });
@@ -564,7 +562,5 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     </Form>
   );
 }
-
-    
 
     
