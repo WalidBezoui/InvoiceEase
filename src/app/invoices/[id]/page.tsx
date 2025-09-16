@@ -133,7 +133,7 @@ export default function InvoiceDetailPage() {
   const [isLoadingPreferences, setIsLoadingPreferences] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
-  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [isProcessingPdf, setIsProcessingPdf] = useState(false);
 
   const isLoading = authLoading || isLoadingLocale || isLoadingData || isLoadingPreferences;
   
@@ -241,10 +241,6 @@ export default function InvoiceDetailPage() {
                 
                 const productRef = doc(db, "products", transaction.productId);
                 
-                // Reverting the stock change. `quantityChange` is negative for sales, so subtracting it will add stock back.
-                // We're not reading the current stock to avoid race conditions; we're just reversing the transaction's effect.
-                // For a more robust system, a Cloud Function with retries would be better to read-and-write.
-                // For client-side, we can read the product, calculate new stock, and update.
                 const productSnap = await getDoc(productRef);
                 if (productSnap.exists()) {
                     const productData = productSnap.data();
@@ -252,7 +248,6 @@ export default function InvoiceDetailPage() {
                     batch.update(productRef, { stock: reversedStock });
                 }
                 
-                // Delete the transaction so it doesn't appear in history
                 batch.delete(transDoc.ref);
             }
         }
@@ -274,12 +269,10 @@ export default function InvoiceDetailPage() {
     };
 
     try {
-        // From any status to 'paid'
         if (newStatus === 'paid' && !invoice.stockUpdated) {
             await updateStockAndCreateTransactions(invoice);
             updateData.paidDate = new Date().toISOString();
             updateData.stockUpdated = true;
-        // From 'paid' back to something else (e.g., 'sent' or 'draft')
         } else if (invoice.status === 'paid' && newStatus !== 'paid' && invoice.stockUpdated) {
             await revertStockUpdate(invoice);
             updateData.paidDate = null;
@@ -312,7 +305,7 @@ export default function InvoiceDetailPage() {
   };
 
 
-  const handleDownloadPdf = async () => {
+  const handlePdfAction = async (action: 'download' | 'print') => {
     if (!invoice || !userPreferences) {
       toast({
         title: "Cannot generate PDF",
@@ -321,18 +314,18 @@ export default function InvoiceDetailPage() {
       });
       return;
     }
-    setIsGeneratingPdf(true);
+    setIsProcessingPdf(true);
     try {
-      await generateInvoicePdf(invoice, userPreferences, t);
+      await generateInvoicePdf(invoice, userPreferences, t, action);
     } catch (error) {
-      console.error("Error generating PDF:", error);
+      console.error("Error processing PDF:", error);
       toast({
-        title: "PDF Generation Failed",
+        title: "PDF Processing Failed",
         description: "An unexpected error occurred while creating the PDF.",
         variant: "destructive",
       });
     } finally {
-      setIsGeneratingPdf(false);
+      setIsProcessingPdf(false);
     }
   };
 
@@ -370,8 +363,6 @@ export default function InvoiceDetailPage() {
     );
   }
   
-  const printInvoice = () => window.print();
-
   const canMarkAsSent = invoice.status === 'draft';
   const canMarkAsPaid = invoice.status === 'sent' || invoice.status === 'overdue';
   const canMarkAsOverdue = invoice.status === 'sent';
@@ -517,13 +508,14 @@ export default function InvoiceDetailPage() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Button variant="outline" onClick={handleDownloadPdf} disabled={isGeneratingPdf}>
-            {isGeneratingPdf ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+          <Button variant="outline" onClick={() => handlePdfAction('download')} disabled={isProcessingPdf}>
+            {isProcessingPdf ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
             {t('invoiceDetailPage.downloadPdf')}
           </Button>
 
-          <Button variant="outline" onClick={printInvoice}>
-            <Printer className="mr-2 h-4 w-4" /> {t('invoiceDetailPage.printPdf', { default: 'Print' })}
+          <Button variant="outline" onClick={() => handlePdfAction('print')} disabled={isProcessingPdf}>
+            {isProcessingPdf ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Printer className="mr-2 h-4 w-4" />}
+            {t('invoiceDetailPage.printPdf', { default: 'Print' })}
           </Button>
 
           { (invoice.status === 'draft' || invoice.status === 'sent') && !isUpdatingStatus ? (
@@ -693,5 +685,3 @@ export default function InvoiceDetailPage() {
     </div>
   );
 }
-
-    

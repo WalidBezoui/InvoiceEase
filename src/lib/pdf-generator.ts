@@ -20,7 +20,8 @@ function chunkArray<T>(array: T[], size: number): T[][] {
 export const generateInvoicePdf = async (
   invoice: Invoice,
   prefs: UserPreferences,
-  t: (key: string, replacements?: Record<string, string | number>) => string
+  t: (key: string, replacements?: Record<string, string | number>) => string,
+  action: 'download' | 'print' = 'download'
 ) => {
   const doc = new jsPDF({
     orientation: 'p',
@@ -280,8 +281,11 @@ export const generateInvoicePdf = async (
     addPageFooter(totalPages + 1, totalPages + 1);
   }
 
-
-  doc.save(`invoice-${invoice.invoiceNumber}.pdf`);
+  // --- FINAL ACTION ---
+  if (action === 'print') {
+    doc.autoPrint();
+    window.open(doc.output('bloburl'), '_blank');
+  } else {
+    doc.save(`invoice-${invoice.invoiceNumber}.pdf`);
+  }
 };
-
-    
