@@ -245,7 +245,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
       notes: values.notes || "",
       currency: initialData?.currency || userPrefs?.currency || "MAD",
       language: initialData?.language || userPrefs?.language || "fr",
-      appliedDefaultNotes: initialData?.appliedDefaultNotes || userPrefs?.defaultNotes || "",
+      appliedDefaultNotes: values.notes ? "" : (initialData?.appliedDefaultNotes || userPrefs?.defaultNotes || ""),
       appliedDefaultPaymentTerms: initialData?.appliedDefaultPaymentTerms || userPrefs?.defaultPaymentTerms || "",
       stockUpdated: initialData?.stockUpdated || false,
     };
