@@ -28,7 +28,6 @@ import { useLanguage } from "@/hooks/use-language";
 import AddItemDialog from "./add-item-dialog";
 
 const invoiceItemSchema = z.object({
-  databaseId: z.string().optional(),
   productId: z.string().optional(),
   reference: z.string().optional(),
   description: z.string().min(1, "Description is required"),
@@ -164,7 +163,6 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
                 issueDate: new Date(initialData.issueDate),
                 dueDate: new Date(initialData.dueDate),
                 items: initialData.items.map(item => ({ 
-                    databaseId: item.id || undefined, 
                     productId: item.productId,
                     reference: item.reference || '', 
                     description: item.description,
@@ -224,24 +222,25 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
       return;
     }
     setIsSaving(true);
-    
-    // Helper to sanitize undefined to null for Firestore
-    const sanitize = <T extends Record<string, any>>(obj: T) => {
-        const newObj: Partial<T> = {};
-        for (const key in obj) {
-            if (obj[key] !== undefined) {
-                newObj[key] = obj[key];
-            } else {
-                 newObj[key] = null as any;
-            }
-        }
-        return newObj as T;
-    };
 
-    const invoiceData = sanitize({
+    const invoiceItemsToSave = values.items.map((item, index) => {
+        // For existing invoices, we need to preserve the ID of each item if it exists.
+        const originalItem = initialData?.items[index];
+        return {
+            id: originalItem?.id || undefined, // Keep existing ID
+            productId: item.productId || null,
+            reference: item.reference || null,
+            description: item.description,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            total: item.quantity * item.unitPrice,
+        };
+    });
+
+    const invoiceData = {
         userId: user.uid,
         invoiceNumber: values.invoiceNumber,
-        clientId: values.clientId === MANUAL_ENTRY_CLIENT_ID ? null : values.clientId,
+        clientId: values.clientId === MANUAL_ENTRY_CLIENT_ID ? null : values.clientId || null,
         clientName: values.clientName,
         clientEmail: values.clientEmail || null,
         clientAddress: values.clientAddress || null,
@@ -249,28 +248,28 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
         clientICE: values.clientICE || null,
         issueDate: format(values.issueDate, "yyyy-MM-dd"),
         dueDate: format(values.dueDate, "yyyy-MM-dd"),
-        items: values.items.map(item => sanitize({
-            id: item.databaseId,
-            productId: item.productId || null,
-            reference: item.reference || null,
+        items: invoiceItemsToSave.map(item => ({
+            id: item.id,
+            productId: item.productId,
+            reference: item.reference,
             description: item.description,
             quantity: item.quantity,
             unitPrice: item.unitPrice,
-            total: item.quantity * item.unitPrice
+            total: item.total
         })),
         subtotal: subtotal,
         taxRate: values.taxRate,
         taxAmount: taxAmount,
         totalAmount: totalAmount,
         notes: values.notes || null,
-        updatedAt: serverTimestamp(),
-    });
+    };
     
     try {
       if (initialData?.id) {
         const updateData = {
-          ...initialData, // Carry over old fields like createdAt, status etc.
-          ...invoiceData // Overwrite with new, clean data
+          ...initialData,
+          ...invoiceData,
+          updatedAt: serverTimestamp(),
         };
         const invoiceRef = doc(db, "invoices", initialData.id);
         await updateDoc(invoiceRef, updateData);
@@ -286,6 +285,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
           appliedDefaultNotes: values.notes ? null : (userPrefs?.defaultNotes || null),
           appliedDefaultPaymentTerms: userPrefs?.defaultPaymentTerms || null,
           createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
         }
         const docRef = await addDoc(collection(db, "invoices"), createData);
         toast({ title: t('invoiceForm.toast.invoiceSavedTitle'), description: t('invoiceForm.toast.invoiceSavedDesc', {invoiceNumber: values.invoiceNumber}) });
@@ -459,7 +459,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
           </CardHeader>
           <CardContent className="space-y-4">
             {fields.map((item, index) => (
-              <div key={item.id || `item-${index}`} className="flex flex-col md:flex-row gap-4 items-start p-4 border rounded-md bg-secondary/30">
+              <div key={item.id} className="flex flex-col md:flex-row gap-4 items-start p-4 border rounded-md bg-secondary/30">
                 <div className="flex-grow grid gap-4 grid-cols-1 sm:grid-cols-5">
                     <FormField control={form.control} name={`items.${index}.description`} render={({ field: itemField }) => (
                       <FormItem className="sm:col-span-2">
