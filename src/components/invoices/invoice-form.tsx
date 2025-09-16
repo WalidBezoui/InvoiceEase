@@ -216,11 +216,10 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     }
     setIsSaving(true);
     
-    // Sanitize all data before saving
     const finalClientId = values.clientId === MANUAL_ENTRY_CLIENT_ID ? null : (values.clientId || null);
 
     const invoiceItemsToSave: InvoiceItem[] = values.items.map((item) => ({
-        id: item.databaseId || undefined,
+        id: item.databaseId,
         productId: item.productId || null,
         reference: item.reference || null,
         description: item.description,
@@ -230,6 +229,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     }));
 
     const calculatedTaxAmount = calculateTaxAmount(subtotal);
+
     const dataToSave = {
       invoiceNumber: values.invoiceNumber,
       clientId: finalClientId,
@@ -246,8 +246,6 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
       taxAmount: isNaN(calculatedTaxAmount) ? 0 : calculatedTaxAmount,
       totalAmount,
       notes: values.notes || null,
-      appliedDefaultNotes: values.notes ? null : (initialData?.appliedDefaultNotes || userPrefs?.defaultNotes || null),
-      appliedDefaultPaymentTerms: initialData?.appliedDefaultPaymentTerms || userPrefs?.defaultPaymentTerms || null,
     };
 
     try {
@@ -260,6 +258,8 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
             status: initialData.status,
             stockUpdated: initialData.stockUpdated || false,
             updatedAt: serverTimestamp(),
+            appliedDefaultNotes: initialData.appliedDefaultNotes || null,
+            appliedDefaultPaymentTerms: initialData.appliedDefaultPaymentTerms || null,
         };
         await updateDoc(invoiceRef, updateData);
         toast({ title: t('invoiceForm.toast.invoiceUpdatedTitle'), description: t('invoiceForm.toast.invoiceUpdatedDesc', {invoiceNumber: values.invoiceNumber}) });
@@ -272,6 +272,8 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
           currency: userPrefs?.currency || "MAD",
           language: userPrefs?.language || "fr",
           stockUpdated: false,
+          appliedDefaultNotes: values.notes ? null : (userPrefs?.defaultNotes || null),
+          appliedDefaultPaymentTerms: userPrefs?.defaultPaymentTerms || null,
           createdAt: serverTimestamp() as FieldValue,
           updatedAt: serverTimestamp() as FieldValue,
         };
@@ -546,3 +548,5 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     </Form>
   );
 }
+
+    
