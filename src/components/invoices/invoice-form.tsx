@@ -60,27 +60,6 @@ interface InvoiceFormProps {
 
 const MANUAL_ENTRY_CLIENT_ID = "_manual_entry_";
 
-// Deep sanitization utility to prevent 'undefined' values from reaching Firestore
-const sanitizeDataForFirestore = (data: any): any => {
-    if (data === undefined) {
-        return null; // Convert top-level undefined to null
-    }
-    if (data === null || typeof data !== 'object' || data instanceof Date || data.hasOwnProperty('seconds')) {
-        return data;
-    }
-    if (Array.isArray(data)) {
-        return data.map(item => sanitizeDataForFirestore(item));
-    }
-    const cleanData: any = {};
-    for (const key in data) {
-        if (data.hasOwnProperty(key)) {
-            const value = data[key];
-            cleanData[key] = sanitizeDataForFirestore(value);
-        }
-    }
-    return cleanData;
-};
-
 
 export default function InvoiceForm({ initialData }: InvoiceFormProps) {
   const { toast } = useToast();
@@ -173,8 +152,9 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
   useEffect(() => {
     if (!isPrefsLoading) {
         if (initialData) {
+            const hasExistingClient = initialData.clientId && clients.some(c => c.id === initialData.clientId);
             form.reset({
-                clientId: initialData.clientId || MANUAL_ENTRY_CLIENT_ID,
+                clientId: hasExistingClient ? initialData.clientId : MANUAL_ENTRY_CLIENT_ID,
                 clientName: initialData.clientName,
                 clientEmail: initialData.clientEmail || "",
                 clientAddress: initialData.clientAddress || "",
@@ -203,7 +183,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
             });
         }
     }
-  }, [initialData, form, isPrefsLoading, userPrefs, user?.uid]);
+  }, [initialData, form, isPrefsLoading, userPrefs, user?.uid, clients]);
 
   const watchItems = form.watch("items");
   const watchTaxRate = form.watch("taxRate");
@@ -245,52 +225,75 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     }
     setIsSaving(true);
     
-    // Construct the full data object first
-    const fullInvoiceData = {
-        ...(initialData || {}),
-        ...values,
+    // Helper to sanitize undefined to null for Firestore
+    const sanitize = <T extends Record<string, any>>(obj: T) => {
+        const newObj: Partial<T> = {};
+        for (const key in obj) {
+            if (obj[key] !== undefined) {
+                newObj[key] = obj[key];
+            } else {
+                 newObj[key] = null as any;
+            }
+        }
+        return newObj as T;
+    };
+
+    const invoiceData = sanitize({
         userId: user.uid,
-        subtotal: subtotal,
-        taxAmount: taxAmount,
-        totalAmount: totalAmount,
+        invoiceNumber: values.invoiceNumber,
+        clientId: values.clientId === MANUAL_ENTRY_CLIENT_ID ? null : values.clientId,
+        clientName: values.clientName,
+        clientEmail: values.clientEmail || null,
+        clientAddress: values.clientAddress || null,
+        clientCompany: values.clientCompany || null,
+        clientICE: values.clientICE || null,
         issueDate: format(values.issueDate, "yyyy-MM-dd"),
         dueDate: format(values.dueDate, "yyyy-MM-dd"),
-        items: values.items.map((item, index) => ({
-            id: item.databaseId || initialData?.items[index]?.id || undefined,
-            productId: item.productId,
-            reference: item.reference,
+        items: values.items.map(item => sanitize({
+            id: item.databaseId,
+            productId: item.productId || null,
+            reference: item.reference || null,
             description: item.description,
             quantity: item.quantity,
             unitPrice: item.unitPrice,
-            total: (item.quantity || 0) * (item.unitPrice || 0),
+            total: item.quantity * item.unitPrice
         })),
-        status: initialData ? initialData.status : 'draft',
-        currency: initialData ? initialData.currency : userPrefs?.currency,
-        language: initialData ? initialData.language : userPrefs?.language,
-        stockUpdated: initialData ? initialData.stockUpdated : false,
-        appliedDefaultNotes: initialData ? initialData.appliedDefaultNotes : (values.notes ? null : userPrefs?.defaultNotes),
-        appliedDefaultPaymentTerms: initialData ? initialData.appliedDefaultPaymentTerms : userPrefs?.defaultPaymentTerms,
-        createdAt: initialData ? initialData.createdAt : serverTimestamp(),
+        subtotal: subtotal,
+        taxRate: values.taxRate,
+        taxAmount: taxAmount,
+        totalAmount: totalAmount,
+        notes: values.notes || null,
         updatedAt: serverTimestamp(),
-    };
-
-    // Sanitize the final object before sending to Firestore
-    const cleanData = sanitizeDataForFirestore(fullInvoiceData);
-
+    });
+    
     try {
       if (initialData?.id) {
+        const updateData = {
+          ...initialData, // Carry over old fields like createdAt, status etc.
+          ...invoiceData // Overwrite with new, clean data
+        };
         const invoiceRef = doc(db, "invoices", initialData.id);
-        await updateDoc(invoiceRef, cleanData);
+        await updateDoc(invoiceRef, updateData);
         toast({ title: t('invoiceForm.toast.invoiceUpdatedTitle'), description: t('invoiceForm.toast.invoiceUpdatedDesc', {invoiceNumber: values.invoiceNumber}) });
         router.push(`/invoices/${initialData.id}`);
       } else {
-        const docRef = await addDoc(collection(db, "invoices"), cleanData);
+        const createData = {
+          ...invoiceData,
+          status: 'draft' as const,
+          currency: userPrefs?.currency || "MAD",
+          language: userPrefs?.language || "fr",
+          stockUpdated: false,
+          appliedDefaultNotes: values.notes ? null : (userPrefs?.defaultNotes || null),
+          appliedDefaultPaymentTerms: userPrefs?.defaultPaymentTerms || null,
+          createdAt: serverTimestamp(),
+        }
+        const docRef = await addDoc(collection(db, "invoices"), createData);
         toast({ title: t('invoiceForm.toast.invoiceSavedTitle'), description: t('invoiceForm.toast.invoiceSavedDesc', {invoiceNumber: values.invoiceNumber}) });
         router.push(`/invoices/${docRef.id}`);
       }
     } catch (error) {
       console.error("Error saving invoice:", error);
-      toast({ title: t('invoiceForm.toast.errorSavingTitle'), description: t('invoiceForm.toast.errorSavingDesc'), variant: "destructive" });
+      toast({ title: t('invoiceForm.toast.errorSavingTitle'), description: `An unexpected error occurred: ${(error as Error).message}`, variant: "destructive" });
     } finally {
       setIsSaving(false);
     }
@@ -555,5 +558,3 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     </Form>
   );
 }
-
-    
