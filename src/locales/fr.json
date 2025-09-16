@@ -26,6 +26,10 @@
     "invoicesPendingCompletion": "Factures en attente de finalisation",
     "totalClients": "Total Clients",
     "managedClients": "Clients gérés",
+    "totalProducts": "Total Produits",
+    "productInventoryDesc": "Pièces uniques en inventaire",
+    "totalStockValue": "Valeur Totale du Stock",
+    "stockValueDesc": "Basé sur le prix d'achat",
     "recentInvoices": "Factures Récentes",
     "recentInvoicesDescription": "Un journal de vos factures les plus récentes.",
     "invoiceTable": {
@@ -35,8 +39,17 @@
       "amount": "Montant",
       "status": "Statut"
     },
+    "productTable": {
+      "partName": "Nom de la Pièce",
+      "stock": "Stock",
+      "healthTip": "Conseil"
+    },
     "noRecentInvoiceActivity": "Aucune activité de facture récente à afficher.",
-    "createInvoiceToStart": "Créez une facture pour commencer !"
+    "createInvoiceToStart": "Créez une facture pour commencer !",
+    "productsToWatchTitle": "Produits à Surveiller",
+    "productsToWatchDesc": "Pièces qui peuvent nécessiter votre attention.",
+    "noProductsToWatch": "Tous les produits semblent corrects !",
+    "productsLookingGood": "Aucune pièce ne nécessite actuellement d'attention."
   },
   "clientsPage": {
     "title": "Clients",
@@ -773,3 +786,5 @@
     "info": "Info"
   }
 }
+
+    

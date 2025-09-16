@@ -26,6 +26,10 @@
     "invoicesPendingCompletion": "Invoices pending completion",
     "totalClients": "Total Clients",
     "managedClients": "Managed clients",
+    "totalProducts": "Total Products",
+    "productInventoryDesc": "Unique parts in inventory",
+    "totalStockValue": "Total Stock Value",
+    "stockValueDesc": "Based on purchase price",
     "recentInvoices": "Recent Invoices",
     "recentInvoicesDescription": "A log of your most recent invoices.",
     "invoiceTable": {
@@ -35,8 +39,17 @@
       "amount": "Amount",
       "status": "Status"
     },
+    "productTable": {
+      "partName": "Part Name",
+      "stock": "Stock",
+      "healthTip": "Health Tip"
+    },
     "noRecentInvoiceActivity": "No recent invoice activity to display.",
-    "createInvoiceToStart": "Create an invoice to get started!"
+    "createInvoiceToStart": "Create an invoice to get started!",
+    "productsToWatchTitle": "Products to Watch",
+    "productsToWatchDesc": "Parts that may require your attention.",
+    "noProductsToWatch": "All products look good!",
+    "productsLookingGood": "No parts currently require attention."
   },
   "clientsPage": {
     "title": "Clients",
@@ -773,3 +786,5 @@
     "info": "Info"
   }
 }
+
+    

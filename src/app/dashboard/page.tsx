@@ -254,25 +254,25 @@ export default function DashboardPage() {
         </Card>
         <Card className="shadow-lg hover:shadow-xl transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Products</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('dashboardPage.totalProducts')}</CardTitle>
             <Package className="h-5 w-5 text-accent" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-primary">{stats?.totalProducts || 0}</div>
             <p className="text-xs text-muted-foreground">
-              Unique parts in inventory
+              {t('dashboardPage.productInventoryDesc')}
             </p>
           </CardContent>
         </Card>
         <Card className="shadow-lg hover:shadow-xl transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Stock Value</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('dashboardPage.totalStockValue')}</CardTitle>
             <BarChart3 className="h-5 w-5 text-accent" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-primary">MAD {stats?.totalStockValue.toFixed(2) || '0.00'}</div>
             <p className="text-xs text-muted-foreground">
-              Based on purchase price
+              {t('dashboardPage.stockValueDesc')}
             </p>
           </CardContent>
         </Card>
@@ -345,8 +345,8 @@ export default function DashboardPage() {
 
         <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle className="font-headline text-xl text-primary">Products to Watch</CardTitle>
-            <CardDescription>Parts that may require your attention.</CardDescription>
+            <CardTitle className="font-headline text-xl text-primary">{t('dashboardPage.productsToWatchTitle')}</CardTitle>
+            <CardDescription>{t('dashboardPage.productsToWatchDesc')}</CardDescription>
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -372,9 +372,9 @@ export default function DashboardPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Part Name</TableHead>
-                    <TableHead>Stock</TableHead>
-                    <TableHead>Health Tip</TableHead>
+                    <TableHead>{t('dashboardPage.productTable.partName')}</TableHead>
+                    <TableHead>{t('dashboardPage.productTable.stock')}</TableHead>
+                    <TableHead>{t('dashboardPage.productTable.healthTip')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -398,8 +398,8 @@ export default function DashboardPage() {
               </Table>
             ) : (
               <div className="text-center py-8">
-                <p className="text-muted-foreground">All products look good!</p>
-                <p className="text-sm text-muted-foreground mt-1">No parts currently require attention.</p>
+                <p className="text-muted-foreground">{t('dashboardPage.noProductsToWatch')}</p>
+                <p className="text-sm text-muted-foreground mt-1">{t('dashboardPage.productsLookingGood')}</p>
               </div>
             )}
           </CardContent>
@@ -409,4 +409,5 @@ export default function DashboardPage() {
   );
 }
 
+    
     
