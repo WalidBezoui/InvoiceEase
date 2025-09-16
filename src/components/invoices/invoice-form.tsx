@@ -28,8 +28,7 @@ import AddItemDialog from "./add-item-dialog";
 
 // Schema for an item within the form
 const invoiceItemSchema = z.object({
-  // This is the database ID, used for tracking updates. It's not for display or direct user editing.
-  id: z.string().optional(),
+  id: z.string().optional(), // This is the database ID, used for tracking updates.
   productId: z.string().optional(),
   reference: z.string().optional(),
   description: z.string().min(1, "Description is required"),
@@ -156,7 +155,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
         const hasExistingClient = initialData.clientId && clients.some(c => c.id === initialData.clientId);
         
         const formItems = initialData.items.map(item => ({
-          id: item.id || doc(collection(db, 'invoices')).id,
+          id: item.id || doc(collection(db, 'invoices')).id, // Ensure ID exists for mapping
           productId: item.productId,
           reference: item.reference || '',
           description: item.description,
@@ -226,25 +225,21 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
         return;
     }
     setIsSaving(true);
-    
-    // --- START: New Robust Data Preparation ---
 
     const subtotal = values.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice || 0), 0);
     const taxAmount = subtotal * ((values.taxRate || 0) / 100);
     const totalAmount = subtotal + taxAmount;
 
-    // Prepare items, ensuring every item has a unique ID and valid structure.
     const itemsToSave = values.items.map(item => ({
-        id: item.id || doc(collection(db, 'invoices')).id, // Ensure ID exists
+        id: item.id || doc(collection(db, 'invoices')).id,
         productId: item.productId || null,
         reference: item.reference || null,
         description: item.description,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
-        total: (item.quantity || 0) * (item.unitPrice || 0),
+        total: item.quantity * item.unitPrice,
     }));
 
-    // Build the final data object, explicitly converting any falsy/undefined values to null.
     const dataToSave = {
         userId: user.uid,
         invoiceNumber: values.invoiceNumber,
@@ -265,20 +260,19 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
         status: initialData?.status || 'draft',
         currency: initialData?.currency || userPrefs?.currency || 'MAD',
         language: initialData?.language || userPrefs?.language || 'fr',
-        stockUpdated: initialData?.stockUpdated || false,
+        stockUpdated: initialData?.stockUpdated ?? false,
         sentDate: initialData?.sentDate || null,
         paidDate: initialData?.paidDate || null,
         appliedDefaultNotes: initialData?.appliedDefaultNotes || null,
         appliedDefaultPaymentTerms: initialData?.appliedDefaultPaymentTerms || null,
     };
-    
-    // --- END: New Robust Data Preparation ---
 
     try {
         if (initialData?.id) {
             const invoiceRef = doc(db, "invoices", initialData.id);
+            // The `dataToSave` object is now fully populated and sanitized.
             await updateDoc(invoiceRef, {
-                ...dataToSave, // The clean object is used directly
+                ...dataToSave,
                 updatedAt: serverTimestamp(),
             });
             toast({ title: t('invoiceForm.toast.invoiceUpdatedTitle'), description: t('invoiceForm.toast.invoiceUpdatedDesc', { invoiceNumber: values.invoiceNumber }) });
@@ -286,7 +280,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
 
         } else {
             const docRef = await addDoc(collection(db, "invoices"), {
-                ...dataToSave, // The clean object is used directly
+                ...dataToSave,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
             });
@@ -562,5 +556,4 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
   );
 }
 
-    
     
