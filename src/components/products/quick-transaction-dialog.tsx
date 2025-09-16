@@ -1,10 +1,9 @@
 
 "use client";
 
-import { useState, type ReactNode } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -24,25 +23,20 @@ import { handleStockAdjustment } from '@/lib/stock-management';
 
 interface QuickTransactionDialogProps {
   product: Product;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
   onTransactionSuccess?: () => void;
 }
 
-export default function QuickTransactionDialog({ product, open, onOpenChange, onTransactionSuccess }: QuickTransactionDialogProps) {
+export default function QuickTransactionDialog({ product, onTransactionSuccess }: QuickTransactionDialogProps) {
   const { user } = useAuth();
   const { t } = useLanguage();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [adjustment, setAdjustment] = useState<{ quantity: number, notes: string, price: number }>({ quantity: 0, notes: '', price: product.sellingPrice });
 
-  const handleOpenChange = (isOpen: boolean) => {
-    if (!isOpen) {
-      // Reset state when closing
-      setAdjustment({ quantity: 0, notes: '', price: product.sellingPrice });
-    }
-    onOpenChange(isOpen);
-  };
+  useEffect(() => {
+    // Reset state when product changes
+    setAdjustment({ quantity: 0, notes: '', price: product.sellingPrice });
+  }, [product]);
 
   const handleQuantityChange = (newQuantity: number) => {
     if (!product) return;
@@ -69,7 +63,6 @@ export default function QuickTransactionDialog({ product, open, onOpenChange, on
         );
         toast({ title: t('productDetailPage.stockAdjusted'), description: t('productDetailPage.stockAdjustedDesc', {productName: product.name, newStock: (product.stock || 0) + adjustment.quantity})});
         onTransactionSuccess?.();
-        handleOpenChange(false);
     } catch (error) {
         console.error("Error adjusting stock:", error);
         toast({ title: "Error", description: t('productDetailPage.stockAdjustedError'), variant: "destructive" });
@@ -80,7 +73,6 @@ export default function QuickTransactionDialog({ product, open, onOpenChange, on
 
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="flex items-center"><Wrench className="mr-2 h-5 w-5"/> {t('productDetailPage.stockAdjustment.title')}</DialogTitle>
@@ -117,6 +109,5 @@ export default function QuickTransactionDialog({ product, open, onOpenChange, on
           </Button>
         </DialogFooter>
       </DialogContent>
-    </Dialog>
   );
 }

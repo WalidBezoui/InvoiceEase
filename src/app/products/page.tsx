@@ -382,17 +382,30 @@ export default function ProductsPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <Tooltip>
-                              <DialogTrigger asChild>
+                          <Dialog open={selectedProduct?.id === product.id && isQuickTransactionOpen} onOpenChange={(open) => {
+                              if (!open) {
+                                  setSelectedProduct(null);
+                              }
+                              setIsQuickTransactionOpen(open);
+                          }}>
+                              <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleQuickTransactionClick(product)}>
+                                  <DialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleQuickTransactionClick(product)}>
                                       <Wrench className="h-4 w-4" />
                                       <span className="sr-only">{t('productsPage.actions.quickTransaction', { default: 'Quick Transaction'})}</span>
-                                  </Button>
+                                    </Button>
+                                  </DialogTrigger>
                                 </TooltipTrigger>
-                              </DialogTrigger>
-                            <TooltipContent><p>{t('productsPage.actions.quickTransaction', { default: 'Quick Transaction'})}</p></TooltipContent>
-                          </Tooltip>
+                                <TooltipContent><p>{t('productsPage.actions.quickTransaction', { default: 'Quick Transaction'})}</p></TooltipContent>
+                              </Tooltip>
+                              {selectedProduct?.id === product.id && (
+                                <QuickTransactionDialog 
+                                    product={selectedProduct} 
+                                    onTransactionSuccess={onTransactionSuccess}
+                                />
+                              )}
+                          </Dialog>
 
                           <Tooltip><TooltipTrigger asChild>
                           <Button variant="ghost" size="icon" asChild className="h-8 w-8">
@@ -443,14 +456,6 @@ export default function ProductsPage() {
                 </TableBody>
               </Table>
               </div>
-              {selectedProduct && (
-                <QuickTransactionDialog 
-                    product={selectedProduct} 
-                    open={isQuickTransactionOpen}
-                    onOpenChange={setIsQuickTransactionOpen}
-                    onTransactionSuccess={onTransactionSuccess}
-                />
-              )}
             </TooltipProvider>
           ) : (
             <div className="text-center py-12">
