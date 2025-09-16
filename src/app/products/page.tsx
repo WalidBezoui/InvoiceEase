@@ -405,12 +405,14 @@ export default function ProductsPage() {
                           </TooltipTrigger><TooltipContent><p>{t('productsPage.actions.edit')}</p></TooltipContent></Tooltip>
 
                           <AlertDialog>
-                             <Tooltip><TooltipTrigger asChild>
+                            <AlertDialogTrigger asChild>
+                               <Tooltip><TooltipTrigger asChild>
                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10">
                                   <Trash2 className="h-4 w-4" />
                                   <span className="sr-only">{t('productsPage.actions.delete')}</span>
                                 </Button>
                              </TooltipTrigger><TooltipContent><p>{t('productsPage.actions.delete')}</p></TooltipContent></Tooltip>
+                            </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
                                 <AlertDialogTitle>{t('productsPage.dialog.deleteTitle')}</AlertDialogTitle>
