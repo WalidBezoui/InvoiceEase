@@ -85,7 +85,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
       invoiceNumber: initialData?.invoiceNumber || `INV-${Date.now().toString().slice(-6)}`,
       issueDate: initialData?.issueDate ? new Date(initialData.issueDate) : new Date(),
       dueDate: initialData?.dueDate ? new Date(initialData.dueDate) : new Date(new Date().setDate(new Date().getDate() + 30)),
-      items: initialData?.items?.map(item => ({ ...item })) || [{ description: "", quantity: 1, unitPrice: 0, reference: "" }],
+      items: initialData?.items?.map(item => ({ ...item, reference: item.reference || '' })) || [{ description: "", quantity: 1, unitPrice: 0, reference: "" }],
       notes: initialData?.notes || userPrefs?.defaultNotes || "",
       taxRate: initialData?.taxRate ?? userPrefs?.defaultTaxRate ?? 0,
     },
@@ -157,7 +157,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
                 invoiceNumber: initialData.invoiceNumber,
                 issueDate: new Date(initialData.issueDate),
                 dueDate: new Date(initialData.dueDate),
-                items: initialData.items.map(item => ({ ...item })),
+                items: initialData.items.map(item => ({ ...item, reference: item.reference || '' })),
                 notes: initialData.notes || "",
                 taxRate: initialData.taxRate ?? userPrefs?.defaultTaxRate ?? 0,
             });
@@ -283,7 +283,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     if (fields.length === 1 && fields[0].description === "" && fields[0].unitPrice === 0) {
       remove(0);
     }
-    append(item);
+    append({ ...item, reference: item.reference || '' });
   };
 
   const isClientSelectedReadOnly = !!(watchClientId && watchClientId !== MANUAL_ENTRY_CLIENT_ID);
@@ -537,6 +537,8 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     </Form>
   );
 }
+
+    
 
     
 
