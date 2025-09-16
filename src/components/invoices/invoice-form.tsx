@@ -141,8 +141,10 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
   }, [user, toast, t]);
 
   useEffect(() => {
-    form.trigger();
-  }, [t, form.trigger]);
+    if (!isLoadingLang) {
+        form.trigger();
+    }
+  }, [t, form, isLoadingLang]);
 
   useEffect(() => {
     if (!isPrefsLoading) {
@@ -237,14 +239,14 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
       dueDate: format(values.dueDate, "yyyy-MM-dd"),
       items: invoiceItemsToSave,
       subtotal,
-      taxRate: values.taxRate,
+      taxRate: values.taxRate || 0,
       taxAmount: isNaN(calculatedTaxAmount) ? 0 : calculatedTaxAmount,
       totalAmount,
       notes: values.notes || "",
       currency: initialData?.currency || userPrefs?.currency || "MAD",
       language: initialData?.language || userPrefs?.language || "fr",
-      appliedDefaultNotes: initialData ? initialData.appliedDefaultNotes : (values.notes === (userPrefs?.defaultNotes || "") ? userPrefs?.defaultNotes : ""),
-      appliedDefaultPaymentTerms: initialData ? initialData.appliedDefaultPaymentTerms : (userPrefs?.defaultPaymentTerms || ""),
+      appliedDefaultNotes: initialData ? (initialData.appliedDefaultNotes || "") : (values.notes === (userPrefs?.defaultNotes || "") ? (userPrefs?.defaultNotes || "") : ""),
+      appliedDefaultPaymentTerms: initialData ? (initialData.appliedDefaultPaymentTerms || "") : (userPrefs?.defaultPaymentTerms || ""),
       stockUpdated: initialData?.stockUpdated || false,
     };
 
@@ -537,9 +539,5 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     </Form>
   );
 }
-
-    
-
-    
 
     
