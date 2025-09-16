@@ -62,18 +62,22 @@ const MANUAL_ENTRY_CLIENT_ID = "_manual_entry_";
 
 // Deep sanitization utility to prevent 'undefined' values from reaching Firestore
 const sanitizeDataForFirestore = (data: any): any => {
+    if (data === undefined) {
+        return null;
+    }
+    if (data === null || typeof data !== 'object' || data instanceof Date || data.hasOwnProperty('seconds')) {
+        return data;
+    }
     if (Array.isArray(data)) {
         return data.map(item => sanitizeDataForFirestore(item));
     }
-    if (data !== null && typeof data === 'object' && !(data instanceof Date) && !data.hasOwnProperty('seconds')) {
-        const cleanData: any = {};
-        for (const key in data) {
-            const value = data[key];
-            cleanData[key] = value === undefined ? null : sanitizeDataForFirestore(value);
+    const cleanData: any = {};
+    for (const key in data) {
+        if (data.hasOwnProperty(key)) {
+            cleanData[key] = sanitizeDataForFirestore(data[key]);
         }
-        return cleanData;
     }
-    return data;
+    return cleanData;
 };
 
 
@@ -178,7 +182,14 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
                 invoiceNumber: initialData.invoiceNumber,
                 issueDate: new Date(initialData.issueDate),
                 dueDate: new Date(initialData.dueDate),
-                items: initialData.items.map(item => ({ ...item, databaseId: item.id || undefined, reference: item.reference || '' })),
+                items: initialData.items.map(item => ({ 
+                    databaseId: item.id || undefined, 
+                    productId: item.productId,
+                    reference: item.reference || '', 
+                    description: item.description,
+                    quantity: item.quantity,
+                    unitPrice: item.unitPrice
+                })),
                 notes: initialData.notes || "",
                 taxRate: initialData.taxRate ?? userPrefs?.defaultTaxRate ?? 0,
             });
@@ -232,65 +243,56 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
       return;
     }
     setIsSaving(true);
-
-    const invoiceItemsToSave = values.items.map(item => {
-        return {
-            id: item.databaseId,
-            productId: item.productId,
-            reference: item.reference,
-            description: item.description,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            total: (item.quantity || 0) * (item.unitPrice || 0),
-        };
-    });
-
-    const calculatedSubtotal = invoiceItemsToSave.reduce((sum, item) => sum + item.total, 0);
-    const calculatedTaxAmount = calculatedSubtotal * ((values.taxRate || 0) / 100);
-    const calculatedTotalAmount = calculatedSubtotal + calculatedTaxAmount;
     
     let dataToSave;
 
     if (initialData?.id) {
         // PREPARE DATA FOR UPDATE
         dataToSave = {
-            ...initialData, // Start with existing data to preserve fields
-            invoiceNumber: values.invoiceNumber,
-            clientId: values.clientId === MANUAL_ENTRY_CLIENT_ID ? null : values.clientId,
-            clientName: values.clientName,
-            clientEmail: values.clientEmail,
-            clientAddress: values.clientAddress,
-            clientCompany: values.clientCompany,
-            clientICE: values.clientICE,
+            ...values,
+            userId: user.uid,
+            subtotal: subtotal,
+            taxAmount: taxAmount,
+            totalAmount: totalAmount,
             issueDate: format(values.issueDate, "yyyy-MM-dd"),
             dueDate: format(values.dueDate, "yyyy-MM-dd"),
-            items: invoiceItemsToSave,
-            subtotal: calculatedSubtotal,
-            taxRate: values.taxRate,
-            taxAmount: calculatedTaxAmount,
-            totalAmount: calculatedTotalAmount,
-            notes: values.notes,
+            items: values.items.map(item => ({
+                id: item.databaseId,
+                productId: item.productId,
+                reference: item.reference,
+                description: item.description,
+                quantity: item.quantity,
+                unitPrice: item.unitPrice,
+                total: (item.quantity || 0) * (item.unitPrice || 0),
+            })),
+            status: initialData.status,
+            currency: initialData.currency,
+            language: initialData.language,
+            stockUpdated: initialData.stockUpdated,
+            appliedDefaultNotes: initialData.appliedDefaultNotes,
+            appliedDefaultPaymentTerms: initialData.appliedDefaultPaymentTerms,
+            createdAt: initialData.createdAt,
             updatedAt: serverTimestamp(),
         };
     } else {
         // PREPARE DATA FOR CREATE
         dataToSave = {
+            ...values,
             userId: user.uid,
-            invoiceNumber: values.invoiceNumber,
-            clientId: values.clientId === MANUAL_ENTRY_CLIENT_ID ? null : values.clientId,
-            clientName: values.clientName,
-            clientEmail: values.clientEmail,
-            clientAddress: values.clientAddress,
-            clientCompany: values.clientCompany,
-            clientICE: values.clientICE,
+            subtotal: subtotal,
+            taxAmount: taxAmount,
+            totalAmount: totalAmount,
             issueDate: format(values.issueDate, "yyyy-MM-dd"),
             dueDate: format(values.dueDate, "yyyy-MM-dd"),
-            items: invoiceItemsToSave,
-            subtotal: calculatedSubtotal,
-            taxRate: values.taxRate,
-            taxAmount: calculatedTaxAmount,
-            totalAmount: calculatedTotalAmount,
-            notes: values.notes,
+            items: values.items.map(item => ({
+                id: item.databaseId,
+                productId: item.productId,
+                reference: item.reference,
+                description: item.description,
+                quantity: item.quantity,
+                unitPrice: item.unitPrice,
+                total: (item.quantity || 0) * (item.unitPrice || 0),
+            })),
             status: 'draft' as const,
             currency: userPrefs?.currency,
             language: userPrefs?.language,
@@ -583,8 +585,3 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     </Form>
   );
 }
-
-    
-
-    
-
