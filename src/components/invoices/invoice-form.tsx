@@ -61,21 +61,19 @@ interface InvoiceFormProps {
 const MANUAL_ENTRY_CLIENT_ID = "_manual_entry_";
 
 // Deep sanitization utility to prevent 'undefined' values from reaching Firestore
-const sanitizeDataForFirestore = (data: any) => {
-    const cleanData: any = {};
-    for (const key in data) {
-        const value = data[key];
-        if (value === undefined) {
-            cleanData[key] = null;
-        } else if (Array.isArray(value)) {
-            cleanData[key] = value.map(item => typeof item === 'object' && item !== null ? sanitizeDataForFirestore(item) : item);
-        } else if (typeof value === 'object' && value !== null && !(value instanceof Date) && !value.hasOwnProperty('seconds')) {
-            cleanData[key] = sanitizeDataForFirestore(value);
-        } else {
-            cleanData[key] = value;
-        }
+const sanitizeDataForFirestore = (data: any): any => {
+    if (Array.isArray(data)) {
+        return data.map(item => sanitizeDataForFirestore(item));
     }
-    return cleanData;
+    if (data !== null && typeof data === 'object' && !(data instanceof Date) && !data.hasOwnProperty('seconds')) {
+        const cleanData: any = {};
+        for (const key in data) {
+            const value = data[key];
+            cleanData[key] = value === undefined ? null : sanitizeDataForFirestore(value);
+        }
+        return cleanData;
+    }
+    return data;
 };
 
 
@@ -236,15 +234,14 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     setIsSaving(true);
 
     const invoiceItemsToSave = values.items.map(item => {
-        const total = item.quantity * item.unitPrice || 0;
         return {
-            id: item.databaseId, // This might be undefined for new items, which is fine
-            productId: item.productId || null,
-            reference: item.reference || null,
+            id: item.databaseId,
+            productId: item.productId,
+            reference: item.reference,
             description: item.description,
             quantity: item.quantity,
             unitPrice: item.unitPrice,
-            total: total,
+            total: (item.quantity || 0) * (item.unitPrice || 0),
         };
     });
 
@@ -252,11 +249,12 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     const calculatedTaxAmount = calculatedSubtotal * ((values.taxRate || 0) / 100);
     const calculatedTotalAmount = calculatedSubtotal + calculatedTaxAmount;
     
-    let fullData;
+    let dataToSave;
 
     if (initialData?.id) {
         // PREPARE DATA FOR UPDATE
-        fullData = {
+        dataToSave = {
+            ...initialData, // Start with existing data to preserve fields
             invoiceNumber: values.invoiceNumber,
             clientId: values.clientId === MANUAL_ENTRY_CLIENT_ID ? null : values.clientId,
             clientName: values.clientName,
@@ -272,18 +270,11 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
             taxAmount: calculatedTaxAmount,
             totalAmount: calculatedTotalAmount,
             notes: values.notes,
-            // Carry over existing fields
-            currency: initialData.currency,
-            language: initialData.language,
-            status: initialData.status,
-            stockUpdated: initialData.stockUpdated,
-            appliedDefaultNotes: initialData.appliedDefaultNotes,
-            appliedDefaultPaymentTerms: initialData.appliedDefaultPaymentTerms,
             updatedAt: serverTimestamp(),
         };
     } else {
         // PREPARE DATA FOR CREATE
-        fullData = {
+        dataToSave = {
             userId: user.uid,
             invoiceNumber: values.invoiceNumber,
             clientId: values.clientId === MANUAL_ENTRY_CLIENT_ID ? null : values.clientId,
@@ -312,7 +303,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     }
     
     // Sanitize the final object before sending to Firestore
-    const cleanData = sanitizeDataForFirestore(fullData);
+    const cleanData = sanitizeDataForFirestore(dataToSave);
 
     try {
       if (initialData?.id) {
@@ -596,3 +587,4 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     
 
     
+
