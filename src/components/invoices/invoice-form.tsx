@@ -144,10 +144,10 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
   }, [user, toast, t]);
 
   useEffect(() => {
-    if (!isLoadingLocale) {
+    if (!isLoadingLang) {
         form.trigger();
     }
-  }, [t, form, isLoadingLocale]);
+  }, [t, form, isLoadingLang]);
 
   useEffect(() => {
     if (!isPrefsLoading && !isClientsLoading) {
@@ -225,7 +225,8 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
         return;
     }
     setIsSaving(true);
-
+    
+    // Create a pristine data object to send to Firestore, ensuring no 'undefined' values.
     const subtotal = values.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice || 0), 0);
     const taxAmount = subtotal * ((values.taxRate || 0) / 100);
     const totalAmount = subtotal + taxAmount;
@@ -243,7 +244,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     const dataToSave = {
         userId: user.uid,
         invoiceNumber: values.invoiceNumber,
-        clientId: values.clientId === MANUAL_ENTRY_CLIENT_ID ? null : (values.clientId || null),
+        clientId: (values.clientId === MANUAL_ENTRY_CLIENT_ID ? null : values.clientId) || null,
         clientName: values.clientName,
         clientEmail: values.clientEmail || null,
         clientAddress: values.clientAddress || null,
@@ -260,17 +261,17 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
         status: initialData?.status || 'draft',
         currency: initialData?.currency || userPrefs?.currency || 'MAD',
         language: initialData?.language || userPrefs?.language || 'fr',
+        // Preserve existing values for fields not in the form during an update
+        appliedDefaultNotes: initialData?.appliedDefaultNotes || null,
+        appliedDefaultPaymentTerms: initialData?.appliedDefaultPaymentTerms || null,
         stockUpdated: initialData?.stockUpdated ?? false,
         sentDate: initialData?.sentDate || null,
         paidDate: initialData?.paidDate || null,
-        appliedDefaultNotes: initialData?.appliedDefaultNotes || null,
-        appliedDefaultPaymentTerms: initialData?.appliedDefaultPaymentTerms || null,
     };
 
     try {
         if (initialData?.id) {
             const invoiceRef = doc(db, "invoices", initialData.id);
-            // The `dataToSave` object is now fully populated and sanitized.
             await updateDoc(invoiceRef, {
                 ...dataToSave,
                 updatedAt: serverTimestamp(),
