@@ -10,7 +10,7 @@ import { Form, FormControl, FormDescription as UiFormDescription, FormField, For
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, PlusCircle, Trash2, Save, Loader2, UserPlus } from "lucide-react";
+import { CalendarIcon, PlusCircle, Trash2, Save, Loader2, UserPlus, PackagePlus } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
@@ -25,10 +25,11 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useLanguage } from "@/hooks/use-language";
 import AddItemDialog from "./add-item-dialog";
+import QuickAddDialog from "./quick-add-dialog"; // Import the new component
 
 // Schema for an item within the form
 const invoiceItemSchema = z.object({
-  id: z.string().optional(), // This will hold the database ID for existing items
+  id: z.string().optional(),
   productId: z.string().optional(),
   reference: z.string().optional(),
   description: z.string().min(1, "Description is required"),
@@ -65,7 +66,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
   const { toast } = useToast();
   const { user } = useAuth();
   const router = useRouter();
-  const { t, isLoadingLocale } = useLanguage();
+  const { t, isLoadingLocale: isLoadingLang } = useLanguage();
   const [isSaving, setIsSaving] = useState(false);
   const [isPrefsLoading, setIsPrefsLoading] = useState(true);
   const [userPrefs, setUserPrefs] = useState<UserPreferences | null>(null);
@@ -88,7 +89,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
       invoiceNumber: `INV-${Date.now().toString().slice(-6)}`,
       issueDate: new Date(),
       dueDate: new Date(new Date().setDate(new Date().getDate() + 30)),
-      items: [{ description: "", quantity: 1, unitPrice: 0, reference: "" }],
+      items: [{ id: doc(collection(db, 'invoices')).id, description: "", quantity: 1, unitPrice: 0, reference: "" }],
       notes: "",
       taxRate: 0,
     },
@@ -144,18 +145,19 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
   }, [user, toast, t]);
 
   useEffect(() => {
-    if (!isLoadingLocale) {
+    if (!isLoadingLang) {
         form.trigger();
     }
-  }, [t, form, isLoadingLocale]);
+  }, [t, form, isLoadingLang]);
 
-  useEffect(() => {
+ useEffect(() => {
     if (!isPrefsLoading && !isClientsLoading) {
       if (initialData) {
+        // When editing, load data into the form
         const hasExistingClient = initialData.clientId && clients.some(c => c.id === initialData.clientId);
         
         const formItems = initialData.items.map(item => ({
-          id: item.id || doc(collection(db, 'invoices')).id, // Ensure every item has an ID for the form state
+          id: item.id || doc(collection(db, 'invoices')).id,
           productId: item.productId,
           reference: item.reference || '',
           description: item.description,
@@ -179,6 +181,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
         });
 
       } else if (userPrefs) {
+        // When creating a new invoice, set defaults from preferences
         form.reset({
           ...form.getValues(),
           notes: userPrefs.defaultNotes || "",
@@ -204,12 +207,15 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
         form.setValue("clientCompany", selectedClient.clientCompany || "");
         form.setValue("clientICE", selectedClient.ice || "");
       }
-    } else if (watchClientId === MANUAL_ENTRY_CLIENT_ID && !initialData?.clientId) {
-        form.setValue("clientName", "");
-        form.setValue("clientEmail", "");
-        form.setValue("clientAddress", "");
-        form.setValue("clientCompany", "");
-        form.setValue("clientICE", "");
+    } else if (watchClientId === MANUAL_ENTRY_CLIENT_ID) {
+        // If switching back to manual, clear the fields if it wasn't a manual entry to start with
+        if (!initialData || initialData.clientId) {
+            form.setValue("clientName", "");
+            form.setValue("clientEmail", "");
+            form.setValue("clientAddress", "");
+            form.setValue("clientCompany", "");
+            form.setValue("clientICE", "");
+        }
     }
   }, [watchClientId, clients, form, initialData]);
 
@@ -221,7 +227,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
 
   async function onSubmit(values: InvoiceFormValues) {
     if (!user) {
-        toast({ title: "Authentication Error", description: "You must be logged in.", variant: "destructive" });
+        toast({ title: t('invoiceForm.toast.errorTitle'), description: t('invoiceForm.toast.authErrorDesc'), variant: "destructive" });
         return;
     }
     setIsSaving(true);
@@ -229,7 +235,8 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     const subtotal = values.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice || 0), 0);
     const taxAmount = subtotal * ((values.taxRate || 0) / 100);
     const totalAmount = subtotal + taxAmount;
-    
+
+    // Ensure every item has a valid ID before saving
     const itemsToSave = values.items.map(item => ({
         id: item.id || doc(collection(db, 'invoices')).id,
         productId: item.productId || null,
@@ -241,9 +248,8 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     }));
 
     const dataToSave = {
-        // Form values
+        userId: user.uid,
         invoiceNumber: values.invoiceNumber,
-        clientName: values.clientName,
         issueDate: format(values.issueDate, "yyyy-MM-dd"),
         dueDate: format(values.dueDate, "yyyy-MM-dd"),
         items: itemsToSave,
@@ -251,29 +257,27 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
         taxRate: values.taxRate ?? 0,
         taxAmount,
         totalAmount,
-
-        // Optional form values, ensuring null instead of undefined
-        clientId: values.clientId === MANUAL_ENTRY_CLIENT_ID ? null : (values.clientId || null),
-        clientEmail: values.clientEmail || null,
-        clientAddress: values.clientAddress || null,
-        clientCompany: values.clientCompany || null,
-        clientICE: values.clientICE || null,
-        notes: values.notes || null,
         
-        // Fields not on the form, carried over from initialData or set to default
-        userId: user.uid,
+        // Explicitly set to null if falsy to prevent 'undefined'
+        clientId: (values.clientId === MANUAL_ENTRY_CLIENT_ID ? null : (values.clientId || null)),
+        clientName: values.clientName,
+        clientEmail: (values.clientEmail || null),
+        clientAddress: (values.clientAddress || null),
+        clientCompany: (values.clientCompany || null),
+        clientICE: (values.clientICE || null),
+        notes: (values.notes || null),
+        
+        // Carry over non-form fields
+        status: initialData?.status || 'draft',
         currency: initialData?.currency || userPrefs?.currency || 'MAD',
         language: initialData?.language || userPrefs?.language || 'fr',
-        status: initialData?.status || 'draft',
-        
-        // Metadata
-        updatedAt: serverTimestamp(),
-        createdAt: initialData?.createdAt || serverTimestamp(), // Keep original creation date
         sentDate: initialData?.sentDate || null,
         paidDate: initialData?.paidDate || null,
         stockUpdated: initialData?.stockUpdated ?? false,
         appliedDefaultNotes: initialData?.appliedDefaultNotes || null,
         appliedDefaultPaymentTerms: initialData?.appliedDefaultPaymentTerms || null,
+        createdAt: initialData?.createdAt || serverTimestamp(),
+        updatedAt: serverTimestamp(),
     };
 
 
@@ -302,12 +306,24 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     if (fields.length === 1 && fields[0].description === "" && fields[0].unitPrice === 0) {
       remove(0);
     }
-    append({ ...item, reference: item.reference || '' });
+    append({ ...item, id: doc(collection(db, 'invoices')).id, reference: item.reference || '' });
+  };
+  
+  const handleAddMultipleItems = (itemsToAdd: Array<Pick<InvoiceItem, 'productId' | 'reference' | 'description' | 'quantity' | 'unitPrice'>>) => {
+      if (fields.length === 1 && fields[0].description === "" && fields[0].unitPrice === 0) {
+        remove(0);
+      }
+      const newItems = itemsToAdd.map(item => ({
+          ...item,
+          id: doc(collection(db, 'invoices')).id,
+          reference: item.reference || ''
+      }));
+      append(newItems);
   };
 
   const isClientReadOnly = !!(watchClientId && watchClientId !== MANUAL_ENTRY_CLIENT_ID);
   
-  if ((isLoadingLocale || isPrefsLoading || isClientsLoading) && !initialData) {
+  if ((isLoadingLang || isPrefsLoading || isClientsLoading) && !initialData) {
       return <div className="flex justify-center items-center min-h-[60vh]"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
   }
 
@@ -502,13 +518,22 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
                 </Button>
               </div>
             ))}
-             <AddItemDialog 
-                products={products}
-                isLoading={isProductsLoading}
-                onAddItem={handleAddItem} 
-                currency={userPrefs?.currency || 'MAD'}
-                t={t}
-            />
+            <div className="flex gap-2 pt-2">
+                 <AddItemDialog 
+                    products={products}
+                    isLoading={isProductsLoading}
+                    onAddItem={handleAddItem} 
+                    currency={userPrefs?.currency || 'MAD'}
+                    t={t}
+                />
+                <QuickAddDialog
+                    products={products}
+                    isLoading={isProductsLoading}
+                    onAddItems={handleAddMultipleItems}
+                    currency={userPrefs?.currency || 'MAD'}
+                    t={t}
+                />
+            </div>
           </CardContent>
         </Card>
 
@@ -547,9 +572,9 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
 
         <CardFooter className="flex justify-end gap-4 pt-6">
             <Button type="button" variant="outline" onClick={() => router.back()}>{t('invoiceForm.buttons.cancel')}</Button>
-            <Button type="submit" disabled={isSaving || isPrefsLoading || isClientsLoading || isLoadingLocale}>
+            <Button type="submit" disabled={isSaving || isPrefsLoading || isClientsLoading || isLoadingLang}>
               {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-              {isPrefsLoading || isClientsLoading || isLoadingLocale ? t('invoiceForm.buttons.loadingData') : (initialData ? t('invoiceForm.buttons.saveChanges') : t('invoiceForm.buttons.saveInvoice'))}
+              {isPrefsLoading || isClientsLoading || isLoadingLang ? t('invoiceForm.buttons.loadingData') : (initialData ? t('invoiceForm.buttons.saveChanges') : t('invoiceForm.buttons.saveInvoice'))}
             </Button>
         </CardFooter>
       </form>

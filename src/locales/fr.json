@@ -309,6 +309,7 @@
     },
     "buttons": {
       "addItem": "Ajouter Ligne",
+      "quickAdd": "Ajout Rapide Pièces",
       "removeItem": "Supprimer la ligne",
       "cancel": "Annuler",
       "saveChanges": "Enregistrer les Modifications",
@@ -368,6 +369,15 @@
         "addButton": "Ajouter Article Personnalisé"
       },
       "loading": "Chargement des pièces..."
+    },
+    "quickAddDialog": {
+      "title": "Ajout Rapide de Pièces",
+      "description": "Sélectionnez plusieurs pièces et définissez leurs quantités pour les ajouter rapidement à la facture.",
+      "addButton": "Ajouter {{count}} Pièces Sélectionnées",
+      "toast": {
+        "noItemsTitle": "Aucun article sélectionné",
+        "noItemsDesc": "Veuillez sélectionner au moins une pièce avec une quantité supérieure à zéro."
+      }
     }
   },
   "invoiceDetailPage": {
