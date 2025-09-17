@@ -4,7 +4,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
-import { FilePlus, Search, Download, Eye, Loader2, ChevronDown, FilterX, Send, DollarSign, AlertCircle, XCircle, Undo, FilePenLine, Trash2 } from "lucide-react";
+import { FilePlus, Search, Download, Eye, Loader2, ChevronDown, FilterX, Send, DollarSign, AlertCircle, XCircle, Undo, FilePenLine, Trash2, PackagePlus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +12,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { db } from "@/lib/firebase";
 import type { Invoice } from "@/lib/types";
 import { collection, query, where, getDocs, orderBy, doc, updateDoc, serverTimestamp, type FieldValue, deleteDoc } from "firebase/firestore";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { format } from "date-fns";
 import { useLanguage } from "@/hooks/use-language";
 import {
@@ -37,6 +37,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogTrigger } from "@/components/ui/dialog";
+import QuickSaveDialog from "@/components/invoices/quick-save-dialog";
 
 const ALL_STATUSES: Invoice['status'][] = ['draft', 'sent', 'paid', 'overdue', 'cancelled'];
 
@@ -50,11 +52,12 @@ export default function InvoicesPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatuses, setSelectedStatuses] = useState<Set<Invoice['status']>>(new Set());
+  const [isQuickSaveOpen, setIsQuickSaveOpen] = useState(false);
+  const [selectedInvoiceForSave, setSelectedInvoiceForSave] = useState<Invoice | null>(null);
 
   const isLoading = authLoading || isLoadingLocale || isLoadingData;
-
-  useEffect(() => {
-    async function fetchInvoices() {
+  
+  const fetchInvoices = useCallback(async () => {
       if (!user) {
         setIsLoadingData(false);
         setAllInvoices([]);
@@ -77,16 +80,18 @@ export default function InvoicesPage() {
       } finally {
         setIsLoadingData(false);
       }
-    }
-    
-    if (user) {
+    }, [user, t]);
+
+
+  useEffect(() => {
+    if (user && !isLoadingLocale) {
         fetchInvoices();
     } else if (!authLoading && !user) {
         setIsLoadingData(false); 
         setAllInvoices([]); 
         setError(null);
     }
-  }, [user, authLoading, t]);
+  }, [user, authLoading, isLoadingLocale, fetchInvoices, t]);
 
   const handleStatusToggle = (status: Invoice['status']) => {
     setSelectedStatuses(prev => {
@@ -236,6 +241,17 @@ export default function InvoicesPage() {
     link.click();
     document.body.removeChild(link);
   };
+  
+  const onQuickSaveSuccess = () => {
+    setIsQuickSaveOpen(false);
+    // Optionally re-fetch products data if needed elsewhere, but for now just close
+  };
+
+  const handleQuickSaveClick = (invoice: Invoice) => {
+    setSelectedInvoiceForSave(invoice);
+    setIsQuickSaveOpen(true);
+  };
+
 
   if (isLoading) {
     return (
@@ -385,37 +401,56 @@ export default function InvoicesPage() {
                         </DropdownMenu>
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                            <Button variant="ghost" size="sm" asChild>
-                            <Link href={`/invoices/${invoice.id}`}>
-                                <Eye className="mr-1 h-4 w-4" /> {t('invoicesPage.viewAction')}
-                            </Link> 
-                            </Button>
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10">
-                                        <Trash2 className="mr-1 h-4 w-4" /> {t('invoicesPage.deleteAction')}
+                        <Dialog open={selectedInvoiceForSave?.id === invoice.id && isQuickSaveOpen} onOpenChange={(open) => {
+                                if (!open) setSelectedInvoiceForSave(null);
+                                setIsQuickSaveOpen(open);
+                            }}>
+                            <div className="flex items-center justify-end gap-1">
+                                <Button variant="ghost" size="sm" asChild>
+                                <Link href={`/invoices/${invoice.id}`}>
+                                    <Eye className="mr-1 h-4 w-4" /> {t('invoicesPage.viewAction')}
+                                </Link> 
+                                </Button>
+
+                                <DialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleQuickSaveClick(invoice)}>
+                                        <PackagePlus className="h-4 w-4 text-primary" />
+                                        <span className="sr-only">{t('invoicesPage.quickSaveDialog.trigger')}</span>
                                     </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                    <AlertDialogTitle>{t('invoicesPage.dialog.deleteTitle')}</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        {t('invoicesPage.dialog.deleteDesc', { invoiceNumber: invoice.invoiceNumber })}
-                                    </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                    <AlertDialogCancel>{t('invoicesPage.dialog.cancel')}</AlertDialogCancel>
-                                    <AlertDialogAction
-                                        onClick={() => handleDeleteInvoice(invoice.id!)}
-                                        className="bg-destructive hover:bg-destructive/90"
-                                    >
-                                        {t('invoicesPage.dialog.confirmDelete')}
-                                    </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        </div>
+                                </DialogTrigger>
+
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                                            <Trash2 className="mr-1 h-4 w-4" /> {t('invoicesPage.deleteAction')}
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                        <AlertDialogTitle>{t('invoicesPage.dialog.deleteTitle')}</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            {t('invoicesPage.dialog.deleteDesc', { invoiceNumber: invoice.invoiceNumber })}
+                                        </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                        <AlertDialogCancel>{t('invoicesPage.dialog.cancel')}</AlertDialogCancel>
+                                        <AlertDialogAction
+                                            onClick={() => handleDeleteInvoice(invoice.id!)}
+                                            className="bg-destructive hover:bg-destructive/90"
+                                        >
+                                            {t('invoicesPage.dialog.confirmDelete')}
+                                        </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </div>
+                             {selectedInvoiceForSave?.id === invoice.id && (
+                                <QuickSaveDialog 
+                                    invoice={selectedInvoiceForSave} 
+                                    onSaveSuccess={onQuickSaveSuccess}
+                                />
+                            )}
+                        </Dialog>
                       </TableCell>
                     </TableRow>
                   );
@@ -450,12 +485,4 @@ export default function InvoicesPage() {
     </div>
   );
 }
-    
-
-    
-
-
-
-    
-
     

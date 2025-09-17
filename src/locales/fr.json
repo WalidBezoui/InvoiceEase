@@ -233,6 +233,29 @@
       "deleteSuccessDesc": "La facture {{invoiceNumber}} a été supprimée définitivement.",
       "deleteErrorTitle": "Échec de la Suppression",
       "deleteErrorDesc": "La facture n'a pas pu être supprimée. Veuillez réessayer."
+    },
+    "quickSaveDialog": {
+      "trigger": "Enregistrement Rapide Pièces",
+      "title": "Enregistrement Rapide des Pièces depuis la Facture",
+      "description": "Examinez et enregistrez de nouvelles pièces de la facture {{invoiceNumber}} dans votre inventaire.",
+      "table": {
+        "partName": "Nom de la pièce (tel qu'il sera enregistré)",
+        "partNumber": "Référence / SKU",
+        "partNumberPlaceholder": "Saisir Réf.",
+        "price": "Prix de Vente"
+      },
+      "saveButton": "Enregistrer les {{count}} Pièces Sélectionnées",
+      "noItemsFoundTitle": "Toutes les Pièces sont Enregistrées !",
+      "noItemsFoundDesc": "Tous les articles de cette facture sont déjà enregistrés dans votre liste de pièces.",
+      "toast": {
+        "errorLoadingTitle": "Erreur",
+        "errorLoadingDesc": "Impossible de charger les articles de la facture.",
+        "noItemsSelectedTitle": "Aucune Pièce Sélectionnée",
+        "saveSuccessTitle": "Pièces Enregistrées",
+        "saveSuccessDesc": "{{count}} nouvelles pièces ont été ajoutées à votre inventaire.",
+        "saveErrorTitle": "Erreur d'Enregistrement des Pièces",
+        "saveErrorDesc": "Un problème est survenu lors de l'enregistrement des nouvelles pièces. Veuillez réessayer."
+      }
     }
   },
   "newInvoicePage": {
@@ -371,11 +394,11 @@
       "loading": "Chargement des pièces..."
     },
     "quickAddDialog": {
-      "title": "Ajout Rapide de Pièces",
-      "description": "Sélectionnez plusieurs pièces et définissez leurs quantités pour les ajouter rapidement à la facture.",
+      "title": "Ajout Rapide de Pièces à la Facture",
+      "description": "Sélectionnez plusieurs pièces et définissez leurs quantités pour les ajouter toutes en même temps.",
       "addButton": "Ajouter {{count}} Pièces Sélectionnées",
       "toast": {
-        "noItemsTitle": "Aucun article sélectionné",
+        "noItemsTitle": "Aucun Article Sélectionné",
         "noItemsDesc": "Veuillez sélectionner au moins une pièce avec une quantité supérieure à zéro."
       }
     }

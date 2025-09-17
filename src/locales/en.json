@@ -233,6 +233,29 @@
       "deleteSuccessDesc": "Invoice {{invoiceNumber}} has been permanently deleted.",
       "deleteErrorTitle": "Deletion Failed",
       "deleteErrorDesc": "The invoice could not be deleted. Please try again."
+    },
+    "quickSaveDialog": {
+      "trigger": "Quick Save Parts",
+      "title": "Quick Save Parts from Invoice",
+      "description": "Review and save new parts from invoice {{invoiceNumber}} to your inventory.",
+      "table": {
+        "partName": "Part Name (as it will be saved)",
+        "partNumber": "Part Number / SKU",
+        "partNumberPlaceholder": "Enter Part No.",
+        "price": "Selling Price"
+      },
+      "saveButton": "Save {{count}} Selected Parts",
+      "noItemsFoundTitle": "All Parts Accounted For!",
+      "noItemsFoundDesc": "All items on this invoice are already saved in your parts list.",
+      "toast": {
+        "errorLoadingTitle": "Error",
+        "errorLoadingDesc": "Could not load items from the invoice.",
+        "noItemsSelectedTitle": "No Parts Selected",
+        "saveSuccessTitle": "Parts Saved",
+        "saveSuccessDesc": "{{count}} new parts have been added to your inventory.",
+        "saveErrorTitle": "Error Saving Parts",
+        "saveErrorDesc": "There was a problem saving the new parts. Please try again."
+      }
     }
   },
   "newInvoicePage": {
@@ -309,6 +332,7 @@
     },
     "buttons": {
       "addItem": "Add Item",
+      "quickAdd": "Quick Add Parts",
       "removeItem": "Remove item",
       "cancel": "Cancel",
       "saveChanges": "Save Changes",
@@ -368,6 +392,15 @@
         "addButton": "Add Custom Item"
       },
       "loading": "Loading parts..."
+    },
+    "quickAddDialog": {
+      "title": "Quick Add Parts to Invoice",
+      "description": "Select multiple parts and specify quantities to add them all at once.",
+      "addButton": "Add {{count}} Selected Parts",
+      "toast": {
+        "noItemsTitle": "No Items Selected",
+        "noItemsDesc": "Please select at least one part with a quantity greater than zero."
+      }
     }
   },
   "invoiceDetailPage": {
