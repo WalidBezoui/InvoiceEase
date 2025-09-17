@@ -32,6 +32,7 @@ interface SavableItem {
   description: string;
   reference: string;
   sellingPrice: number;
+  purchasePrice: number;
 }
 
 export default function QuickSaveDialog({ invoice, onSaveSuccess }: QuickSaveDialogProps) {
@@ -77,6 +78,7 @@ export default function QuickSaveDialog({ invoice, onSaveSuccess }: QuickSaveDia
             description: item.description,
             reference: item.reference || '',
             sellingPrice: item.unitPrice,
+            purchasePrice: 0,
         }));
         
         setItemsToSave(savable);
@@ -152,8 +154,8 @@ export default function QuickSaveDialog({ invoice, onSaveSuccess }: QuickSaveDia
             name: item.description,
             reference: item.reference || `SKU-${newProductRef.id.substring(0,6).toUpperCase()}`,
             sellingPrice: item.sellingPrice,
+            purchasePrice: item.purchasePrice,
             description: "",
-            purchasePrice: 0,
             stock: 0,
         };
         batch.set(newProductRef, {
@@ -182,11 +184,11 @@ export default function QuickSaveDialog({ invoice, onSaveSuccess }: QuickSaveDia
     }
   };
 
-  const isAllSelected = Object.keys(selectedItems).length > 0 && Object.keys(selectedItems).length === itemsToSave.length;
+  const isAllSelected = itemsToSave.length > 0 && Object.keys(selectedItems).length === itemsToSave.length;
   const isPartiallySelected = Object.keys(selectedItems).length > 0 && !isAllSelected;
 
   return (
-    <DialogContent className="sm:max-w-4xl">
+    <DialogContent className="sm:max-w-5xl">
       <DialogHeader>
         <DialogTitle>{t('invoicesPage.quickSaveDialog.title')}</DialogTitle>
         <DialogDescription>
@@ -220,11 +222,12 @@ export default function QuickSaveDialog({ invoice, onSaveSuccess }: QuickSaveDia
                       }
                     }}
                     checked={isAllSelected}
-                    indeterminate={isPartiallySelected}
+                    data-indeterminate={isPartiallySelected}
                   />
                 </TableHead>
                 <TableHead>{t('invoicesPage.quickSaveDialog.table.partName')}</TableHead>
                 <TableHead>{t('invoicesPage.quickSaveDialog.table.partNumber')}</TableHead>
+                <TableHead className="text-right">{t('invoicesPage.quickSaveDialog.table.purchasePrice')}</TableHead>
                 <TableHead className="text-right">{t('invoicesPage.quickSaveDialog.table.price')}</TableHead>
               </TableRow>
             </TableHeader>
@@ -250,6 +253,15 @@ export default function QuickSaveDialog({ invoice, onSaveSuccess }: QuickSaveDia
                       onChange={e => handleFieldChange(item.id, 'reference', e.target.value)}
                       placeholder={t('invoicesPage.quickSaveDialog.table.partNumberPlaceholder')}
                       className="h-8"
+                    />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Input
+                      type="number"
+                      value={item.purchasePrice}
+                      onChange={e => handleFieldChange(item.id, 'purchasePrice', parseFloat(e.target.value) || 0)}
+                      className="h-8 w-28 text-right ml-auto"
+                      placeholder="0.00"
                     />
                   </TableCell>
                   <TableCell className="text-right">

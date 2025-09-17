@@ -242,7 +242,8 @@
         "partName": "Nom de la pièce (tel qu'il sera enregistré)",
         "partNumber": "Référence / SKU",
         "partNumberPlaceholder": "Saisir Réf.",
-        "price": "Prix de Vente"
+        "price": "Prix de Vente",
+        "purchasePrice": "Prix d'Achat"
       },
       "saveButton": "Enregistrer les {{count}} Pièces Sélectionnées",
       "noItemsFoundTitle": "Toutes les Pièces sont Enregistrées !",
