@@ -102,6 +102,9 @@ export default function QuickAddDialog({ products, isLoading, onAddItems, curren
     setOpen(isOpen);
   }
 
+  const isAllSelected = Object.keys(selectedProducts).length > 0 && Object.keys(selectedProducts).length === filteredProducts.length;
+  const isPartiallySelected = Object.keys(selectedProducts).length > 0 && !isAllSelected;
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
@@ -153,8 +156,8 @@ export default function QuickAddDialog({ products, isLoading, onAddItems, curren
                                         setSelectedProducts({});
                                     }
                                 }}
-                                checked={Object.keys(selectedProducts).length > 0 && Object.keys(selectedProducts).length === filteredProducts.length}
-                                indeterminate={Object.keys(selectedProducts).length > 0 && Object.keys(selectedProducts).length < filteredProducts.length}
+                                checked={isAllSelected}
+                                indeterminate={isPartiallySelected}
                             /></TableHead>
                             <TableHead>{t('invoiceForm.addItemDialog.selectProductTab.name')}</TableHead>
                             <TableHead>{t('invoiceForm.addItemDialog.selectProductTab.reference')}</TableHead>

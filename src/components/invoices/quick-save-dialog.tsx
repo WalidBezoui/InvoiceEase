@@ -20,7 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/hooks/use-language';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
-import { collection, writeBatch, serverTimestamp, getDocs, query, where } from 'firebase/firestore';
+import { collection, writeBatch, serverTimestamp, getDocs, query, where, doc } from 'firebase/firestore';
 
 interface QuickSaveDialogProps {
   invoice: Invoice;
@@ -182,6 +182,9 @@ export default function QuickSaveDialog({ invoice, onSaveSuccess }: QuickSaveDia
     }
   };
 
+  const isAllSelected = Object.keys(selectedItems).length > 0 && Object.keys(selectedItems).length === itemsToSave.length;
+  const isPartiallySelected = Object.keys(selectedItems).length > 0 && !isAllSelected;
+
   return (
     <DialogContent className="sm:max-w-4xl">
       <DialogHeader>
@@ -216,8 +219,8 @@ export default function QuickSaveDialog({ invoice, onSaveSuccess }: QuickSaveDia
                         setSelectedItems({});
                       }
                     }}
-                    checked={Object.keys(selectedItems).length > 0 && Object.keys(selectedItems).length === itemsToSave.length}
-                    indeterminate={Object.keys(selectedItems).length > 0 && Object.keys(selectedItems).length < itemsToSave.length}
+                    checked={isAllSelected}
+                    indeterminate={isPartiallySelected}
                   />
                 </TableHead>
                 <TableHead>{t('invoicesPage.quickSaveDialog.table.partName')}</TableHead>
