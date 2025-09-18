@@ -14,7 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Save } from "lucide-react";
+import { Loader2, Save, Trash2 } from "lucide-react";
 import type { Invoice, Product } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/hooks/use-language';
@@ -132,6 +132,15 @@ export default function QuickSaveDialog({ invoice, onSaveSuccess }: QuickSaveDia
     });
   };
 
+  const handleDeleteLine = (itemId: string) => {
+      setItemsToSave(prev => prev.filter(item => item.id !== itemId));
+      setSelectedItems(prev => {
+          const newSelected = { ...prev };
+          delete newSelected[itemId];
+          return newSelected;
+      });
+  };
+
   const handleSaveSelected = async () => {
     if (!user) {
         toast({ title: t('toast.authErrorTitle'), description: t('toast.authErrorDesc'), variant: 'destructive'});
@@ -222,13 +231,14 @@ export default function QuickSaveDialog({ invoice, onSaveSuccess }: QuickSaveDia
                       }
                     }}
                     checked={isAllSelected}
-                    data-indeterminate={isPartiallySelected}
+                    indeterminate={isPartiallySelected ? "true" : undefined}
                   />
                 </TableHead>
                 <TableHead>{t('invoicesPage.quickSaveDialog.table.partName')}</TableHead>
                 <TableHead>{t('invoicesPage.quickSaveDialog.table.partNumber')}</TableHead>
                 <TableHead className="text-right">{t('invoicesPage.quickSaveDialog.table.purchasePrice')}</TableHead>
                 <TableHead className="text-right">{t('invoicesPage.quickSaveDialog.table.price')}</TableHead>
+                <TableHead className="w-12 text-right"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -271,6 +281,12 @@ export default function QuickSaveDialog({ invoice, onSaveSuccess }: QuickSaveDia
                       onChange={e => handleFieldChange(item.id, 'sellingPrice', parseFloat(e.target.value) || 0)}
                       className="h-8 w-28 text-right ml-auto"
                     />
+                  </TableCell>
+                   <TableCell className="text-right">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDeleteLine(item.id)}>
+                          <Trash2 className="h-4 w-4" />
+                          <span className="sr-only">Delete line</span>
+                      </Button>
                   </TableCell>
                 </TableRow>
               ))}
