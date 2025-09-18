@@ -243,7 +243,8 @@
         "partNumber": "Référence / SKU",
         "partNumberPlaceholder": "Saisir Réf.",
         "price": "Prix de Vente",
-        "purchasePrice": "Prix d'Achat"
+        "purchasePrice": "Prix d'Achat",
+        "initialStock": "Stock Initial"
       },
       "saveButton": "Enregistrer les {{count}} Pièces Sélectionnées",
       "noItemsFoundTitle": "Toutes les Pièces sont Enregistrées !",
@@ -829,3 +830,5 @@
     "info": "Info"
   }
 }
+
+    

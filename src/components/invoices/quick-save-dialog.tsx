@@ -33,6 +33,7 @@ interface SavableItem {
   reference: string;
   sellingPrice: number;
   purchasePrice: number;
+  stock: number;
 }
 
 export default function QuickSaveDialog({ invoice, onSaveSuccess }: QuickSaveDialogProps) {
@@ -79,6 +80,7 @@ export default function QuickSaveDialog({ invoice, onSaveSuccess }: QuickSaveDia
             reference: item.reference || '',
             sellingPrice: item.unitPrice,
             purchasePrice: 0,
+            stock: 0, // Default initial stock to 0
         }));
         
         setItemsToSave(savable);
@@ -163,9 +165,9 @@ export default function QuickSaveDialog({ invoice, onSaveSuccess }: QuickSaveDia
             name: item.description,
             reference: item.reference || `SKU-${newProductRef.id.substring(0,6).toUpperCase()}`,
             sellingPrice: item.sellingPrice,
-            purchasePrice: item.purchasePrice,
+            purchasePrice: item.purchasePrice || 0,
             description: "",
-            stock: 0,
+            stock: item.stock || 0,
         };
         batch.set(newProductRef, {
             ...productData,
@@ -197,7 +199,7 @@ export default function QuickSaveDialog({ invoice, onSaveSuccess }: QuickSaveDia
   const isPartiallySelected = Object.keys(selectedItems).length > 0 && !isAllSelected;
 
   return (
-    <DialogContent className="sm:max-w-5xl">
+    <DialogContent className="sm:max-w-6xl">
       <DialogHeader>
         <DialogTitle>{t('invoicesPage.quickSaveDialog.title')}</DialogTitle>
         <DialogDescription>
@@ -221,6 +223,7 @@ export default function QuickSaveDialog({ invoice, onSaveSuccess }: QuickSaveDia
               <TableRow>
                 <TableHead className="w-12">
                   <Checkbox 
+                    checked={isAllSelected}
                     onCheckedChange={(checked) => {
                       if (checked) {
                         const allSelected: Record<string, SavableItem> = {};
@@ -230,7 +233,6 @@ export default function QuickSaveDialog({ invoice, onSaveSuccess }: QuickSaveDia
                         setSelectedItems({});
                       }
                     }}
-                    checked={isAllSelected}
                     indeterminate={isPartiallySelected ? "true" : undefined}
                   />
                 </TableHead>
@@ -238,6 +240,7 @@ export default function QuickSaveDialog({ invoice, onSaveSuccess }: QuickSaveDia
                 <TableHead>{t('invoicesPage.quickSaveDialog.table.partNumber')}</TableHead>
                 <TableHead className="text-right">{t('invoicesPage.quickSaveDialog.table.purchasePrice')}</TableHead>
                 <TableHead className="text-right">{t('invoicesPage.quickSaveDialog.table.price')}</TableHead>
+                <TableHead className="text-right">{t('invoicesPage.quickSaveDialog.table.initialStock')}</TableHead>
                 <TableHead className="w-12 text-right"></TableHead>
               </TableRow>
             </TableHeader>
@@ -282,6 +285,15 @@ export default function QuickSaveDialog({ invoice, onSaveSuccess }: QuickSaveDia
                       className="h-8 w-28 text-right ml-auto"
                     />
                   </TableCell>
+                  <TableCell className="text-right">
+                    <Input
+                      type="number"
+                      value={item.stock}
+                      onChange={e => handleFieldChange(item.id, 'stock', parseInt(e.target.value) || 0)}
+                      className="h-8 w-24 text-right ml-auto"
+                      placeholder="0"
+                    />
+                  </TableCell>
                    <TableCell className="text-right">
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDeleteLine(item.id)}>
                           <Trash2 className="h-4 w-4" />
@@ -307,3 +319,5 @@ export default function QuickSaveDialog({ invoice, onSaveSuccess }: QuickSaveDia
     </DialogContent>
   );
 }
+
+    

@@ -243,7 +243,8 @@
         "partNumber": "Part Number / SKU",
         "partNumberPlaceholder": "Enter Part No.",
         "price": "Selling Price",
-        "purchasePrice": "Purchase Price"
+        "purchasePrice": "Purchase Price",
+        "initialStock": "Initial Stock"
       },
       "saveButton": "Save {{count}} Selected Parts",
       "noItemsFoundTitle": "All Parts Accounted For!",
@@ -829,3 +830,5 @@
     "info": "Info"
   }
 }
+
+    
