@@ -26,7 +26,7 @@ import Link from "next/link";
 import { useLanguage } from "@/hooks/use-language";
 import AddItemDialog from "./add-item-dialog";
 import QuickAddDialog from "./quick-add-dialog"; 
-import { Tooltip, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 
 // New schema for an item within the form, using priceWithTax
@@ -69,7 +69,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
   const { toast } = useToast();
   const { user } = useAuth();
   const router = useRouter();
-  const { t, isLoadingLocale: isLoadingLang } = useLanguage();
+  const { t, isLoadingLocale } = useLanguage();
   const [isSaving, setIsSaving] = useState(false);
   const [isPrefsLoading, setIsPrefsLoading] = useState(true);
   const [userPrefs, setUserPrefs] = useState<UserPreferences | null>(null);
@@ -141,10 +141,10 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
   }, [user, toast, t]);
 
  useEffect(() => {
-    if (!isLoadingLang) {
+    if (!isLoadingLocale) {
         form.trigger();
     }
-  }, [t, form, isLoadingLang]);
+  }, [t, form, isLoadingLocale]);
 
  useEffect(() => {
     if (!isPrefsLoading && !isClientsLoading && (initialData || userPrefs)) {
@@ -338,7 +338,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
 
   const isClientReadOnly = !!(watchClientId && watchClientId !== MANUAL_ENTRY_CLIENT_ID);
   
-  if ((isLoadingLang || isPrefsLoading || isClientsLoading) && !initialData) {
+  if ((isLoadingLocale || isPrefsLoading || isClientsLoading) && !initialData) {
       return <div className="flex justify-center items-center min-h-[60vh]"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
   }
 
@@ -604,9 +604,9 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
 
         <CardFooter className="flex justify-end gap-4 pt-6">
             <Button type="button" variant="outline" onClick={() => router.back()}>{t('invoiceForm.buttons.cancel')}</Button>
-            <Button type="submit" disabled={isSaving || isPrefsLoading || isClientsLoading || isLoadingLang}>
+            <Button type="submit" disabled={isSaving || isPrefsLoading || isClientsLoading || isLoadingLocale}>
               {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-              {isPrefsLoading || isClientsLoading || isLoadingLang ? t('invoiceForm.buttons.loadingData') : (initialData ? t('invoiceForm.buttons.saveChanges') : t('invoiceForm.buttons.saveInvoice'))}
+              {isPrefsLoading || isClientsLoading || isLoadingLocale ? t('invoiceForm.buttons.loadingData') : (initialData ? t('invoiceForm.buttons.saveChanges') : t('invoiceForm.buttons.saveInvoice'))}
             </Button>
         </CardFooter>
       </form>
@@ -614,4 +614,3 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     </TooltipProvider>
   );
 }
-
