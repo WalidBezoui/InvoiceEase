@@ -47,7 +47,7 @@
     "noRecentInvoiceActivity": "Aucune activité de facture récente à afficher.",
     "createInvoiceToStart": "Créez une facture pour commencer !",
     "productsToWatchTitle": "Pièces à Surveiller",
-    "productsToWatchDesc": "Pièces qui peuvent nécessiter votre attention.",
+    "productsToWatchDesc": "Pièces qui могут nécessiter votre attention.",
     "noProductsToWatch": "Toutes les pièces semblent correctes !",
     "productsLookingGood": "Aucune pièce ne nécessite actuellement d'attention.",
     "invoiceStatusOverview": {
@@ -326,6 +326,7 @@
       "itemDescription": "Description",
       "itemQuantity": "Qté",
       "itemUnitPrice": "Prix Unitaire",
+      "itemUnitPriceTaxIncl": "Prix Unitaire (TTC)",
       "itemTotal": "Total",
       "notes": "Notes de Facture (Optionnel)",
       "notesDescription": "Ces notes sont spécifiques à cette facture. Les notes par défaut des préférences seront appliquées si ce champ est vide lors de la création d'une nouvelle facture.",
@@ -346,6 +347,7 @@
       "tax": "Taxe ({{taxRate}}%) :",
       "total": "Total :"
     },
+    "preTaxPrice": "HT : ",
     "toast": {
       "authErrorTitle": "Erreur d'Authentification",
       "authErrorDesc": "Vous devez être connecté.",
@@ -672,8 +674,8 @@
       "fullCustomization": "Personnalisation complète (logo, couleurs)",
       "prioritySupport": "Support par e-mail prioritaire",
       "maxInvoicesBusiness": "Factures illimitées",
-      "maxClientsBusiness": "Clients illimités",
-      "teamCollaboration": "Team collaboration (bientôt)",
+      "clientsIllimites": "Clients illimités",
+      "teamCollaboration": "Collaboration d'équipe (bientôt)",
       "dedicatedSupport": "Support dédié"
     }
   },
@@ -779,9 +781,7 @@
       "notesLabel": "Notes (Optionnel)",
       "notesPlaceholderPurchase": "ex: Nouvelle livraison du fournisseur",
       "notesPlaceholderSale": "ex: Vente directe au client",
-      "confirmButton": "Confirmer l'Ajustement",
-      "purchaseNote": "Achat de stock",
-      "saleNote": "Vente directe"
+      "confirmButton": "Confirmer l'Ajustement"
     },
     "transactionHistory": {
       "title": "Historique des Transactions",
@@ -830,5 +830,3 @@
     "info": "Info"
   }
 }
-
-    

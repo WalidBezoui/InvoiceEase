@@ -326,6 +326,7 @@
       "itemDescription": "Description",
       "itemQuantity": "Qty",
       "itemUnitPrice": "Unit Price",
+      "itemUnitPriceTaxIncl": "Unit Price (Tax Incl.)",
       "itemTotal": "Total",
       "notes": "Invoice Notes (Optional)",
       "notesDescription": "These notes are specific to this invoice. Default notes from preferences will be applied if this is empty and creating a new invoice.",
@@ -346,6 +347,7 @@
       "tax": "Tax ({{taxRate}}%):",
       "total": "Total:"
     },
+    "preTaxPrice": "Pre-tax: ",
     "toast": {
       "authErrorTitle": "Authentication Error",
       "authErrorDesc": "You must be logged in.",
@@ -779,9 +781,7 @@
       "notesLabel": "Notes (Optional)",
       "notesPlaceholderPurchase": "e.g., New shipment from supplier",
       "notesPlaceholderSale": "e.g., Direct sale to customer",
-      "confirmButton": "Confirm Adjustment",
-      "purchaseNote": "Stock purchase",
-      "saleNote": "Direct Sale"
+      "confirmButton": "Confirm Adjustment"
     },
     "transactionHistory": {
       "title": "Transaction History",
@@ -830,5 +830,3 @@
     "info": "Info"
   }
 }
-
-    

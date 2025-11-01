@@ -25,16 +25,19 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useLanguage } from "@/hooks/use-language";
 import AddItemDialog from "./add-item-dialog";
-import QuickAddDialog from "./quick-add-dialog"; // Import the new component
+import QuickAddDialog from "./quick-add-dialog"; 
+import { Tooltip, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
-// Schema for an item within the form
+
+// New schema for an item within the form, using priceWithTax
 const invoiceItemSchema = z.object({
   id: z.string().optional(),
   productId: z.string().optional(),
   reference: z.string().optional(),
   description: z.string().min(1, "Description is required"),
   quantity: z.coerce.number().min(0.01, "Quantity must be at least 0.01"),
-  unitPrice: z.coerce.number().min(0, "Unit price must be non-negative"),
+  unitPrice: z.coerce.number(), // This will now store the PRE-TAX price
+  priceWithTax: z.coerce.number().min(0, "Price must be non-negative"), // User-facing price
 });
 
 
@@ -89,7 +92,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
       invoiceNumber: `INV-${Date.now().toString().slice(-6)}`,
       issueDate: new Date(),
       dueDate: new Date(new Date().setDate(new Date().getDate() + 30)),
-      items: [{ id: doc(collection(db, 'invoices')).id, description: "", quantity: 1, unitPrice: 0, reference: "" }],
+      items: [{ id: doc(collection(db, 'invoices')).id, description: "", quantity: 1, unitPrice: 0, priceWithTax: 0, reference: "" }],
       notes: "",
       taxRate: 0,
     },
@@ -104,7 +107,6 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
         setIsClientsLoading(true);
         setIsProductsLoading(true);
         try {
-          // Fetch Prefs
           const prefDocRef = doc(db, "userPreferences", user.uid);
           const prefDocSnap = await getDoc(prefDocRef);
           if (prefDocSnap.exists()) {
@@ -113,19 +115,13 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
             setUserPrefs({ currency: "MAD", language: "fr", defaultTaxRate: 0 });
           }
 
-          // Fetch Clients
           const clientsQuery = query(collection(db, "clients"), where("userId", "==", user.uid), orderBy("name"));
           const clientsSnapshot = await getDocs(clientsQuery);
-          const fetchedClients: Client[] = [];
-          clientsSnapshot.forEach(doc => fetchedClients.push({ id: doc.id, ...doc.data() } as Client));
-          setClients(fetchedClients);
+          setClients(clientsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Client)));
 
-          // Fetch Products
           const productsQuery = query(collection(db, "products"), where("userId", "==", user.uid), orderBy("name"));
           const productsSnapshot = await getDocs(productsQuery);
-          const fetchedProducts: Product[] = [];
-          productsSnapshot.forEach(doc => fetchedProducts.push({ id: doc.id, ...doc.data() } as Product));
-          setProducts(fetchedProducts);
+          setProducts(productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product)));
 
         } catch (error) {
           console.error("Error fetching initial data:", error);
@@ -144,53 +140,53 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     fetchData();
   }, [user, toast, t]);
 
-  useEffect(() => {
+ useEffect(() => {
     if (!isLoadingLang) {
         form.trigger();
     }
   }, [t, form, isLoadingLang]);
 
  useEffect(() => {
-    if (!isPrefsLoading && !isClientsLoading) {
-      if (initialData) {
-        // When editing, load data into the form
-        const hasExistingClient = initialData.clientId && clients.some(c => c.id === initialData.clientId);
-        
-        const formItems = initialData.items.map(item => ({
-          id: item.id || doc(collection(db, 'invoices')).id,
-          productId: item.productId,
-          reference: item.reference || '',
-          description: item.description,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-        }));
-        
-        form.reset({
-          clientId: hasExistingClient ? initialData.clientId : MANUAL_ENTRY_CLIENT_ID,
-          clientName: initialData.clientName,
-          clientEmail: initialData.clientEmail || "",
-          clientAddress: initialData.clientAddress || "",
-          clientCompany: initialData.clientCompany || "",
-          clientICE: initialData.clientICE || "",
-          invoiceNumber: initialData.invoiceNumber,
-          issueDate: new Date(initialData.issueDate),
-          dueDate: new Date(initialData.dueDate),
-          items: formItems,
-          notes: initialData.notes || "",
-          taxRate: initialData.taxRate ?? userPrefs?.defaultTaxRate ?? 0,
-        });
+    if (!isPrefsLoading && !isClientsLoading && (initialData || userPrefs)) {
+        const taxRate = initialData?.taxRate ?? userPrefs?.defaultTaxRate ?? 0;
+        const taxMultiplier = 1 + (taxRate / 100);
 
-      } else if (userPrefs) {
-        // When creating a new invoice, set defaults from preferences
-        form.reset({
-          ...form.getValues(),
-          notes: userPrefs.defaultNotes || "",
-          taxRate: userPrefs.defaultTaxRate ?? 0,
-          invoiceNumber: `INV-${Date.now().toString().slice(-4)}-${user?.uid.slice(0,3) || 'XXX'}`,
-        });
-      }
+        if (initialData) {
+            const hasExistingClient = initialData.clientId && clients.some(c => c.id === initialData.clientId);
+            
+            form.reset({
+                clientId: hasExistingClient ? initialData.clientId : MANUAL_ENTRY_CLIENT_ID,
+                clientName: initialData.clientName,
+                clientEmail: initialData.clientEmail || "",
+                clientAddress: initialData.clientAddress || "",
+                clientCompany: initialData.clientCompany || "",
+                clientICE: initialData.clientICE || "",
+                invoiceNumber: initialData.invoiceNumber,
+                issueDate: new Date(initialData.issueDate),
+                dueDate: new Date(initialData.dueDate),
+                items: initialData.items.map(item => ({
+                    id: item.id || doc(collection(db, 'invoices')).id,
+                    productId: item.productId,
+                    reference: item.reference || '',
+                    description: item.description,
+                    quantity: item.quantity,
+                    unitPrice: item.unitPrice,
+                    priceWithTax: item.unitPrice * taxMultiplier, // Calculate priceWithTax from stored unitPrice
+                })),
+                notes: initialData.notes || "",
+                taxRate: taxRate,
+            });
+
+        } else if (userPrefs) {
+            form.reset({
+                ...form.getValues(),
+                notes: userPrefs.defaultNotes || "",
+                taxRate: taxRate,
+                invoiceNumber: `INV-${Date.now().toString().slice(-4)}-${user?.uid.slice(0,3) || 'XXX'}`,
+            });
+        }
     }
-  }, [initialData, form, isPrefsLoading, userPrefs, user?.uid, clients, isClientsLoading]);
+}, [initialData, form, isPrefsLoading, userPrefs, user?.uid, clients, isClientsLoading]);
 
 
   const watchItems = form.watch("items");
@@ -208,7 +204,6 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
         form.setValue("clientICE", selectedClient.ice || "");
       }
     } else if (watchClientId === MANUAL_ENTRY_CLIENT_ID) {
-        // If switching back to manual, clear the fields if it wasn't a manual entry to start with
         if (!initialData || initialData.clientId) {
             form.setValue("clientName", "");
             form.setValue("clientEmail", "");
@@ -219,10 +214,12 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     }
   }, [watchClientId, clients, form, initialData]);
 
-  const calculateSubtotal = () => watchItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice || 0), 0);
-  const calculateTaxAmount = (subtotalValue: number) => subtotalValue * ((watchTaxRate || 0) / 100);
-  const subtotal = calculateSubtotal();
-  const taxAmount = calculateTaxAmount(subtotal);
+  const subtotal = watchItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice || 0), 0);
+  const taxAmount = watchItems.reduce((sum, item) => {
+    const totalItemPrice = item.quantity * item.unitPrice;
+    const itemTax = totalItemPrice * ((watchTaxRate || 0) / 100);
+    return sum + itemTax;
+  }, 0);
   const totalAmount = subtotal + taxAmount;
 
   async function onSubmit(values: InvoiceFormValues) {
@@ -231,43 +228,41 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
         return;
     }
     setIsSaving(true);
+    
+    // Final recalculation before saving to ensure data integrity
+    const finalTaxRate = values.taxRate ?? 0;
+    const finalSubtotal = values.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+    const finalTaxAmount = finalSubtotal * (finalTaxRate / 100);
+    const finalTotalAmount = finalSubtotal + finalTaxAmount;
 
-    const subtotal = values.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice || 0), 0);
-    const taxAmount = subtotal * ((values.taxRate || 0) / 100);
-    const totalAmount = subtotal + taxAmount;
-
-    // Ensure every item has a valid ID before saving
     const itemsToSave = values.items.map(item => ({
         id: item.id || doc(collection(db, 'invoices')).id,
         productId: item.productId || null,
         reference: item.reference || null,
         description: item.description,
         quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        total: (item.quantity || 0) * (item.unitPrice || 0),
+        unitPrice: item.unitPrice, // Already pre-tax
+        total: item.quantity * item.unitPrice,
     }));
 
     const dataToSave = {
+        ...initialData,
         userId: user.uid,
         invoiceNumber: values.invoiceNumber,
         issueDate: format(values.issueDate, "yyyy-MM-dd"),
         dueDate: format(values.dueDate, "yyyy-MM-dd"),
         items: itemsToSave,
-        subtotal,
-        taxRate: values.taxRate ?? 0,
-        taxAmount,
-        totalAmount,
-        
-        // Explicitly set to null if falsy to prevent 'undefined'
-        clientId: (values.clientId === MANUAL_ENTRY_CLIENT_ID ? null : (values.clientId || null)),
+        subtotal: finalSubtotal,
+        taxRate: finalTaxRate,
+        taxAmount: finalTaxAmount,
+        totalAmount: finalTotalAmount,
+        clientId: values.clientId === MANUAL_ENTRY_CLIENT_ID ? null : (values.clientId || null),
         clientName: values.clientName,
         clientEmail: (values.clientEmail || null),
         clientAddress: (values.clientAddress || null),
         clientCompany: (values.clientCompany || null),
         clientICE: (values.clientICE || null),
         notes: (values.notes || null),
-        
-        // Carry over non-form fields
         status: initialData?.status || 'draft',
         currency: initialData?.currency || userPrefs?.currency || 'MAD',
         language: initialData?.language || userPrefs?.language || 'fr',
@@ -279,7 +274,6 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
         createdAt: initialData?.createdAt || serverTimestamp(),
         updatedAt: serverTimestamp(),
     };
-
 
     try {
         if (initialData?.id) {
@@ -302,23 +296,44 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
 
 
   const handleAddItem = (item: Pick<InvoiceItem, 'productId' | 'reference' | 'description' | 'quantity' | 'unitPrice'>) => {
-    // If the first item is the default empty one, remove it
-    if (fields.length === 1 && fields[0].description === "" && fields[0].unitPrice === 0) {
+    if (fields.length === 1 && fields[0].description === "" && fields[0].priceWithTax === 0) {
       remove(0);
     }
-    append({ ...item, id: doc(collection(db, 'invoices')).id, reference: item.reference || '' });
+    const taxRate = form.getValues('taxRate') || 0;
+    const taxMultiplier = 1 + (taxRate / 100);
+    const priceWithTax = item.unitPrice * taxMultiplier;
+
+    append({ 
+        ...item, 
+        id: doc(collection(db, 'invoices')).id, 
+        reference: item.reference || '',
+        priceWithTax: priceWithTax,
+        unitPrice: item.unitPrice // unitPrice from product is pre-tax
+    });
   };
   
   const handleAddMultipleItems = (itemsToAdd: Array<Pick<InvoiceItem, 'productId' | 'reference' | 'description' | 'quantity' | 'unitPrice'>>) => {
-      if (fields.length === 1 && fields[0].description === "" && fields[0].unitPrice === 0) {
+      if (fields.length === 1 && fields[0].description === "" && fields[0].priceWithTax === 0) {
         remove(0);
       }
+      const taxRate = form.getValues('taxRate') || 0;
+      const taxMultiplier = 1 + (taxRate / 100);
       const newItems = itemsToAdd.map(item => ({
           ...item,
           id: doc(collection(db, 'invoices')).id,
-          reference: item.reference || ''
+          reference: item.reference || '',
+          priceWithTax: item.unitPrice * taxMultiplier,
+          unitPrice: item.unitPrice // unitPrice from product is pre-tax
       }));
       append(newItems);
+  };
+  
+  const handlePriceWithTaxChange = (index: number, priceWithTax: number) => {
+    const taxRate = form.getValues('taxRate') || 0;
+    const taxDivisor = 1 + (taxRate / 100);
+    const unitPrice = taxDivisor > 0 ? priceWithTax / taxDivisor : 0;
+    form.setValue(`items.${index}.unitPrice`, unitPrice, { shouldValidate: true });
+    form.setValue(`items.${index}.priceWithTax`, priceWithTax, { shouldValidate: true });
   };
 
   const isClientReadOnly = !!(watchClientId && watchClientId !== MANUAL_ENTRY_CLIENT_ID);
@@ -328,6 +343,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
   }
 
   return (
+    <TooltipProvider>
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <Card className="shadow-lg">
@@ -496,21 +512,30 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
                         <FormMessage />
                       </FormItem>
                     )} />
-                    <FormField control={form.control} name={`items.${index}.unitPrice`} render={({ field: itemField }) => (
-                      <FormItem>
-                        <FormLabel>{t('invoiceForm.formFields.itemUnitPrice')}</FormLabel>
-                        <FormControl><Input type="number" placeholder="100.00" step="0.01" {...itemField} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
+                    <FormField control={form.control} name={`items.${index}.priceWithTax`} render={({ field: itemField }) => (
+                        <FormItem>
+                            <FormLabel>{t('invoiceForm.formFields.itemUnitPriceTaxIncl', { default: 'Unit Price (Tax Incl.)'})}</FormLabel>
+                            <FormControl><Input type="number" placeholder="120.00" step="0.01" {...itemField} onChange={e => { itemField.onChange(e); handlePriceWithTaxChange(index, parseFloat(e.target.value) || 0); }} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
                     )} />
                 </div>
                  <div className="w-full md:w-32 self-end">
-                    <FormLabel>{t('invoiceForm.formFields.itemTotal')}</FormLabel>
-                    <Input
-                      readOnly
-                      value={(watchItems[index]?.quantity * watchItems[index]?.unitPrice || 0).toFixed(2)}
-                      className="bg-muted cursor-default font-semibold"
-                    />
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <div>
+                                <FormLabel>{t('invoiceForm.formFields.itemTotal')}</FormLabel>
+                                <Input
+                                readOnly
+                                value={((watchItems[index]?.quantity || 0) * (watchItems[index]?.priceWithTax || 0)).toFixed(2)}
+                                className="bg-muted cursor-default font-semibold"
+                                />
+                            </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                           <p>{t('invoiceForm.preTaxPrice', { default: 'Pre-tax: '})} {(watchItems[index]?.unitPrice || 0).toFixed(2)}</p>
+                        </TooltipContent>
+                    </Tooltip>
                   </div>
                 <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="mt-auto text-destructive hover:bg-destructive/10 self-end md:self-center">
                   <Trash2 className="h-5 w-5" />
@@ -534,6 +559,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
                     t={t}
                 />
             </div>
+             <FormMessage>{form.formState.errors.items?.root?.message || form.formState.errors.items?.message}</FormMessage>
           </CardContent>
         </Card>
 
@@ -556,7 +582,13 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
               <FormField control={form.control} name="taxRate" render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t('invoiceForm.formFields.taxRate')}</FormLabel>
-                  <FormControl><Input type="number" placeholder={t('invoiceForm.placeholders.taxRate')} {...field} min="0" max="100" step="0.01" /></FormControl>
+                  <FormControl><Input type="number" placeholder={t('invoiceForm.placeholders.taxRate')} {...field} min="0" max="100" step="0.01" onChange={e => {
+                        field.onChange(e);
+                        // Recalculate all item pre-tax prices when tax rate changes
+                        watchItems.forEach((item, index) => {
+                            handlePriceWithTaxChange(index, item.priceWithTax);
+                        });
+                  }} /></FormControl>
                   <UiFormDescription>{t('invoiceForm.formFields.taxRateDescription')}</UiFormDescription>
                   <FormMessage />
                 </FormItem>
@@ -579,5 +611,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
         </CardFooter>
       </form>
     </Form>
+    </TooltipProvider>
   );
 }
+
