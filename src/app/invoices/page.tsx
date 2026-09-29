@@ -11,10 +11,11 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 import { db } from "@/lib/firebase";
 import type { Invoice } from "@/lib/types";
-import { collection, query, where, getDocs, orderBy, doc, updateDoc, serverTimestamp, type FieldValue, deleteDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, orderBy, doc, deleteDoc } from "firebase/firestore";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { format } from "date-fns";
 import { useLanguage } from "@/hooks/use-language";
+import { transitionInvoiceStatus, canDeleteInvoice } from "@/lib/invoice-transitions";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -113,24 +114,30 @@ export default function InvoicesPage() {
     if (!user) return;
     setIsUpdatingStatus(invoiceId);
 
-    const invoiceRef = doc(db, "invoices", invoiceId);
-    
-    const updateData: { status: Invoice['status']; updatedAt: FieldValue; sentDate?: string | null; paidDate?: string | null } = {
-      status: newStatus,
-      updatedAt: serverTimestamp() as FieldValue,
-    };
-    
-    if (newStatus === 'sent' && currentStatus === 'draft') {
-      updateData.sentDate = new Date().toISOString();
-    } else if (newStatus === 'paid' && (currentStatus === 'sent' || currentStatus === 'overdue')) {
-      updateData.paidDate = new Date().toISOString();
-    } else if (newStatus === 'sent' && currentStatus === 'paid') {
-      updateData.paidDate = null;
-    }
-
     try {
-      await updateDoc(invoiceRef, updateData as any);
-      setAllInvoices(prev => prev.map(inv => inv.id === invoiceId ? { ...inv, status: newStatus } : inv));
+      const result = await transitionInvoiceStatus(invoiceId, user.uid, newStatus);
+
+      if (!result.success) {
+        toast({
+          title: t('invoiceDetailPage.errorToastTitle'),
+          description: result.error || t('invoiceDetailPage.statusUpdateErrorToastDesc'),
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Update local state to reflect the change
+      setAllInvoices(prev => prev.map(inv => {
+        if (inv.id !== invoiceId) return inv;
+        return {
+          ...inv,
+          status: newStatus,
+          stockUpdated: result.updatedInvoice?.stockUpdated ?? inv.stockUpdated,
+          paidDate: result.updatedInvoice?.paidDate !== undefined ? (result.updatedInvoice.paidDate as string | null) : inv.paidDate,
+          sentDate: result.updatedInvoice?.sentDate !== undefined ? (result.updatedInvoice.sentDate as string | null) : inv.sentDate,
+        };
+      }));
+
       toast({
         title: t('invoiceDetailPage.statusUpdatedToastTitle'),
         description: t('invoiceDetailPage.statusUpdatedToastDesc', { invoiceNumber: allInvoices.find(i=>i.id === invoiceId)?.invoiceNumber || '', status: t(`invoiceStatus.${newStatus}`) }),
@@ -157,6 +164,17 @@ export default function InvoicesPage() {
     if (!invoiceToDelete) return;
     
     try {
+        // Check if deletion is allowed (preserves stock and audit trail)
+        const deleteCheck = await canDeleteInvoice(invoiceId, user.uid);
+        if (!deleteCheck.canDelete) {
+            toast({
+                title: t('invoicesPage.toast.deleteErrorTitle'),
+                description: deleteCheck.reason || t('invoicesPage.toast.deleteErrorDesc'),
+                variant: "destructive",
+            });
+            return;
+        }
+
         await deleteDoc(doc(db, "invoices", invoiceId));
         setAllInvoices(prev => prev.filter(inv => inv.id !== invoiceId));
         toast({

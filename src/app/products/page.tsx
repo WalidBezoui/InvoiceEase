@@ -215,8 +215,25 @@ export default function ProductsPage() {
     if (!productToDelete) return;
 
     try {
+      // Check for transaction history before allowing deletion
+      const transQuery = query(
+        collection(db, "productTransactions"),
+        where("productId", "==", productId),
+      );
+      const transSnapshot = await getDocs(transQuery);
+
+      if (!transSnapshot.empty) {
+        toast({
+          title: t('productsPage.toast.deleteErrorTitle'),
+          description: t('productsPage.toast.deleteHasTransactionsDesc', {
+            default: `Cannot delete "${productToDelete.name}" — it has ${transSnapshot.size} stock transaction(s). Deleting would break the audit trail.`,
+          }),
+          variant: 'destructive',
+        });
+        return;
+      }
+
       await deleteDoc(doc(db, "products", productId));
-      // Note: This doesn't delete associated transactions, which might be desired for historical data.
       setAllProducts(prev => prev.filter(p => p.id !== productId));
       toast({
         title: t('productsPage.toast.deleteSuccessTitle'),

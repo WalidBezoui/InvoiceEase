@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { generateInvoicePdf } from "@/lib/pdf-generator";
+import { transitionInvoiceStatus } from "@/lib/invoice-transitions";
 
 
 const currencyWordForms: { [key: string]: { singular: string, plural: string, centimeSingular: string, centimePlural: string } } = {
@@ -260,43 +261,45 @@ export default function InvoiceDetailPage() {
     if (isUpdatingStatus) return;
 
     setIsUpdatingStatus(true);
-    const invoiceRef = doc(db, "invoices", invoice.id);
-    
-    const updateData: { status: Invoice['status']; updatedAt: FieldValue; sentDate?: string | null; paidDate?: string | null, stockUpdated?: boolean } = {
-      status: newStatus,
-      updatedAt: serverTimestamp() as FieldValue,
-      stockUpdated: invoice.stockUpdated
-    };
 
     try {
-        if (newStatus === 'paid' && !invoice.stockUpdated) {
-            await updateStockAndCreateTransactions(invoice);
-            updateData.paidDate = new Date().toISOString();
-            updateData.stockUpdated = true;
-        } else if (invoice.status === 'paid' && newStatus !== 'paid' && invoice.stockUpdated) {
-            await revertStockUpdate(invoice);
-            updateData.paidDate = null;
-            updateData.stockUpdated = false;
-        }
-        
-        if (newStatus === 'sent' && invoice.status === 'draft') {
-            updateData.sentDate = new Date().toISOString();
+        const result = await transitionInvoiceStatus(invoice.id, user.uid, newStatus);
+
+        if (!result.success) {
+            toast({
+                title: t('invoiceDetailPage.errorToastTitle'),
+                description: result.error || t('invoiceDetailPage.statusUpdateErrorToastDesc'),
+                variant: "destructive",
+            });
+            return;
         }
 
-        await updateDoc(invoiceRef, updateData as any); 
-
-        setInvoice(prev => prev ? { ...prev, ...updateData, status: newStatus, stockUpdated: updateData.stockUpdated } : null);
+        // Update local state with the result
+        setInvoice(prev => {
+            if (!prev) return null;
+            return {
+                ...prev,
+                status: newStatus,
+                stockUpdated: result.updatedInvoice?.stockUpdated ?? prev.stockUpdated,
+                paidDate: result.updatedInvoice?.paidDate !== undefined
+                    ? (result.updatedInvoice.paidDate as string | null)
+                    : prev.paidDate,
+                sentDate: result.updatedInvoice?.sentDate !== undefined
+                    ? (result.updatedInvoice.sentDate as string | null)
+                    : prev.sentDate,
+            };
+        });
 
         toast({
-            title: t('invoiceDetailPage.statusUpdatedToastTitle'), 
-            description: t('invoiceDetailPage.statusUpdatedToastDesc', {invoiceNumber: invoice.invoiceNumber, status: newStatus}), 
+            title: t('invoiceDetailPage.statusUpdatedToastTitle'),
+            description: t('invoiceDetailPage.statusUpdatedToastDesc', {invoiceNumber: invoice.invoiceNumber, status: t(`invoiceStatus.${newStatus}`)}),
         });
 
     } catch (err) {
       console.error("Error updating invoice status or stock:", err);
       toast({
-        title: t('invoiceDetailPage.errorToastTitle'), 
-        description: t('invoiceDetailPage.statusUpdateErrorToastDesc'), 
+        title: t('invoiceDetailPage.errorToastTitle'),
+        description: t('invoiceDetailPage.statusUpdateErrorToastDesc'),
         variant: "destructive",
       });
     } finally {

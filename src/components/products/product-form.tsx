@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { db } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp, doc, updateDoc, writeBatch } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, doc, updateDoc, writeBatch, runTransaction, getDoc } from "firebase/firestore";
 import type { Product } from "@/lib/types";
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
@@ -80,20 +80,43 @@ export default function ProductForm({ initialData, onSave }: ProductFormProps) {
 
     try {
       if (initialData?.id) {
-        // This is an update
+        // This is an update — use a transaction for atomic stock + data update
         const productRef = doc(db, "products", initialData.id);
-        const stockDifference = (values.stock ?? 0) - (initialData.stock ?? 0);
         
-        if (stockDifference !== 0) {
-            await handleStockAdjustment(
-                initialData.id, 
-                stockDifference, 
-                t('productForm.toast.stockCorrectionNote', { default: 'Stock correction from edit form'}),
-                user.uid,
-                values.purchasePrice // Assume correction is at purchase price
-            );
-        }
-        await updateDoc(productRef, productData);
+        await runTransaction(db, async (transaction) => {
+          const productSnap = await transaction.get(productRef);
+          
+          if (!productSnap.exists()) {
+            throw new Error("Product not found.");
+          }
+          
+          const currentProduct = productSnap.data() as Product;
+          const currentStock = currentProduct.stock ?? 0;
+          const targetStock = values.stock ?? 0;
+          const stockDifference = targetStock - currentStock;
+          
+          // Update product data
+          transaction.update(productRef, {
+            ...productData,
+            stock: targetStock,
+          });
+          
+          // If stock changed, create a transaction record
+          if (stockDifference !== 0) {
+            const transactionRef = doc(collection(db, "productTransactions"));
+            transaction.set(transactionRef, {
+              userId: user.uid,
+              productId: initialData.id,
+              type: stockDifference > 0 ? 'purchase' : 'sale',
+              quantityChange: stockDifference,
+              newStock: targetStock,
+              notes: t('productForm.toast.stockCorrectionNote', { default: 'Stock correction from edit form' }),
+              transactionPrice: values.purchasePrice,
+              transactionDate: serverTimestamp(),
+            });
+          }
+        });
+        
         toast({ title: t('productForm.toast.productUpdated') });
         if (onSave) onSave(initialData.id); else router.push(`/products/${initialData.id}`);
 
