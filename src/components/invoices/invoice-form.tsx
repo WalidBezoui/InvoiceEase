@@ -19,9 +19,9 @@ import { useToast } from "@/hooks/use-toast";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp, doc, getDoc, query, where, getDocs, orderBy, updateDoc, type FieldValue } from "firebase/firestore";
 import type { Invoice, InvoiceItem, UserPreferences, Client, Product } from "@/lib/types";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { useLanguage } from "@/hooks/use-language";
 import AddItemDialog from "./add-item-dialog";
@@ -69,6 +69,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
   const { toast } = useToast();
   const { user } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const { t, isLoadingLocale } = useLanguage();
   const [isSaving, setIsSaving] = useState(false);
   const [isPrefsLoading, setIsPrefsLoading] = useState(true);
@@ -77,6 +78,14 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
   const [isClientsLoading, setIsClientsLoading] = useState(true);
   const [products, setProducts] = useState<Product[]>([]);
   const [isProductsLoading, setIsProductsLoading] = useState(true);
+
+  // Track whether initial form population has occurred to prevent
+  // the initialization effect from re-firing when dependencies change
+  // (e.g., when clients finish loading after user started editing).
+  const initialFormPopulatedRef = useRef(false);
+  // Track whether the client-clearing effect should be active
+  // (only after user interaction, not during initial form setup).
+  const clientSetupCompleteRef = useRef(false);
 
   const currentInvoiceFormSchema = getInvoiceFormSchema(t);
 
@@ -147,44 +156,55 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
   }, [t, form, isLoadingLocale]);
 
  useEffect(() => {
-    if (!isPrefsLoading && !isClientsLoading && (initialData || userPrefs)) {
-        const taxRate = initialData?.taxRate ?? userPrefs?.defaultTaxRate ?? 0;
-        const taxMultiplier = 1 + (taxRate / 100);
+    // Only populate the form once — prevent re-firing when clients
+    // finish loading (which would overwrite user edits).
+    if (initialFormPopulatedRef.current) return;
+    if (isPrefsLoading || isClientsLoading) return;
+    if (!initialData && !userPrefs) return;
 
-        if (initialData) {
-            const hasExistingClient = initialData.clientId && clients.some(c => c.id === initialData.clientId);
-            
-            form.reset({
-                clientId: hasExistingClient ? initialData.clientId : MANUAL_ENTRY_CLIENT_ID,
-                clientName: initialData.clientName,
-                clientEmail: initialData.clientEmail || "",
-                clientAddress: initialData.clientAddress || "",
-                clientCompany: initialData.clientCompany || "",
-                clientICE: initialData.clientICE || "",
-                invoiceNumber: initialData.invoiceNumber,
-                issueDate: new Date(initialData.issueDate),
-                dueDate: new Date(initialData.dueDate),
-                items: initialData.items.map(item => ({
-                    id: item.id || doc(collection(db, 'invoices')).id,
-                    productId: item.productId,
-                    reference: item.reference || '',
-                    description: item.description,
-                    quantity: item.quantity,
-                    unitPrice: item.unitPrice,
-                    priceWithTax: item.unitPrice * taxMultiplier, // Calculate priceWithTax from stored unitPrice
-                })),
-                notes: initialData.notes || "",
-                taxRate: taxRate,
-            });
+    initialFormPopulatedRef.current = true;
 
-        } else if (userPrefs) {
-            form.reset({
-                ...form.getValues(),
-                notes: userPrefs.defaultNotes || "",
-                taxRate: taxRate,
-                invoiceNumber: `INV-${Date.now().toString().slice(-4)}-${user?.uid.slice(0,3) || 'XXX'}`,
-            });
-        }
+    const taxRate = initialData?.taxRate ?? userPrefs?.defaultTaxRate ?? 0;
+    const taxMultiplier = 1 + (taxRate / 100);
+
+    if (initialData) {
+        const hasExistingClient = initialData.clientId && clients.some(c => c.id === initialData.clientId);
+        
+        form.reset({
+            clientId: hasExistingClient ? (initialData.clientId || undefined) : MANUAL_ENTRY_CLIENT_ID,
+            clientName: initialData.clientName,
+            clientEmail: initialData.clientEmail || "",
+            clientAddress: initialData.clientAddress || "",
+            clientCompany: initialData.clientCompany || "",
+            clientICE: initialData.clientICE || "",
+            invoiceNumber: initialData.invoiceNumber,
+            issueDate: new Date(initialData.issueDate),
+            dueDate: new Date(initialData.dueDate),
+            items: (initialData.items || []).map(item => ({
+                id: item.id || doc(collection(db, 'invoices')).id,
+                productId: item.productId,
+                reference: item.reference || '',
+                description: item.description,
+                quantity: item.quantity,
+                unitPrice: item.unitPrice,
+                priceWithTax: item.unitPrice * taxMultiplier,
+            })),
+            notes: initialData.notes || "",
+            taxRate: taxRate,
+        });
+
+        // Mark client setup as complete so the client-clearing effect
+        // won't wipe the fields we just set.
+        clientSetupCompleteRef.current = true;
+
+    } else if (userPrefs) {
+        form.reset({
+            ...form.getValues(),
+            notes: userPrefs.defaultNotes || "",
+            taxRate: taxRate,
+            invoiceNumber: `INV-${Date.now().toString().slice(-4)}-${user?.uid.slice(0,3) || 'XXX'}`,
+        });
+        clientSetupCompleteRef.current = true;
     }
 }, [initialData, form, isPrefsLoading, userPrefs, user?.uid, clients, isClientsLoading]);
 
@@ -194,6 +214,11 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
   const watchClientId = form.watch("clientId");
 
   useEffect(() => {
+    // Don't run during initial form setup — the initialization effect
+    // already set the correct client fields. This effect only handles
+    // user-initiated client selection changes.
+    if (!clientSetupCompleteRef.current) return;
+
     if (watchClientId && watchClientId !== MANUAL_ENTRY_CLIENT_ID) {
       const selectedClient = clients.find(c => c.id === watchClientId);
       if (selectedClient) {
@@ -204,15 +229,14 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
         form.setValue("clientICE", selectedClient.ice || "");
       }
     } else if (watchClientId === MANUAL_ENTRY_CLIENT_ID) {
-        if (!initialData || initialData.clientId) {
-            form.setValue("clientName", "");
-            form.setValue("clientEmail", "");
-            form.setValue("clientAddress", "");
-            form.setValue("clientCompany", "");
-            form.setValue("clientICE", "");
-        }
+        // User explicitly switched to manual entry — clear the fields
+        form.setValue("clientName", "");
+        form.setValue("clientEmail", "");
+        form.setValue("clientAddress", "");
+        form.setValue("clientCompany", "");
+        form.setValue("clientICE", "");
     }
-  }, [watchClientId, clients, form, initialData]);
+  }, [watchClientId, clients, form]);
 
   const subtotal = watchItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice || 0), 0);
   const taxAmount = watchItems.reduce((sum, item) => {
@@ -246,7 +270,9 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
     }));
 
     const dataToSave = {
-        ...initialData,
+        // Explicit field list — never spread raw Firestore documents.
+        // This prevents carrying stale metadata, the redundant `id` field,
+        // or Timestamp objects that may not serialize correctly.
         userId: user.uid,
         invoiceNumber: values.invoiceNumber,
         issueDate: format(values.issueDate, "yyyy-MM-dd"),
@@ -354,7 +380,7 @@ export default function InvoiceForm({ initialData }: InvoiceFormProps) {
                 <UiCardDescription>{t('invoiceForm.clientInfoCard.description')}</UiCardDescription>
               </div>
               <Button type="button" variant="outline" size="sm" asChild>
-                <Link href={`/clients/new?redirect=${encodeURIComponent(router.asPath)}`}>
+                <Link href={`/clients/new?redirect=${encodeURIComponent(pathname)}`}>
                   <UserPlus className="mr-2 h-4 w-4" /> {t('invoiceForm.clientInfoCard.addNewClient')}
                 </Link>
               </Button>

@@ -42,12 +42,13 @@ const currencies = [
   { code: "MAD", name: "Moroccan Dirham" },
 ];
 
+// Only languages with complete translation files (src/locales/*.json) are listed.
+// The LanguageContext type (Locale) also restricts to 'en' | 'fr'.
+// To add a new language: 1) create locale file, 2) update Locale type, 3) add here.
+// Arabic (ar) additionally requires RTL layout support.
 const languages = [
   { code: "en", name: "English" },
-  { code: "es", name: "Español (Spanish)" },
   { code: "fr", name: "Français (French)" },
-  { code: "de", name: "Deutsch (German)" },
-  { code: "ar", name: "العربية (Arabic)" },
 ];
 
 export default function PreferencesForm() {
